@@ -388,18 +388,21 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       reachedEstimation = true;
     }
 
+    // Auto-avance sur une étape à choix unique. Déclenchée par `change` (clavier /
+    // changement de valeur) ET par `click` (re-clic sur un choix DÉJÀ sélectionné,
+    // qui n'émet pas de `change`). Le garde-fou `current === idx` empêche la double-avance.
+    function maybeAutoAdvance(targetEl) {
+      var stepEl = steps[current];
+      if (!isAutoStep(stepEl) || !stepEl.contains(targetEl)) return;
+      var idx = current;
+      setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1, true); }, 280);
+    }
+
     form.addEventListener('change', function (e) {
       if (['type_demande', 'type_bien', 'surface_band', 'age_bien', 'copropriete', 'annexe_appart', 'annexe_maison'].indexOf(e.target.name) > -1) {
         updateEstimation();
       }
-      // Auto-avance sur les étapes à choix unique (sans cliquer « Continuer »)
-      if (e.target.type === 'radio') {
-        var stepEl = steps[current];
-        if (isAutoStep(stepEl) && stepEl.contains(e.target)) {
-          var idx = current;
-          setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1, true); }, 280);
-        }
-      }
+      if (e.target.type === 'radio') maybeAutoAdvance(e.target);
     });
 
     form.addEventListener('click', function (e) {
@@ -408,6 +411,9 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         if (current < steps.length - 1) showStep(current + 1, true);
       } else if (e.target.matches('[data-prev]')) {
         if (current > 0) showStep(current - 1, true);
+      } else if (e.target.matches('input[type="radio"]')) {
+        // re-clic sur un radio déjà coché : `change` ne se déclenche pas → on avance ici
+        if (e.target.checked) maybeAutoAdvance(e.target);
       }
     });
 
