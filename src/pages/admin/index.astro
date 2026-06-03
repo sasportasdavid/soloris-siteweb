@@ -147,6 +147,23 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-edit textarea { resize:vertical; min-height:64px; }
     .adm-saved { font-size:11.5px; color:#1d7a48; margin-left:8px; opacity:0; transition:opacity .2s; }
     .adm-saved.on { opacity:1; }
+
+    /* Section Devis */
+    .adm-btn { display:inline-block; background:var(--blue); color:#fff; border:none; cursor:pointer; font-family:var(--sora); font-weight:600; font-size:13px; padding:9px 14px; border-radius:9px; text-decoration:none; }
+    .adm-btn:hover { background:#0d3358; }
+    .adm-btn-ghost { background:#fff; color:var(--blue); border:1.5px solid var(--line); }
+    .adm-btn-ghost:hover { border-color:var(--blue); background:var(--paper); }
+    .adm-btn-sm { background:none; border:1px dashed var(--line); color:var(--blue-light); cursor:pointer; font-size:12px; padding:6px 10px; border-radius:8px; margin-top:8px; }
+    .adm-devis-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .adm-lig { display:grid; grid-template-columns:1fr 92px 26px; gap:8px; margin-bottom:8px; align-items:center; }
+    .adm-lig input { width:100%; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-size:13px; font-family:var(--inter); }
+    .adm-lig input:focus { outline:none; border-color:var(--blue-light); }
+    .adm-lig-x { border:none; background:none; color:var(--ink-soft); cursor:pointer; font-size:18px; line-height:1; }
+    .adm-lig-x:hover { color:#b3261e; }
+    .dv-total { text-align:right; margin-top:10px; font-size:14px; color:var(--ink); }
+    .dv-total b { color:var(--blue); font-family:var(--sora); font-size:16px; margin-left:6px; }
+    #dv-msg { min-height:16px; }
+    #dv-msg.err { color:#b3261e; }
   </style>
 
   <script define:vars={{ STATUTS, STATUT_LABELS }}>
@@ -155,6 +172,7 @@ const STATUT_LABELS: Record<string, string> = {
 
   <script>
     import { supabase } from '../../lib/supabase';
+    import { buildDevisDraftFromLead } from '../../lib/devis';
 
     const { STATUTS, STATUT_LABELS } = (window as any).__ADMIN_CONST;
     const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -168,6 +186,8 @@ const STATUT_LABELS: Record<string, string> = {
     const NETWORK_LBL: Record<string, string> = { g: 'Recherche Google', s: 'Partenaires recherche', d: 'Display', ytv: 'YouTube', vp: 'Partenaires vidéo' };
 
     let allLeads: any[] = [];
+    let devisByLead: Record<string, any> = {}; // lead_id → devis le plus récent
+    let currentLeadId: string | null = null;
 
     function esc(s: any): string {
       return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -312,9 +332,119 @@ const STATUT_LABELS: Record<string, string> = {
       return `<dl class="adm-dl">${filled.join('')}</dl>`;
     }
 
+    // ── Devis ───────────────────────────────────────────────────────────
+    function statutDevisBadge(s: string): string {
+      const map: Record<string, [string, string]> = { brouillon: ['Brouillon', 'pill-chan'], envoye: ['Envoyé', 'pill-orga'], signe: ['Signé', 'pill-complet'], refuse: ['Refusé', 'pill-partiel'] };
+      const m = map[s] || ['—', 'pill-chan'];
+      return `<span class="adm-pill ${m[1]}">${m[0]}</span>`;
+    }
+    function ligneRowHtml(l: any): string {
+      return `<div class="adm-lig" data-lig><input type="text" class="lig-lib" value="${esc(l.libelle || '')}" placeholder="Désignation"><input type="number" class="lig-amt" value="${l.montant ?? ''}" placeholder="€"><button type="button" class="adm-lig-x" data-lig-del aria-label="Retirer">×</button></div>`;
+    }
+    function buildDevisSection(l: any): string {
+      const d = devisByLead[l.id];
+      if (!d) {
+        return `<div class="adm-sec" id="adm-devis"><h3>Devis</h3>
+          <p class="muted" style="font-size:13px;margin-bottom:10px">Aucun devis. Il sera pré-rempli depuis la demande (modifiable avant envoi).</p>
+          <button type="button" class="adm-btn" data-devis-create>Générer le devis</button></div>`;
+      }
+      const signUrl = window.location.origin + '/devis/signer/' + d.sign_token;
+      const pdfUrl = '/api/devis/' + d.sign_token + '.pdf';
+      const lignes = Array.isArray(d.lignes) ? d.lignes : [];
+      const meta = [
+        dlRow('Numéro', esc(d.numero), true),
+        dlRow('Envoyé le', d.sent_at ? fmtDateTime(d.sent_at) : ''),
+        dlRow('Signé', d.signed_at ? ('par ' + esc(d.signed_nom || '—') + ' le ' + fmtDateTime(d.signed_at)) : ''),
+      ].filter(Boolean).join('');
+      return `<div class="adm-sec" id="adm-devis" data-devis-id="${d.id}">
+        <h3>Devis ${statutDevisBadge(d.statut)}</h3>
+        <dl class="adm-dl">${meta}</dl>
+        <div class="adm-edit" style="margin-top:14px">
+          <div class="full"><label>Objet</label><input type="text" id="dv-objet" value="${esc(d.objet || '')}"></div>
+          <div><label>Validité (jours)</label><input type="number" id="dv-validite" value="${d.validite_jours || 30}"></div>
+        </div>
+        <label style="display:block;font-size:11.5px;font-family:var(--sora);color:var(--ink-soft);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em">Lignes du devis</label>
+        <div id="dv-lignes">${lignes.map(ligneRowHtml).join('')}</div>
+        <button type="button" class="adm-btn-sm" data-lig-add>+ Ajouter une ligne</button>
+        <div class="dv-total">Total TTC :<b id="dv-total">${fmtEUR(d.montant || 0)}</b></div>
+        <div class="adm-devis-actions">
+          <button type="button" class="adm-btn" data-devis-save>Enregistrer</button>
+          <a class="adm-btn adm-btn-ghost" href="${pdfUrl}" target="_blank" rel="noopener">Télécharger le PDF</a>
+          <button type="button" class="adm-btn adm-btn-ghost" data-devis-copy data-link="${signUrl}">Copier le lien de signature</button>
+          <button type="button" class="adm-btn" data-devis-send>Envoyer par email</button>
+        </div>
+        <p class="muted" id="dv-msg" style="font-size:12.5px;margin-top:10px"></p>
+      </div>`;
+    }
+    function collectLignes(): any[] {
+      const rows = Array.from(document.querySelectorAll('#dv-lignes [data-lig]'));
+      return rows.map((r) => ({
+        libelle: (r.querySelector('.lig-lib') as HTMLInputElement).value.trim(),
+        montant: Math.round(Number((r.querySelector('.lig-amt') as HTMLInputElement).value) || 0),
+      })).filter((l) => l.libelle || l.montant);
+    }
+    function recomputeTotal() {
+      const el = document.getElementById('dv-total');
+      if (el) el.textContent = fmtEUR(collectLignes().reduce((s, l) => s + l.montant, 0));
+    }
+    function devisMsg(msg: string, isErr = false) {
+      const el = document.getElementById('dv-msg');
+      if (el) { el.textContent = msg; el.classList.toggle('err', isErr); }
+    }
+    async function createDevis() {
+      const l = allLeads.find((x) => x.id === currentLeadId);
+      if (!l) return;
+      const draft = buildDevisDraftFromLead(l);
+      const row = { lead_id: l.id, client_nom: l.nom, client_email: l.email, client_tel: l.telephone, client_cp: l.secteur, objet: draft.objet, lignes: draft.lignes, montant: draft.montant, validite_jours: draft.validite_jours };
+      const { data, error } = await supabase.from('devis').insert(row).select('*').single();
+      if (error) { alert('Création du devis impossible : ' + error.message); return; }
+      devisByLead[l.id] = data;
+      openDrawer(l.id);
+    }
+    async function saveDevis(silent = false): Promise<boolean> {
+      const sec = document.getElementById('adm-devis');
+      const id = sec && sec.getAttribute('data-devis-id');
+      if (!id) return false;
+      const objet = (document.getElementById('dv-objet') as HTMLInputElement).value.trim();
+      const validite = parseInt((document.getElementById('dv-validite') as HTMLInputElement).value, 10) || 30;
+      const lignes = collectLignes();
+      const montant = lignes.reduce((s, l) => s + (Number(l.montant) || 0), 0);
+      const { data, error } = await supabase.from('devis').update({ objet, validite_jours: validite, lignes, montant, updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+      if (error) { devisMsg('Échec de l’enregistrement : ' + error.message, true); return false; }
+      if (data && data.lead_id) devisByLead[data.lead_id] = data;
+      if (!silent) devisMsg('Devis enregistré ✓');
+      return true;
+    }
+    async function sendDevis() {
+      const sec = document.getElementById('adm-devis');
+      const id = sec && sec.getAttribute('data-devis-id');
+      if (!id) return;
+      const l = allLeads.find((x) => x.id === currentLeadId);
+      if (l && !l.email) { devisMsg("Ce lead n'a pas d'email — impossible d'envoyer.", true); return; }
+      devisMsg('Enregistrement…');
+      if (!(await saveDevis(true))) return;
+      devisMsg('Envoi en cours…');
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess.session && sess.session.access_token;
+      if (!tok) { devisMsg('Session expirée, reconnectez-vous.', true); return; }
+      try {
+        const res = await fetch('/api/devis/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ devis_id: id }) });
+        const j = await res.json();
+        if (!res.ok || !j.ok) { devisMsg('Échec : ' + (j.error || 'erreur') + (j.detail ? ' — ' + j.detail : ''), true); return; }
+        const { data: fresh } = await supabase.from('devis').select('*').eq('id', id).single();
+        if (fresh && fresh.lead_id) devisByLead[fresh.lead_id] = fresh;
+        openDrawer(currentLeadId as string);
+        devisMsg('Devis envoyé à ' + (j.to || 'le client') + ' ✓');
+      } catch (e) { devisMsg("L'envoi a échoué.", true); }
+    }
+    function copyDevisLink(link: string) {
+      navigator.clipboard.writeText(link).then(() => devisMsg('Lien de signature copié ✓')).catch(() => devisMsg(link));
+    }
+
     function openDrawer(id: string) {
       const l = allLeads.find((x) => x.id === id);
       if (!l) return;
+      currentLeadId = id;
       const panel = document.getElementById('adm-drawer-panel') as HTMLElement;
 
       const badges: string[] = [];
@@ -375,6 +505,8 @@ const STATUT_LABELS: Record<string, string> = {
           </div>
         </div>
 
+        ${buildDevisSection(l)}
+
         <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
 
         <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
@@ -418,12 +550,24 @@ const STATUT_LABELS: Record<string, string> = {
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
 
-      // Édition dans le drawer
-      document.getElementById('adm-drawer-panel')!.addEventListener('change', (e) => {
+      // Édition dans le drawer (champs commerciaux du lead)
+      const panel = document.getElementById('adm-drawer-panel')!;
+      panel.addEventListener('change', (e) => {
         const t = e.target as HTMLElement;
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
+      // Actions Devis
+      panel.addEventListener('click', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-devis-create]')) createDevis();
+        else if (t.closest('[data-lig-add]')) { const c = document.getElementById('dv-lignes'); if (c) c.insertAdjacentHTML('beforeend', ligneRowHtml({})); }
+        else if (t.closest('[data-lig-del]')) { const r = t.closest('[data-lig]'); if (r) { r.remove(); recomputeTotal(); } }
+        else if (t.closest('[data-devis-save]')) saveDevis();
+        else if (t.closest('[data-devis-copy]')) copyDevisLink((t.closest('[data-devis-copy]') as HTMLElement).getAttribute('data-link') || '');
+        else if (t.closest('[data-devis-send]')) sendDevis();
+      });
+      panel.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#dv-lignes')) recomputeTotal(); });
       // Fermeture du drawer (backdrop, bouton, Échap)
       document.getElementById('adm-drawer')!.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('[data-close]')) closeDrawer();
@@ -443,6 +587,11 @@ const STATUT_LABELS: Record<string, string> = {
       const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
       if (error) { alert('Erreur de chargement : ' + error.message); return; }
       allLeads = data || [];
+
+      // Devis (le plus récent par lead)
+      const { data: dv } = await supabase.from('devis').select('*').order('created_at', { ascending: false });
+      devisByLead = {};
+      (dv || []).forEach((d: any) => { if (d.lead_id && !devisByLead[d.lead_id]) devisByLead[d.lead_id] = d; });
 
       (document.getElementById('admin-loading') as HTMLElement).hidden = true;
       (document.getElementById('admin-app') as HTMLElement).hidden = false;

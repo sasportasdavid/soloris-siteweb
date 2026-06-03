@@ -1,0 +1,191 @@
+---
+/**
+ * /devis/signer/<token> — page publique de validation d'un devis (lien unique).
+ * Affiche le devis, permet de télécharger le PDF et de signer « bon pour accord »
+ * (signature électronique simple : nom + horodatage + IP enregistrés côté serveur).
+ * SSR (prerender=false). Lecture via la fonction SECURITY DEFINER get_devis_public.
+ */
+export const prerender = false;
+
+import { SUPABASE_URL, SUPABASE_ANON } from '../../../lib/serverEnv';
+import { SITE } from '../../../lib/site';
+
+const token = String(Astro.params.token || '');
+const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
+
+let devis: any = null;
+if (isUuid && SUPABASE_URL && SUPABASE_ANON) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_devis_public`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_token: token }),
+    });
+    if (res.ok) devis = await res.json();
+  } catch { /* devis reste null */ }
+}
+
+function eur(n: any): string {
+  const v = Math.round(Number(n) || 0);
+  return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
+}
+function frDate(s: any): string {
+  if (!s) return '';
+  const dt = new Date(s);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(dt.getDate())}/${p(dt.getMonth() + 1)}/${dt.getFullYear()}`;
+}
+
+const lignes: any[] = devis && Array.isArray(devis.lignes) ? devis.lignes : [];
+const pdfUrl = `/api/devis/${token}.pdf`;
+let expiry = '';
+if (devis?.created_at) {
+  const e = new Date(devis.created_at);
+  e.setDate(e.getDate() + (devis.validite_jours || 30));
+  expiry = frDate(e.toISOString());
+}
+const isSigned = devis?.statut === 'signe';
+const isRefused = devis?.statut === 'refuse';
+---
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{devis ? `Devis ${devis.numero} — Soloris` : 'Devis — Soloris'}</title>
+  <style>
+    :root { --blue:#0B2A4A; --gold:#F5A623; --ink:#21262d; --soft:#6b727b; --line:#e6e9ee; --paper:#f4f6f8; --green:#1d7a48; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; line-height:1.55; }
+    .wrap { max-width:620px; margin:0 auto; padding:28px 16px 60px; }
+    .brand { display:flex; align-items:center; gap:10px; color:var(--blue); font-weight:700; font-size:22px; margin-bottom:20px; }
+    .brand .bar { width:34px; height:4px; background:var(--gold); border-radius:3px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px 26px; box-shadow:0 18px 40px -24px rgba(11,42,74,.3); }
+    h1 { font-size:21px; color:var(--blue); margin:0 0 4px; }
+    .muted { color:var(--soft); font-size:13.5px; }
+    .meta { display:flex; flex-wrap:wrap; gap:6px 16px; margin:14px 0 18px; font-size:13.5px; color:var(--soft); }
+    .meta b { color:var(--ink); }
+    table.lig { width:100%; border-collapse:collapse; margin:6px 0 4px; font-size:14px; }
+    table.lig td { padding:9px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+    table.lig td.amt { text-align:right; white-space:nowrap; }
+    .total { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:12px 14px; background:var(--blue); color:#fff; border-radius:10px; }
+    .total .v { font-size:20px; font-weight:700; color:var(--gold); }
+    .pdfbtn { display:inline-flex; align-items:center; gap:8px; margin:18px 0 4px; color:var(--blue); font-weight:600; font-size:14px; text-decoration:none; border:1.5px solid var(--line); padding:10px 16px; border-radius:10px; }
+    .pdfbtn:hover { border-color:var(--blue); }
+    .sign { margin-top:24px; border-top:1px solid var(--line); padding-top:22px; }
+    .sign h2 { font-size:16px; color:var(--blue); margin:0 0 10px; }
+    label { display:block; font-size:13px; color:var(--soft); margin:12px 0 6px; }
+    input[type=text] { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-size:15px; }
+    input[type=text]:focus { outline:none; border-color:var(--blue); }
+    .chk { display:flex; align-items:flex-start; gap:10px; margin:14px 0; font-size:13.5px; color:var(--ink); }
+    .chk input { width:18px; height:18px; margin-top:2px; flex:none; accent-color:var(--blue); }
+    .btn { width:100%; border:none; cursor:pointer; background:var(--gold); color:var(--blue); font-weight:700; font-size:16px; padding:14px; border-radius:11px; }
+    .btn:disabled { opacity:.6; cursor:default; }
+    .btn-ghost { width:100%; margin-top:10px; background:none; border:none; color:var(--soft); font-size:13px; cursor:pointer; text-decoration:underline; }
+    .ok { background:#eaf6ee; border:1px solid var(--green); color:var(--green); border-radius:12px; padding:18px 20px; }
+    .ok h2 { margin:0 0 6px; color:var(--green); font-size:18px; }
+    .err { color:#b3261e; font-size:13.5px; margin-top:10px; }
+    .legal { margin-top:22px; font-size:11px; color:var(--soft); line-height:1.5; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><span>Soloris</span><span class="bar"></span></div>
+
+    {!devis && (
+      <div class="card"><h1>Devis introuvable</h1><p class="muted">Ce lien n'est plus valide ou le devis n'existe pas. Contactez-nous au {SITE.phoneDisplay} ou à {SITE.email}.</p></div>
+    )}
+
+    {devis && (
+      <div class="card">
+        <h1>Devis {devis.numero}</h1>
+        <p class="muted">{devis.objet || 'Prestation de diagnostics'}</p>
+        <div class="meta">
+          <span>Établi le <b>{frDate(devis.created_at)}</b></span>
+          {expiry && <span>Valable jusqu'au <b>{expiry}</b></span>}
+          {devis.client_nom && <span>Pour <b>{devis.client_nom}</b></span>}
+        </div>
+
+        <table class="lig">
+          {lignes.map((l: any) => (
+            <tr><td>{l.libelle}</td><td class="amt">{eur(l.montant)}</td></tr>
+          ))}
+        </table>
+        <div class="total"><span>Total TTC</span><span class="v">{eur(devis.montant)}</span></div>
+
+        <a class="pdfbtn" href={pdfUrl} target="_blank" rel="noopener">📄 Télécharger le devis en PDF</a>
+
+        {isSigned && (
+          <div class="sign"><div class="ok"><h2>Devis déjà signé</h2><p style="margin:0">Signé par <b>{devis.signed_nom || '—'}</b> le {frDate(devis.signed_at)}. Merci ! Nous vous recontactons pour planifier le rendez-vous.</p></div></div>
+        )}
+        {isRefused && (
+          <div class="sign"><p class="muted">Ce devis a été refusé. Si c'est une erreur, contactez-nous au {SITE.phoneDisplay}.</p></div>
+        )}
+
+        {!isSigned && !isRefused && (
+          <div class="sign" id="sign-zone">
+            <h2>Validation du devis</h2>
+            <p class="muted">Pour accepter ce devis, indiquez votre nom et cochez « bon pour accord ». Votre validation vaut signature électronique (horodatée).</p>
+            <form id="sign-form">
+              <label for="nom">Nom et prénom</label>
+              <input type="text" id="nom" name="nom" autocomplete="name" placeholder="Camille Roussel" required />
+              <label class="chk"><input type="checkbox" id="accord" required /> <span>Bon pour accord. J'accepte ce devis et ses conditions (montant, prestations, validité).</span></label>
+              <button type="submit" class="btn" id="sign-btn">Signer et accepter le devis</button>
+              <button type="button" class="btn-ghost" id="refuse-btn">Je ne souhaite pas donner suite</button>
+              <p class="err" id="sign-err" hidden></p>
+            </form>
+          </div>
+        )}
+
+        <p class="legal">{SITE.legalName} ({SITE.legalForm}) — marque {SITE.tradeName} · SIRET {SITE.siret} · {SITE.email}</p>
+      </div>
+    )}
+  </div>
+
+  <script is:inline define:vars={{ token }}>
+    (function () {
+      var form = document.getElementById('sign-form');
+      if (!form) return;
+      var btn = document.getElementById('sign-btn');
+      var err = document.getElementById('sign-err');
+      var zone = document.getElementById('sign-zone');
+
+      function fail(msg) { err.textContent = msg; err.hidden = false; }
+
+      function post(action, nom) {
+        return fetch('/api/devis/sign', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token, nom: nom, action: action }),
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); });
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        err.hidden = true;
+        var nom = document.getElementById('nom').value.trim();
+        var accord = document.getElementById('accord').checked;
+        if (nom.length < 2) return fail('Veuillez indiquer votre nom complet.');
+        if (!accord) return fail('Merci de cocher « bon pour accord ».');
+        btn.disabled = true; btn.textContent = 'Validation…';
+        post('sign', nom).then(function (res) {
+          if (!res.ok || !res.j.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
+          zone.innerHTML = '<div class="ok"><h2>Merci, devis signé !</h2><p style="margin:0">Votre accord est bien enregistré. Un diagnostiqueur Soloris vous recontacte pour fixer le rendez-vous.</p></div>';
+          zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }).catch(function (e2) {
+          btn.disabled = false; btn.textContent = 'Signer et accepter le devis';
+          fail(e2.message || 'Une erreur est survenue.');
+        });
+      });
+
+      document.getElementById('refuse-btn').addEventListener('click', function () {
+        if (!confirm('Confirmer le refus de ce devis ?')) return;
+        post('refuse', '').then(function (res) {
+          if (!res.ok || !res.j.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
+          zone.innerHTML = '<p class="muted">Devis refusé. Merci de votre retour — n\'hésitez pas à nous contacter si besoin.</p>';
+        }).catch(function (e2) { fail(e2.message || 'Une erreur est survenue.'); });
+      });
+    })();
+  </script>
+</body>
+</html>
