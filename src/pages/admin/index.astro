@@ -28,7 +28,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     <!-- Filtres -->
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
-      <input id="search" type="search" placeholder="Rechercher (nom, email, secteur…)" style="flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px" />
+      <input id="search" type="search" placeholder="Rechercher (nom, email, code postal…)" style="flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px" />
       <select id="filter-statut" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
         <option value="">Tous les statuts</option>
         {STATUTS.map((s) => <option value={s}>{STATUT_LABELS[s]}</option>)}
@@ -45,7 +45,7 @@ const STATUT_LABELS: Record<string, string> = {
       <table class="ptable" style="font-size:13.5px">
         <thead>
           <tr>
-            <th>Date</th><th>Type</th><th>Secteur</th><th>Estim.</th><th>Contact</th><th>Source</th><th>Statut</th><th>RDV</th><th>Montant</th><th>Notes</th>
+            <th>Date</th><th>Type</th><th>Code postal</th><th>Estim.</th><th>Contact</th><th>Source</th><th>Statut</th><th>RDV</th><th>Montant</th><th>Notes</th>
           </tr>
         </thead>
         <tbody id="leads-body"></tbody>

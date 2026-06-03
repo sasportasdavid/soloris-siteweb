@@ -52,7 +52,6 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
   const chatId = import.meta.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return; // non configuré → on ignore silencieusement
 
-  const cp = (rec.secteur || '').match(/\b(\d{5})\b/)?.[1] || '—';
   const prenom = (rec.nom || '').trim().split(/\s+/)[0] || '—';
   let dateHeure = '';
   try {
@@ -71,7 +70,7 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
       `📞 ${rec.telephone || '—'}`,
       `📋 ${bienLine}`,
       rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
-      rec.secteur ? `📍 ${rec.secteur}` : '',
+      rec.secteur ? `📍 CP ${rec.secteur}` : '',
       `🔗 ${rec.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
     ];
@@ -89,11 +88,11 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
   } else {
     lines = [
       '🔔 Nouveau lead Soloris',
-      `📋 ${bienLine} · CP ${cp}`,
+      `📋 ${bienLine}`,
       `👤 ${rec.nom || '—'} (${prenom})`,
       `📞 ${rec.telephone || '—'}`,
       rec.email ? `✉️ ${rec.email}` : '',
-      rec.secteur ? `📍 ${rec.secteur}` : '',
+      rec.secteur ? `📍 CP ${rec.secteur}` : '',
       rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
       rec.message ? `💬 ${rec.message}` : '',
       `🔗 ${rec.landing_path || '/'}`,
