@@ -10,6 +10,14 @@
  */
 import { GRILLE, TYPO_LABELS, DEMANDE_LABELS } from '../lib/pricing';
 
+// Descriptions en langage clair sous chaque choix (étape 1)
+const DEMANDE_DESC: Record<string, string> = {
+  vente: 'Je vends un bien',
+  location: 'Je mets en location',
+  dpe: 'Juste le diagnostic énergie',
+  audit: 'Logement classé F, G ou E',
+};
+
 const GADS = import.meta.env.PUBLIC_GADS_ID;
 const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
 const PLACEHOLDER = '__A_REMPLACER__';
@@ -28,12 +36,13 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
 
     <!-- Étape 1 — Type de demande -->
     <fieldset class="qstep" data-step="1">
-      <legend>De quoi avez-vous besoin&nbsp;?</legend>
+      <legend>Quel est votre projet&nbsp;?</legend>
+      <p class="qsub">Choisissez votre situation : on calcule le bon tarif, tout compris.</p>
       <div class="qgrid">
         {Object.entries(DEMANDE_LABELS).map(([val, label]) => (
           <label class="qopt">
             <input type="radio" name="type_demande" value={val} required />
-            <span class="qopt-body"><b>{label}</b></span>
+            <span class="qopt-body"><b>{label}</b><span class="qopt-desc">{DEMANDE_DESC[val]}</span></span>
           </label>
         ))}
       </div>
@@ -139,7 +148,8 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qsteps .dot { width: 30px; height: 5px; border-radius: 4px; background: var(--line); transition: background .2s; }
   .qsteps .dot.active { background: var(--gold); }
   .qstep { border: none; }
-  .qstep legend { font-family: var(--sora); font-weight: 600; font-size: 22px; color: var(--blue); margin-bottom: 18px; padding: 0; letter-spacing: -.01em; }
+  .qstep legend { font-family: var(--sora); font-weight: 600; font-size: 22px; color: var(--blue); margin-bottom: 6px; padding: 0; letter-spacing: -.01em; }
+  .qsub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
   .qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .qgrid-2 { grid-template-columns: 1fr 1fr; }
   @media (max-width: 480px) { .qgrid, .qgrid-2 { grid-template-columns: 1fr; } }
@@ -147,6 +157,7 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qopt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
   .qopt-body { display: block; border: 1.5px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, background .15s; }
   .qopt-body b { font-family: var(--sora); font-weight: 600; color: var(--blue); font-size: 15px; }
+  .qopt-desc { display: block; font-family: var(--inter); font-weight: 400; font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
   .qopt:hover .qopt-body { border-color: var(--blue-light); }
   .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
   .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
