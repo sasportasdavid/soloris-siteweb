@@ -1,0 +1,66 @@
+---
+import Base from '../../layouts/Base.astro';
+import EnergyScale from '../../components/EnergyScale.astro';
+import { getGuide } from '../../lib/guides';
+import { article, breadcrumb, faqPage } from '../../lib/jsonld';
+
+const g = getGuide('comprendre-etiquette-dpe')!;
+const faq = [
+  { q: 'Que signifient les lettres A à G du DPE ?', a: "A correspond à un logement très performant et G à un logement très énergivore. L'étiquette combine la consommation d'énergie et les émissions de gaz à effet de serre." },
+  { q: 'Le DPE peut-il être amélioré ?', a: "L'étiquette reflète l'état réel du logement. Des travaux (isolation, chauffage, ventilation) peuvent améliorer la performance ; un audit énergétique permet de prioriser ces travaux." },
+  { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
+];
+const jsonLd = [
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
+  faqPage(faq),
+];
+---
+<Base title={g.title} description={g.description} path={g.url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <a href="/guides">Guides</a> <span>/</span> <span aria-current="page">Étiquette DPE</span></nav>
+  </div>
+  <article>
+    <section>
+      <div class="wrap prose">
+        <div class="eyebrow">Guide · {g.readMin} min</div>
+        <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
+        <p class="lead">Votre DPE affiche une lettre, de A à G. Que mesure-t-elle vraiment, et comment la lire sereinement ? Décryptage neutre, sans promesse de résultat.</p>
+
+        <h2>Ce que mesure le DPE</h2>
+        <p>Le Diagnostic de Performance Énergétique évalue deux choses : la <strong>consommation d'énergie</strong> du logement et ses <strong>émissions de gaz à effet de serre</strong> (le « climat »). Le calcul suit la méthode réglementaire <strong>3CL-DPE</strong>, à partir des caractéristiques réelles du bien : isolation, chauffage, ventilation, fenêtres, etc.</p>
+
+        <h2>L'échelle, de A à G</h2>
+        <div class="card" style="padding:26px;margin:8px 0 22px">
+          <EnergyScale highlight="C" />
+        </div>
+        <ul>
+          <li><strong>A et B</strong> : logements très performants, faibles consommations.</li>
+          <li><strong>C et D</strong> : performance moyenne, la plus fréquente.</li>
+          <li><strong>E, F, G</strong> : logements plus énergivores ; F et G sont souvent qualifiés de « passoires énergétiques ».</li>
+        </ul>
+        <p>L'étiquette finale retient la moins favorable des deux dimensions (énergie / climat). Un logement peut donc être bien classé en énergie mais pénalisé par son mode de chauffage.</p>
+
+        <h2>Pourquoi nous ne « promettons » jamais une étiquette</h2>
+        <p>C'est une question de déontologie. Le DPE reflète l'état réel du logement : un diagnostiqueur sérieux ne peut pas garantir une « bonne » lettre à l'avance. Chez Soloris, notre engagement porte sur la <strong>rigueur du calcul</strong> et la <strong>clarté du rapport</strong> — jamais sur le résultat.</p>
+
+        <h2>Mon logement est mal classé : que faire ?</h2>
+        <p>Une étiquette E, F ou G n'est pas une fatalité. Des travaux ciblés (isolation, changement de système de chauffage, ventilation) peuvent améliorer la performance. Pour les prioriser intelligemment, un <a href="/audit-energetique">audit énergétique</a> dresse un parcours de travaux hiérarchisé et chiffré.</p>
+
+        <h2>En résumé</h2>
+        <p>Le DPE classe votre logement de A à G en combinant énergie et climat. C'est un repère utile à l'achat, à la vente et à la location. Besoin du vôtre ? Notre <a href="/dpe">DPE</a> est réalisé sous 48 h, avec un rapport qu'on vous explique. Estimez-le en 2 minutes via notre <a href="/devis">formulaire de devis</a>.</p>
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <h2>Votre DPE, expliqué clairement</h2>
+        <p>Sous 48 h, tarif tout compris dès 120 €.</p>
+        <div class="cta">
+          <a href="/devis?type=dpe" class="btn-gold">Estimer mon DPE</a>
+          <a href="/dpe" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir l'offre DPE</a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>

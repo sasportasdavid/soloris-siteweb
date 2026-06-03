@@ -1,0 +1,33 @@
+---
+/**
+ * /devis — page de conversion. Formulaire multi-étapes + estimation.
+ */
+import Base from '../layouts/Base.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import { breadcrumb } from '../lib/jsonld';
+
+const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Devis', url: '/devis' }])];
+---
+<Base
+  title="Obtenir mon devis en 2 min | Soloris"
+  description="Estimez vos diagnostics immobiliers en 2 minutes : DPE, vente, location, audit. Tarif tout compris, déplacement inclus, à Paris et en Île-de-France."
+  path="/devis"
+  jsonLd={jsonLd}
+  hideHeaderCta={true}
+>
+  <section>
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">Devis en 2 minutes</div>
+        <h1 class="sec-title" style="font-size:40px">Obtenez votre estimation tout compris</h1>
+        <p class="sec-intro">Quelques questions, et vous obtenez une estimation indicative immédiate. Devis confirmé sans engagement.</p>
+      </div>
+      <div class="mt-5">
+        <QuoteForm />
+      </div>
+      <p class="text-center muted mt-4" style="font-size:13px;max-width:560px;margin-left:auto;margin-right:auto">
+        L'estimation affichée est indicative (« à partir de »). Le prix exact, tout compris, vous est confirmé au devis selon les diagnostics applicables à votre bien.
+      </p>
+    </div>
+  </section>
+</Base>

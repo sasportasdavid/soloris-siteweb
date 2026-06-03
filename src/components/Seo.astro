@@ -1,0 +1,65 @@
+---
+/**
+ * Composant SEO unique par page : title, meta description, canonical,
+ * OpenGraph, Twitter cards, et injection JSON-LD.
+ * Les longueurs title ≤ 60 / description ≤ 155 sont surveillées en dev.
+ */
+import { SITE } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  path?: string; // chemin canonique, ex: '/dpe'
+  ogImage?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, any>[];
+}
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  ogImage = '/og-default.png',
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+const siteUrl = SITE.url;
+const canonical = new URL(path, siteUrl).href.replace(/\/$/, '') || siteUrl;
+const ogImageAbs = new URL(ogImage, siteUrl).href;
+
+// Avertissements de longueur en développement (n'impacte pas la prod)
+if (import.meta.env.DEV) {
+  if (title.length > 60) console.warn(`[SEO] <title> > 60 car. (${title.length}) : ${title}`);
+  if (description.length > 155) console.warn(`[SEO] description > 155 car. (${description.length}) : ${path}`);
+}
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+<!-- OpenGraph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImageAbs} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImageAbs} />
+
+<!-- Données structurées JSON-LD -->
+{
+  jsonLd.map((obj) => (
+    <script type="application/ld+json" set:html={JSON.stringify(obj)} />
+  ))
+}

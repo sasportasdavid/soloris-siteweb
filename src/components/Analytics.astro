@@ -1,0 +1,92 @@
+---
+/**
+ * Tracking conforme RGPD/CNIL.
+ * - Google Consent Mode v2 : tout en `denied` par défaut.
+ * - gtag (GA4 + Google Ads) chargé immédiatement MAIS sans consentement → aucun
+ *   cookie publicitaire/analytics tant que l'utilisateur n'a pas accepté.
+ * - Meta Pixel : chargé UNIQUEMENT après consentement publicité.
+ * - Capture utm_* / gclid / fbclid → sessionStorage → champs cachés du formulaire.
+ * Les IDs sont en variables d'env PUBLIC_* ([À REMPLACER]). Si non configurés,
+ * les balises ne se chargent pas (pratique en dev), mais la logique reste en place.
+ */
+const GA4 = import.meta.env.PUBLIC_GA4_ID;
+const GADS = import.meta.env.PUBLIC_GADS_ID;
+const META = import.meta.env.PUBLIC_META_PIXEL_ID;
+
+const PLACEHOLDER = '__A_REMPLACER__';
+const hasGtag = (!!GA4 && GA4 !== PLACEHOLDER) || (!!GADS && GADS !== PLACEHOLDER);
+const hasMeta = !!META && META !== PLACEHOLDER;
+---
+
+<!-- Bootstrap Consent Mode v2 — exécuté avant toute balise, tout en "denied" -->
+<script is:inline define:vars={{ GA4, GADS, META, hasGtag, hasMeta }}>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+  window.gtag = gtag;
+
+  // État de consentement par défaut : TOUT refusé (RGPD)
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    analytics_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
+    wait_for_update: 500,
+  });
+  gtag('js', new Date());
+  if (GA4 && GA4 !== '__A_REMPLACER__') gtag('config', GA4, { anonymize_ip: true });
+  if (GADS && GADS !== '__A_REMPLACER__') gtag('config', GADS);
+
+  // ── Capture d'attribution publicitaire ─────────────────────────────
+  (function captureAttribution() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var keys = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'];
+      var store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}');
+      var changed = false;
+      keys.forEach(function (k) {
+        var v = params.get(k);
+        if (v) { store[k] = v; changed = true; }
+      });
+      if (!store.landing_path) { store.landing_path = window.location.pathname; changed = true; }
+      if (changed) sessionStorage.setItem('soloris_attribution', JSON.stringify(store));
+    } catch (e) { /* sessionStorage indisponible : on ignore */ }
+  })();
+
+  // ── Helpers de consentement (appelés par le bandeau CNIL) ───────────
+  window.solorisLoadMetaPixel = function () {
+    if (!META || META === '__A_REMPLACER__' || window.__metaLoaded) return;
+    window.__metaLoaded = true;
+    !(function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+      t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq('init', META);
+    window.fbq('track', 'PageView');
+  };
+
+  // Applique un consentement et déclenche les chargements conditionnels
+  window.solorisApplyConsent = function (consent) {
+    // consent = { analytics: bool, ads: bool }
+    gtag('consent', 'update', {
+      analytics_storage: consent.analytics ? 'granted' : 'denied',
+      ad_storage: consent.ads ? 'granted' : 'denied',
+      ad_user_data: consent.ads ? 'granted' : 'denied',
+      ad_personalization: consent.ads ? 'granted' : 'denied',
+    });
+    if (consent.ads) window.solorisLoadMetaPixel();
+    try { localStorage.setItem('soloris_consent', JSON.stringify(consent)); } catch (e) {}
+  };
+</script>
+
+<!-- Librairie gtag (chargée sous Consent Mode : aucun cookie tant que "denied") -->
+{hasGtag && (
+  <script
+    type="text/partytown-ignore"
+    is:inline
+    async
+    src={`https://www.googletagmanager.com/gtag/js?id=${GA4 && GA4 !== '__A_REMPLACER__' ? GA4 : GADS}`}
+  ></script>
+)}

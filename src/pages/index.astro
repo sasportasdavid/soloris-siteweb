@@ -1,0 +1,204 @@
+---
+/**
+ * Accueil — hub + conversion. 13 sections (cf. brief §4).
+ * Hero dynamique (landing DTR). JSON-LD : LocalBusiness + FAQPage.
+ */
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import ReassuranceBar from '../components/ReassuranceBar.astro';
+import OfferCard from '../components/OfferCard.astro';
+import ReportPreview from '../components/ReportPreview.astro';
+import EnergyScale from '../components/EnergyScale.astro';
+import Faq from '../components/Faq.astro';
+import { OFFERS } from '../lib/offers';
+import { prixDes } from '../lib/pricing';
+import { SITE } from '../lib/site';
+import { localBusiness, faqPage } from '../lib/jsonld';
+
+const piliers = [
+  { t: 'Clarté', d: 'Tarif tout compris affiché, rapport lisible sans jargon.', proof: 'Le prix que vous voyez est le prix final.', ic: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { t: 'Rapidité', d: 'Rendez-vous et rapport sous 48 h dans la plupart des cas.', proof: 'Devis immédiat, intervention sous 48 h.', ic: '<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>' },
+  { t: 'Confiance', d: 'Diagnostiqueur certifié COFRAC, rapport opposable et assuré.', proof: 'Certifié COFRAC · rapport opposable.', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+  { t: 'Expertise énergie', d: "Conseil clair sur votre étiquette et les pistes d'amélioration.", proof: 'Un expert qui vous explique, sans vous vendre des travaux.', ic: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>' },
+];
+
+// Avis réels issus de la fiche Google « is diag » (5/5 chacun)
+const avis = [
+  { txt: "Société très compétente et très réactive lors des différents échanges, je recommande cette dernière pour toutes opération de diagnostic.", who: 'M. Lambt', sub: 'Avis Google' },
+  { txt: "Travail rapide et bien exécuté. M. Teboul est très sympathique.", who: 'Philippe G.', sub: 'Avis Google' },
+  { txt: "Vous avez réalisé les diagnostics d'un appartement mis en vente dans mon agence immobilière à Paris.", who: 'Julie A.', sub: 'Avis Google · agence immobilière' },
+];
+
+const faq = [
+  { q: 'Quels diagnostics sont obligatoires pour vendre ?', a: "Selon le bien : DPE, ERP, et selon l'âge et la zone — amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, termites. Nous établissons la liste exacte applicable à votre logement au moment du devis." },
+  { q: 'Quels diagnostics pour mettre en location ?', a: "Généralement le DPE et l'ERP, complétés selon le logement par le CREP (plomb), l'électricité, le gaz et le mesurage Loi Boutin. La composition est confirmée au devis." },
+  { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
+  { q: 'Quels sont vos délais ?', a: 'Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.' },
+  { q: 'Combien coûtent vos diagnostics ?', a: `Nos tarifs sont tout compris, déplacement inclus : dès ${prixDes('dpe')} € pour un DPE, dès ${prixDes('vente')} € pour un pack vente. Vous obtenez une estimation immédiate via notre formulaire de devis.` },
+  { q: 'Dans quelle zone intervenez-vous ?', a: 'À Paris et dans toute l’Île-de-France.' },
+  { q: 'Pouvez-vous garantir une bonne étiquette énergétique ?', a: "Non. Le DPE reflète la performance réelle du logement. Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat." },
+];
+
+const jsonLd = [localBusiness(), faqPage(faq)];
+const title = 'Diagnostics immobiliers à Paris & Île-de-France | Soloris';
+const description = 'Diagnostics immobiliers à Paris et Île-de-France : DPE, packs vente et location, audit énergétique. Tarif tout compris, rapport sous 48 h.';
+---
+<Base title={title} description={description} path="/" jsonLd={jsonLd}>
+  <!-- 2 · Hero dynamique -->
+  <Hero
+    dynamic={true}
+    h1='Vos diagnostics immobiliers, <span class="hl">en toute clarté</span>'
+    sub="Tarif tout compris, rapport lisible sous 48 h. À Paris et en Île-de-France."
+  />
+
+  <!-- 3 · Barre de réassurance -->
+  <ReassuranceBar />
+
+  <!-- 4 · Quel est votre besoin ? -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">Par où commencer</div>
+        <h2 class="sec-title">Quel est votre besoin&nbsp;?</h2>
+        <p class="sec-intro">Choisissez votre situation : on vous emmène droit au bon diagnostic.</p>
+      </div>
+      <div class="grid grid-4 mt-5">
+        {OFFERS.map((o) => <OfferCard offer={o} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Comment ça marche -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Comment ça marche</div>
+      <h2 class="sec-title">Trois étapes, zéro corvée</h2>
+      <div class="grid grid-3 mt-5 steps">
+        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Renseignez votre bien en 2 minutes et obtenez une estimation tout compris à l'écran.</p></div>
+        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement, à la date qui vous arrange.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Vous recevez un rapport clair, opposable, qui vous dit où vous en êtes — sans jargon.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Les 4 piliers -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Pourquoi Soloris</div>
+      <h2 class="sec-title">La transparence est notre luxe</h2>
+      <div class="grid grid-2 mt-5">
+        {piliers.map((p) => (
+          <div class="pillar">
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={p.ic} /></span>
+            <div>
+              <h3>{p.t}</h3>
+              <p>{p.d}</p>
+              <span class="proof">{p.proof}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Tarifs en aperçu -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="block-blue">
+        <div class="kicker">Tarifs tout compris</div>
+        <h2>Dès {prixDes('vente')} € tout compris, déplacement inclus</h2>
+        <p>Pas de frais cachés, pas de surprise. Le prix que vous voyez au devis est le prix que vous payez. Nos tarifs sont justes — jamais les moins chers, jamais le luxe.</p>
+        <div class="flex-cta mt-3">
+          <a href="/tarifs" class="btn-gold">Voir tous les tarifs</a>
+          <a href="/devis" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Obtenir mon devis</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Expertise énergie / réforme DPE -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="grid grid-2" style="align-items:center;gap:40px">
+        <div>
+          <div class="eyebrow">Expertise énergie</div>
+          <h2 class="sec-title">Comprendre votre étiquette, anticiper la réforme</h2>
+          <p class="sec-intro">
+            Le DPE et l'audit énergétique prennent une place croissante dans la vie d'un logement.
+            Chez Soloris, un expert vous explique votre étiquette et les pistes d'amélioration —
+            clairement, sans vous vendre de travaux.
+          </p>
+          <p class="muted mt-2" style="font-size:14.5px">
+            La loi Climat et résilience interdit progressivement la location des logements énergivores
+            (classe G depuis 2025, F en 2028, E en 2034) et un audit énergétique est requis à la vente
+            des logements F, G et E. Au 1ᵉʳ janvier 2026, le calcul du DPE évolue aussi (coefficient de
+            l'électricité). Nous faisons le point sur votre situation au moment du devis.
+          </p>
+          <div class="flex-cta mt-3">
+            <a href="/audit-energetique" class="btn-blue">L'audit énergétique</a>
+            <a href="/guides/reforme-dpe" class="btn-ghost">Réforme DPE : ce qui change</a>
+          </div>
+        </div>
+        <div class="card" style="padding:30px">
+          <div class="eyebrow">Étiquette énergie</div>
+          <p class="muted" style="font-size:14px;margin-bottom:18px">Exemple d'échelle A→G. Votre classe reflète l'état réel du logement — nous ne promettons jamais de résultat.</p>
+          <EnergyScale highlight="C" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · Aperçu d'un rapport type -->
+  <section class="section-line" id="rapport-type">
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">À quoi ressemble un rapport</div>
+        <h2 class="sec-title">Un rapport clair, opposable</h2>
+        <p class="sec-intro">Lisible au premier coup d'œil, conçu pour votre notaire comme pour vous. (Exemple illustratif.)</p>
+      </div>
+      <div class="mt-5" style="max-width:880px;margin-left:auto;margin-right:auto">
+        <ReportPreview />
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · Avis clients -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Ils nous ont fait confiance</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
+        <h2 class="sec-title">Ce que disent nos clients</h2>
+        <div class="rating-agg">
+          <span class="big">{SITE.rating.value}</span>
+          <span class="muted" style="font-size:14px">Note Google<br /><span style="font-size:12px">{SITE.rating.count} avis</span></span>
+        </div>
+      </div>
+      <div class="grid grid-3 mt-5">
+        {avis.map((a) => (
+          <div class="review">
+            <div class="stars" aria-label="5 étoiles sur 5">
+              {[0,1,2,3,4].map(() => <svg width="16" height="16" viewBox="0 0 24 24" fill="#F5A623" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+            </div>
+            <p>« {a.txt} »</p>
+            <div class="who">{a.who}<span>{a.sub}</span></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · FAQ -->
+  <Faq items={faq} title="Vos questions, nos réponses claires" />
+
+  <!-- 12 · CTA final -->
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Prêt à y voir clair&nbsp;?</h2>
+      <p>Obtenez votre estimation tout compris en 2 minutes. Sans engagement.</p>
+      <div class="cta">
+        <a href="/devis" class="btn-gold">Obtenir mon devis en 2 min</a>
+        <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+      </div>
+    </div>
+  </section>
+</Base>

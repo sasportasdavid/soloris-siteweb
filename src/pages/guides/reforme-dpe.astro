@@ -1,0 +1,78 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getGuide } from '../../lib/guides';
+import { article, breadcrumb, faqPage } from '../../lib/jsonld';
+
+const g = getGuide('reforme-dpe')!;
+const faq = [
+  { q: 'Qu\'est-ce qui change pour le DPE au 1ᵉʳ janvier 2026 ?', a: "Le coefficient de conversion de l'électricité utilisé dans le calcul du DPE passe de 2,3 à 1,9 (arrêté du 13 août 2025). Certains logements chauffés à l'électricité peuvent gagner une classe sans aucun travaux. Les DPE édités avant 2026 restent valables et peuvent être mis à jour gratuitement via l'Observatoire DPE de l'ADEME." },
+  { q: 'Mon logement classé F ou G est-il concerné ?', a: "Oui : un logement classé G ne peut plus être proposé à la location depuis le 1ᵉʳ janvier 2025 (F au 1ᵉʳ janvier 2028, E au 1ᵉʳ janvier 2034). Et à la vente d'un logement en monopropriété, un audit énergétique est obligatoire pour les classes F et G (depuis avril 2023) et E (depuis janvier 2025)." },
+];
+const jsonLd = [
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
+  faqPage(faq),
+];
+---
+<Base title={g.title} description={g.description} path={g.url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <a href="/guides">Guides</a> <span>/</span> <span aria-current="page">Réforme DPE</span></nav>
+  </div>
+  <article>
+    <section>
+      <div class="wrap prose">
+        <div class="eyebrow">Guide · {g.readMin} min</div>
+        <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
+
+        <div class="card" style="padding:20px 24px;border-left:3px solid var(--gold);margin:6px 0 26px">
+          <p style="margin:0;font-size:15px"><strong>Mise à jour : juin 2026.</strong> Les éléments ci-dessous reflètent la réglementation en vigueur (loi Climat et résilience, arrêté du 13 août 2025). La réglementation pouvant évoluer, nous vérifions toujours l'état applicable à votre bien au moment du devis.</p>
+        </div>
+
+        <p class="lead">Calcul du DPE, location des passoires thermiques, audit énergétique : voici ce qui s'applique aujourd'hui, avec les dates clés.</p>
+
+        <h2>1. Nouveau calcul du DPE au 1ᵉʳ janvier 2026</h2>
+        <p>L'arrêté du 13 août 2025 modifie le calcul du DPE : à compter du <strong>1ᵉʳ janvier 2026</strong>, le coefficient de conversion de l'électricité passe de <strong>2,3 à 1,9</strong>. Concrètement, certains logements chauffés à l'électricité peuvent <strong>gagner une classe</strong> (par exemple passer de F à E) sans aucun travaux. Les DPE édités en 2025 et avant <strong>restent valables</strong> et peuvent être mis à jour gratuitement, sans nouvelle visite, sur le site de l'Observatoire DPE-Audit de l'ADEME.</p>
+
+        <h2>2. Location : l'interdiction progressive des passoires thermiques</h2>
+        <p>La loi Climat et résilience interdit par étapes la mise en location des logements les plus énergivores, qui deviennent « indécents » :</p>
+        <ul>
+          <li><strong>Depuis le 1ᵉʳ janvier 2025</strong> : les logements classés <strong>G</strong> ne peuvent plus être loués (baux signés, renouvelés ou tacitement reconduits).</li>
+          <li><strong>Au 1ᵉʳ janvier 2028</strong> : ce sera au tour de la classe <strong>F</strong>.</li>
+          <li><strong>Au 1ᵉʳ janvier 2034</strong> : la classe <strong>E</strong> sera concernée.</li>
+        </ul>
+        <p>(Calendrier de la France métropolitaine.) Un bail en cours signé avant l'échéance n'est concerné qu'au moment de son renouvellement ou de sa reconduction tacite.</p>
+
+        <h2>3. Vente : l'audit énergétique obligatoire</h2>
+        <p>Pour la vente d'un logement individuel ou d'un immeuble en monopropriété énergivore, un <strong>audit énergétique réglementaire</strong> est obligatoire :</p>
+        <ul>
+          <li><strong>Depuis le 1ᵉʳ avril 2023</strong> : logements classés <strong>F ou G</strong>.</li>
+          <li><strong>Depuis le 1ᵉʳ janvier 2025</strong> : logements classés <strong>E</strong>.</li>
+          <li><strong>À partir du 1ᵉʳ janvier 2034</strong> : logements classés <strong>D</strong>.</li>
+        </ul>
+        <p>L'audit propose des scénarios de travaux au futur acquéreur et est valable 5 ans. Voir notre page <a href="/audit-energetique">audit énergétique</a>.</p>
+
+        <h2>4. La durée de validité du DPE</h2>
+        <p>Un DPE est valable <strong>10 ans</strong>. Exception issue de la réforme de 2021 : les DPE réalisés <strong>avant le 1ᵉʳ juillet 2021</strong> ne sont plus valides depuis le <strong>1ᵉʳ janvier 2025</strong>.</p>
+
+        <h2>Comment rester serein</h2>
+        <p>La réglementation continue d'évoluer : le mieux est de vérifier l'état applicable <strong>au moment de votre projet</strong>. C'est exactement ce que Soloris fait au devis — nous adaptons la prestation à votre bien et à la réglementation en vigueur, sans vous vendre d'inquiétude.</p>
+        <p class="muted" style="font-size:13.5px">Sources : service-public.fr, economie.gouv.fr, ecologie.gouv.fr, ADEME — réglementation en vigueur en juin 2026.</p>
+
+        <h2>Pour aller plus loin</h2>
+        <ul>
+          <li><a href="/guides/comprendre-etiquette-dpe">Comprendre votre étiquette DPE</a></li>
+          <li><a href="/guides/diagnostics-obligatoires-vente">Quels diagnostics pour vendre un appartement</a></li>
+          <li><a href="/audit-energetique">Notre audit énergétique</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <h2>Un projet de vente ou de location&nbsp;?</h2>
+        <p>On vérifie pour vous l'état applicable, et on s'occupe des diagnostics.</p>
+        <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+      </div>
+    </section>
+  </article>
+</Base>

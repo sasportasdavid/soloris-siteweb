@@ -1,0 +1,39 @@
+---
+/**
+ * Layout du back-office /admin. Sobre, mêmes tokens (bleu/or/blanc).
+ * Pas de header/footer public, noindex. Auth et données gérées côté client
+ * via Supabase (session utilisateur + RLS).
+ */
+import '../styles/global.css';
+import '@fontsource/sora/latin-400.css';
+import '@fontsource/sora/latin-600.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import Logo from '../components/Logo.astro';
+
+interface Props { title: string; showNav?: boolean }
+const { title, showNav = false } = Astro.props;
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{title} · Soloris Admin</title>
+  </head>
+  <body style="background:var(--paper)">
+    <header style="background:var(--blue);padding:14px 0">
+      <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+        <a href="/admin" aria-label="Tableau de bord"><Logo variant="dark" size={20} /></a>
+        {showNav && (
+          <button id="logout-btn" class="btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)">Déconnexion</button>
+        )}
+      </div>
+    </header>
+    <main class="wrap" style="padding-top:32px;padding-bottom:64px">
+      <slot />
+    </main>
+  </body>
+</html>

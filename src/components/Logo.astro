@@ -1,0 +1,28 @@
+---
+/**
+ * Logo Soloris — picto « o ouvert + rai d'or » posé devant le wordmark.
+ * variant : 'light' (sur fond clair) | 'dark' (sur fond bleu).
+ * Sur fond bleu : arc en blanc, rai en jaune rayon (#FFC94D).
+ */
+interface Props {
+  variant?: 'light' | 'dark';
+  size?: number; // taille de police du wordmark en px
+  withWord?: boolean;
+  class?: string;
+}
+const { variant = 'light', size = 24, withWord = true, class: cls = '' } = Astro.props;
+
+const arc = variant === 'dark' ? '#fff' : '#0B2A4A';
+const ray = variant === 'dark' ? '#FFC94D' : '#F5A623';
+const wordColor = variant === 'dark' ? '#fff' : '#0B2A4A';
+---
+
+<span class={`logo-word ${cls}`} style={`font-size:${size}px;color:${wordColor}`} aria-label="Soloris">
+  <span class="mk" aria-hidden="true">
+    <svg viewBox="0 0 100 100" fill="none">
+      <path d="M 53 47 L 84 16" stroke={ray} stroke-width="9" stroke-linecap="round" />
+      <path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke={arc} stroke-width="9" stroke-linecap="round" />
+    </svg>
+  </span>
+  {withWord && <span>soloris</span>}
+</span>

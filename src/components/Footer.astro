@@ -1,0 +1,61 @@
+---
+/**
+ * Footer : logo + baseline (Fraunces), navigation, zone desservie,
+ * coordonnées NAP cohérentes (depuis site.ts) et liens légaux.
+ */
+import Logo from './Logo.astro';
+import { SITE, fullAddress } from '../lib/site';
+import { OFFERS } from '../lib/offers';
+
+const year = 2026; // année courante (build statique ; cf. currentDate)
+const addr = fullAddress();
+const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
+---
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <Logo variant="dark" size={26} />
+        <p class="baseline">{SITE.baseline}</p>
+        <p style="color:#9FB8D2;font-size:13.5px;margin-top:18px;line-height:1.7">
+          Diagnostics immobiliers<br />
+          <strong style="color:#fff;font-weight:500">Paris &amp; Île-de-France</strong>
+        </p>
+      </div>
+
+      <div>
+        <h4>Diagnostics</h4>
+        <ul>
+          {OFFERS.map((o) => <li><a href={o.url}>{o.nav}</a></li>)}
+        </ul>
+      </div>
+
+      <div>
+        <h4>Soloris</h4>
+        <ul>
+          <li><a href="/tarifs">Tarifs</a></li>
+          <li><a href="/methode">Notre méthode</a></li>
+          <li><a href="/guides">Guides</a></li>
+          <li><a href="/devis">Obtenir un devis</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href={telHref}>{SITE.phoneDisplay}</a></li>
+          <li><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+          {addr && <li style="color:#C3D2E2;font-size:14px">{addr}</li>}
+        </ul>
+      </div>
+    </div>
+
+    <div class="legal">
+      <span>© {year} {SITE.name}. Tous droits réservés.</span>
+      <span>
+        <a href="/mentions-legales">Mentions légales</a> ·
+        <a href="/confidentialite">Confidentialité</a>
+      </span>
+    </div>
+  </div>
+</footer>

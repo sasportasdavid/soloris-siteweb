@@ -1,0 +1,92 @@
+---
+/**
+ * /tarifs — pilier Clarté. Grille complète + add-ons. JSON-LD AggregateOffer + FAQ.
+ */
+import Base from '../layouts/Base.astro';
+import PricingTable from '../components/PricingTable.astro';
+import Faq from '../components/Faq.astro';
+import { ADDONS, GRILLE } from '../lib/pricing';
+import { SITE } from '../lib/site';
+import { faqPage, breadcrumb } from '../lib/jsonld';
+
+const allPrices = Object.values(GRILLE).flatMap((o) => Object.values(o));
+const low = Math.min(...allPrices);
+const high = Math.max(...allPrices);
+
+const aggregateOffer = {
+  '@context': 'https://schema.org',
+  '@type': 'AggregateOffer',
+  priceCurrency: 'EUR',
+  lowPrice: String(low),
+  highPrice: String(high),
+  offerCount: String(allPrices.length),
+  availability: 'https://schema.org/InStock',
+  areaServed: SITE.areaServed.map((name) => ({ '@type': 'AdministrativeArea', name })),
+};
+
+const faq = [
+  { q: 'Le déplacement est-il inclus dans le prix ?', a: 'Oui. Tous nos tarifs sont tout compris, déplacement inclus à Paris et en Île-de-France. Aucun frais caché.' },
+  { q: 'Pourquoi « à partir de » ?', a: "Parce que le prix exact dépend des diagnostics réellement applicables à votre bien (année, énergie, zone). Nous l'établissons précisément au devis, et le « dès » affiché est honnête et atteignable." },
+  { q: 'Proposez-vous des packs ?', a: "Oui : les packs vente et location regroupent les diagnostics nécessaires en un seul rendez-vous, à un tarif tout compris. L'ERP est offert dans les packs." },
+  { q: 'Comment obtenir un prix ferme ?', a: 'Utilisez notre formulaire de devis : vous obtenez une estimation immédiate, puis un devis confirmé sans engagement.' },
+];
+
+const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Tarifs', url: '/tarifs' }])];
+---
+<Base
+  title="Tarifs des diagnostics immobiliers, tout compris | Soloris"
+  description="Tarifs tout compris des diagnostics immobiliers à Paris et Île-de-France : DPE, vente, location, audit. Déplacement inclus, sans frais cachés."
+  path="/tarifs"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Tarifs</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Tarifs</div>
+      <h1 class="sec-title" style="font-size:44px">Tarifs tout compris, déplacement inclus</h1>
+      <p class="sec-intro">Le prix que vous voyez est le prix que vous payez. Jamais les moins chers, jamais le luxe : un tarif juste, et la transparence en prime.</p>
+    </div>
+  </section>
+
+  <section class="section-line">
+    <div class="wrap">
+      <h2 class="sec-title" style="font-size:26px;margin-bottom:24px">Nos prestations</h2>
+      <PricingTable caption="Grille tarifaire complète Soloris" />
+    </div>
+  </section>
+
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">À la carte</div>
+      <h2 class="sec-title">Diagnostics complémentaires</h2>
+      <p class="sec-intro">Certains diagnostics s'ajoutent selon votre bien. Voici les principaux, à titre indicatif.</p>
+      <div style="overflow-x:auto" class="mt-5">
+        <table class="ptable">
+          <thead><tr><th scope="col">Diagnostic</th><th scope="col">Tarif indicatif</th></tr></thead>
+          <tbody>
+            {ADDONS.map((a) => (
+              <tr>
+                <th scope="row" style="font-weight:500">{a.label}</th>
+                <td class="price">{a.prefix}{a.price} €{a.note ? <small> · {a.note}</small> : null}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="price-note">Montants TTC indicatifs. La liste exacte applicable à votre bien est confirmée au devis.</p>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Une estimation en 2 minutes</h2>
+      <p>Obtenez votre prix tout compris immédiatement, sans engagement.</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+    </div>
+  </section>
+
+  <Faq items={faq} title="Questions sur nos tarifs" />
+</Base>

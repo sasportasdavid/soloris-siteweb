@@ -1,0 +1,89 @@
+---
+/**
+ * Hero centré (tagpill + H1 avec mot surligné + sous-titre + double CTA + trust).
+ * Motif soleil en filigrane (SVG).
+ *
+ * `dynamic` active la landing dynamique (Dynamic Text Replacement) : le H1/sub
+ * par défaut sont pré-rendus (SEO) et remplacés côté client par une variante
+ * issue d'une LISTE BLANCHE selon ?kw= ou utm_term. Jamais d'injection brute.
+ */
+import { HERO_VARIANTS } from '../lib/heroVariants';
+
+interface Props {
+  tagpill?: string;
+  h1: string; // peut contenir du HTML (ex: <span class="hl">…</span>)
+  sub: string;
+  primaryHref?: string;
+  primaryLabel?: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+  showTrust?: boolean;
+  dynamic?: boolean;
+  sun?: boolean;
+}
+const {
+  tagpill = 'Certifié COFRAC · Rapport opposable',
+  h1,
+  sub,
+  primaryHref = '/devis',
+  primaryLabel = 'Obtenir mon devis en 2 min',
+  secondaryHref = '/#rapport-type',
+  secondaryLabel = 'Voir un rapport type',
+  showTrust = true,
+  dynamic = false,
+  sun = true,
+} = Astro.props;
+---
+<section class="hero" data-dynamic={dynamic ? 'true' : 'false'}>
+  {sun && (
+    <svg class="hero-sun" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <circle cx="50" cy="50" r="30" stroke="#2E6FAE" stroke-width="1.4" opacity="0.45" />
+      <circle cx="50" cy="50" r="40" stroke="#2E6FAE" stroke-width="1.4" opacity="0.28" />
+      <circle cx="50" cy="50" r="49.3" stroke="#2E6FAE" stroke-width="1.4" opacity="0.16" />
+      <path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke="#FFC94D" stroke-width="5" stroke-linecap="round" />
+      <path d="M 52 48 L 94 6" stroke="#F5A623" stroke-width="5" stroke-linecap="round" />
+    </svg>
+  )}
+  <div class="wrap hero-inner">
+    {tagpill && (
+      <span class="tagpill">
+        <svg width="14" height="14" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <path d="M 53 47 L 84 16" stroke="#F5A623" stroke-width="12" stroke-linecap="round" />
+          <path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke="#2E6FAE" stroke-width="12" stroke-linecap="round" />
+        </svg>
+        {tagpill}
+      </span>
+    )}
+    <h1 id="hero-h1" set:html={h1} />
+    <p class="sub" id="hero-sub">{sub}</p>
+    <div class="cta">
+      <a href={primaryHref} class="btn-blue">{primaryLabel}</a>
+      {secondaryLabel && <a href={secondaryHref} class="btn-ghost">{secondaryLabel}</a>}
+    </div>
+    {showTrust && (
+      <div class="trust">
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport sous 48 h</span>
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Tarif tout compris</span>
+        <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Diagnostiqueur certifié</span>
+      </div>
+    )}
+  </div>
+</section>
+
+{dynamic && (
+  <script is:inline define:vars={{ VARIANTS: HERO_VARIANTS }}>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var raw = (params.get('kw') || params.get('utm_term') || '').toLowerCase().trim();
+        if (!raw || !Object.prototype.hasOwnProperty.call(VARIANTS, raw) || raw === 'default') return;
+        var v = VARIANTS[raw];
+        var h1 = document.getElementById('hero-h1');
+        var sub = document.getElementById('hero-sub');
+        // On n'écrit que des variantes issues de la liste blanche (jamais la requête brute).
+        if (h1) h1.innerHTML = v.h1;
+        if (sub) sub.textContent = v.sub;
+      } catch (e) { /* fallback = hero par défaut */ }
+    })();
+  </script>
+)}

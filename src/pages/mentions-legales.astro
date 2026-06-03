@@ -1,0 +1,42 @@
+---
+/**
+ * /mentions-legales — champs éditeur/hébergeur [À REMPLACER].
+ */
+import Base from '../layouts/Base.astro';
+import { SITE, fullAddress } from '../lib/site';
+---
+<Base
+  title="Mentions légales | Soloris"
+  description="Mentions légales du site Soloris, diagnostics immobiliers à Paris et en Île-de-France."
+  path="/mentions-legales"
+  noindex={true}
+>
+  <section>
+    <div class="wrap prose">
+      <div class="eyebrow">Informations légales</div>
+      <h1 class="sec-title">Mentions légales</h1>
+
+      <h2>Éditeur du site</h2>
+      <p>
+        <strong>{SITE.legalName}</strong>, {SITE.legalForm} au capital de {SITE.capital}, exploitant la marque commerciale « {SITE.tradeName} ».<br />
+        Siège social : {fullAddress()}<br />
+        SIRET : {SITE.siret} · SIREN : {SITE.siren} · APE {SITE.ape}<br />
+        TVA intracommunautaire : {SITE.vat}<br />
+        Téléphone : {SITE.phoneDisplay} · Email : {SITE.email}<br />
+        Directeur de la publication : {SITE.director}
+      </p>
+
+      <h2>Certification</h2>
+      <p>Les diagnostics sont réalisés par un diagnostiqueur certifié, conformément à la réglementation applicable.</p>
+
+      <h2>Hébergement</h2>
+      <p>Le site est hébergé par Vercel Inc. — 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis (vercel.com). La base de données (leads) est hébergée par Supabase au sein de l'Union européenne.</p>
+
+      <h2>Propriété intellectuelle</h2>
+      <p>L'ensemble des contenus de ce site (textes, logo, identité visuelle, images) est la propriété de {SITE.legalName} ou de ses partenaires et est protégé par le droit de la propriété intellectuelle. Toute reproduction sans autorisation est interdite.</p>
+
+      <h2>Données personnelles</h2>
+      <p>Le traitement des données personnelles est décrit dans notre <a href="/confidentialite">politique de confidentialité</a>.</p>
+    </div>
+  </section>
+</Base>

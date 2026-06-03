@@ -1,0 +1,63 @@
+---
+/**
+ * /methode — E-E-A-T. Certification COFRAC, déontologie, process.
+ * ⚠️ Aucun n° COFRAC inventé : [À REMPLACER]. Aucune promesse de résultat.
+ */
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+import { breadcrumb } from '../lib/jsonld';
+
+const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Méthode', url: '/methode' }])];
+---
+<Base
+  title="Notre méthode & certification COFRAC | Soloris"
+  description="La méthode Soloris : diagnostiqueur certifié COFRAC, déontologie stricte, rapports opposables et pédagogiques. Diagnostics immobiliers à Paris et en Île-de-France."
+  path="/methode"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Méthode</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Notre méthode</div>
+      <h1 class="sec-title" style="font-size:44px">Le diagnostic, mené avec rigueur et transparence</h1>
+      <p class="sec-intro">Notre métier est sérieux : un rapport opposable engage votre responsabilité comme la nôtre. Voici comment nous travaillons.</p>
+    </div>
+  </section>
+
+  <section class="section-line">
+    <div class="wrap">
+      <div class="grid grid-2" style="gap:40px">
+        <div class="pillar"><span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><div><h3>Diagnostiqueur certifié COFRAC</h3><p>Nos diagnostics sont réalisés par un diagnostiqueur certifié par un organisme accrédité COFRAC, dans le respect de la réglementation et de nos obligations professionnelles.</p></div></div>
+        <div class="pillar"><span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><div><h3>Rapports opposables</h3><p>Chaque rapport respecte la méthode réglementaire (ex. 3CL-DPE pour le DPE) et est opposable : il peut être annexé à la promesse de vente ou au bail.</p></div></div>
+        <div class="pillar"><span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span><div><h3>Déontologie : aucun résultat promis</h3><p>Nous ne promettons jamais une « bonne » étiquette. Un diagnostic de complaisance n'existe pas chez Soloris : le rapport reflète l'état réel du logement. Notre engagement porte sur la rigueur et la clarté.</p></div></div>
+        <div class="pillar"><span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16l3-4 3 2 4-6"/></svg></span><div><h3>Pédagogie, sans jargon</h3><p>Nous vous expliquons votre rapport en langage clair : ce que disent les résultats, et les pistes d'amélioration — sans vous vendre de travaux.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Étape par étape</div>
+      <h2 class="sec-title">Comment se déroule une intervention</h2>
+      <div class="grid grid-3 mt-5 steps">
+        <div class="step"><div class="n">Avant</div><h3>Devis & préparation</h3><p>Nous identifions les diagnostics applicables à votre bien et fixons un rendez-vous sous 48 h.</p></div>
+        <div class="step"><div class="n">Sur place</div><h3>Visite & relevés</h3><p>Le diagnostiqueur réalise les mesures et constats nécessaires, avec soin et méthode.</p></div>
+        <div class="step"><div class="n">Après</div><h3>Rapport & explications</h3><p>Vous recevez un rapport clair et opposable, et nous répondons à vos questions.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Un diagnostic en qui vous pouvez avoir confiance</h2>
+      <p>Obtenez votre devis tout compris en 2 minutes.</p>
+      <div class="cta">
+        <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+        <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+      </div>
+    </div>
+  </section>
+</Base>

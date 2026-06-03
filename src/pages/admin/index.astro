@@ -1,0 +1,183 @@
+---
+/**
+ * /admin — mini-CRM. Protégé (Supabase Auth). Liste des leads, filtres, recherche,
+ * changement de statut inline, RDV/montant/notes éditables, mini-stats.
+ * Suivi du pipeline lead → RDV → facturé.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const STATUTS = ['nouveau', 'contacte', 'rdv_pris', 'realise', 'facture', 'perdu'];
+const STATUT_LABELS: Record<string, string> = {
+  nouveau: 'Nouveau', contacte: 'Contacté', rdv_pris: 'RDV pris', realise: 'Réalisé', facture: 'Facturé', perdu: 'Perdu',
+};
+---
+<AdminLayout title="Tableau de bord" showNav={true}>
+  <div id="admin-loading" style="text-align:center;padding:60px 0;color:var(--ink-soft)">Chargement…</div>
+
+  <div id="admin-app" hidden>
+    <h1 style="font-family:var(--sora);font-weight:600;font-size:28px;color:var(--blue);margin-bottom:4px">Leads</h1>
+    <p class="muted" style="font-size:14px;margin-bottom:24px">Suivi commercial — de la demande à la facturation.</p>
+
+    <!-- Mini stats -->
+    <div class="grid grid-4" style="gap:16px;margin-bottom:28px">
+      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Leads ce mois</div><div id="stat-month" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
+      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Dont publicité</div><div id="stat-ads" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div><div class="muted" id="stat-ads-sub" style="font-size:12px"></div></div>
+      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Taux lead → facturé</div><div id="stat-conv" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
+      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">CA facturé</div><div id="stat-ca" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
+    </div>
+
+    <!-- Filtres -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
+      <input id="search" type="search" placeholder="Rechercher (nom, email, secteur…)" style="flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px" />
+      <select id="filter-statut" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+        <option value="">Tous les statuts</option>
+        {STATUTS.map((s) => <option value={s}>{STATUT_LABELS[s]}</option>)}
+      </select>
+      <select id="filter-source" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+        <option value="">Toutes sources</option>
+        <option value="ads">Publicité</option>
+        <option value="organique">Organique</option>
+      </select>
+    </div>
+
+    <!-- Tableau -->
+    <div style="overflow-x:auto">
+      <table class="ptable" style="font-size:13.5px">
+        <thead>
+          <tr>
+            <th>Date</th><th>Type</th><th>Secteur</th><th>Estim.</th><th>Contact</th><th>Source</th><th>Statut</th><th>RDV</th><th>Montant</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="leads-body"></tbody>
+      </table>
+    </div>
+    <p id="empty-state" class="muted" style="text-align:center;padding:40px 0" hidden>Aucun lead pour ces critères.</p>
+  </div>
+
+  <script define:vars={{ STATUTS, STATUT_LABELS }}>
+    // Injecté pour le module ci-dessous
+    window.__ADMIN_CONST = { STATUTS, STATUT_LABELS };
+  </script>
+
+  <script>
+    import { supabase } from '../../lib/supabase';
+
+    const { STATUTS, STATUT_LABELS } = (window as any).__ADMIN_CONST;
+    const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+
+    let allLeads: any[] = [];
+
+    function isAds(l: any): boolean {
+      if (l.gclid || l.fbclid) return true;
+      const m = (l.medium || '').toLowerCase();
+      const s = (l.source || '').toLowerCase();
+      if (['cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display'].includes(m)) return true;
+      if (['google', 'meta', 'facebook', 'instagram', 'bing'].includes(s) && m && m !== 'organic') return true;
+      return false;
+    }
+
+    function renderStats(leads: any[]) {
+      const now = new Date();
+      const thisMonth = leads.filter((l) => {
+        const d = new Date(l.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+      const adsCount = thisMonth.filter(isAds).length;
+      const factures = leads.filter((l) => l.statut === 'facture');
+      const ca = factures.reduce((sum, l) => sum + (Number(l.montant) || 0), 0);
+      const convRate = leads.length ? Math.round((factures.length / leads.length) * 100) : 0;
+
+      (document.getElementById('stat-month') as HTMLElement).textContent = String(thisMonth.length);
+      (document.getElementById('stat-ads') as HTMLElement).textContent = String(adsCount);
+      (document.getElementById('stat-ads-sub') as HTMLElement).textContent = thisMonth.length ? `${Math.round((adsCount / thisMonth.length) * 100)}% du mois` : '';
+      (document.getElementById('stat-conv') as HTMLElement).textContent = convRate + '%';
+      (document.getElementById('stat-ca') as HTMLElement).textContent = fmtEUR(ca);
+    }
+
+    function statutSelect(lead: any): string {
+      const opts = STATUTS.map((s: string) => `<option value="${s}" ${lead.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
+      return `<select data-id="${lead.id}" data-field="statut" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;font-family:var(--sora)">${opts}</select>`;
+    }
+
+    function esc(s: any): string {
+      return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+    }
+
+    function render() {
+      const q = (document.getElementById('search') as HTMLInputElement).value.toLowerCase().trim();
+      const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
+      const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
+
+      let rows = allLeads.slice();
+      if (fStatut) rows = rows.filter((l) => l.statut === fStatut);
+      if (fSource === 'ads') rows = rows.filter(isAds);
+      if (fSource === 'organique') rows = rows.filter((l) => !isAds(l));
+      if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign].some((v) => String(v ?? '').toLowerCase().includes(q)));
+
+      const body = document.getElementById('leads-body') as HTMLElement;
+      (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
+
+      body.innerHTML = rows.map((l) => {
+        const date = new Date(l.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        const sourceTag = isAds(l)
+          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Pub${l.campaign ? ' · ' + esc(l.campaign) : ''}</span>`
+          : `<span style="background:rgba(46,111,174,.1);color:var(--blue-light);font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Organique</span>`;
+        return `<tr>
+          <td>${date}</td>
+          <td>${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.typologie || '')} ${esc(l.type_bien || '')}</span></td>
+          <td>${esc(l.secteur || '—')}</td>
+          <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
+          <td><b>${esc(l.nom || '—')}</b><br><a href="tel:${esc(l.telephone)}">${esc(l.telephone || '')}</a><br><a href="mailto:${esc(l.email)}" style="font-size:11px">${esc(l.email || '')}</a></td>
+          <td>${sourceTag}</td>
+          <td>${statutSelect(l)}</td>
+          <td><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}" style="border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px"></td>
+          <td><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€" style="width:74px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-size:12px"></td>
+          <td><input type="text" data-id="${l.id}" data-field="notes" value="${esc(l.notes || '')}" placeholder="…" style="width:140px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-size:12px"></td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function update(id: string, field: string, value: any) {
+      const patch: any = {};
+      patch[field] = value === '' ? null : value;
+      const { error } = await supabase.from('leads').update(patch).eq('id', id);
+      if (error) { alert('Échec de la mise à jour : ' + error.message); return; }
+      const lead = allLeads.find((l) => l.id === id);
+      if (lead) lead[field] = patch[field];
+      renderStats(allLeads);
+    }
+
+    function wireEvents() {
+      ['search', 'filter-statut', 'filter-source'].forEach((id) => {
+        document.getElementById(id)!.addEventListener('input', render);
+      });
+      const body = document.getElementById('leads-body')!;
+      body.addEventListener('change', (e) => {
+        const t = e.target as HTMLElement;
+        const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
+        if (id && field) update(id, field, (t as HTMLInputElement).value);
+      });
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/admin/login';
+      });
+    }
+
+    async function init() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) { window.location.href = '/admin/login'; return; }
+
+      const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+      if (error) { alert('Erreur de chargement : ' + error.message); return; }
+      allLeads = data || [];
+
+      (document.getElementById('admin-loading') as HTMLElement).hidden = true;
+      (document.getElementById('admin-app') as HTMLElement).hidden = false;
+      renderStats(allLeads);
+      render();
+      wireEvents();
+    }
+
+    init();
+  </script>
+</AdminLayout>

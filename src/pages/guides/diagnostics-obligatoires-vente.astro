@@ -1,0 +1,71 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getGuide } from '../../lib/guides';
+import { article, breadcrumb, faqPage } from '../../lib/jsonld';
+
+const g = getGuide('diagnostics-obligatoires-vente')!;
+const faq = [
+  { q: 'Quels diagnostics sont obligatoires pour vendre un appartement ?', a: "Le DPE et l'ERP sont quasi systématiques. S'y ajoutent, selon l'année de construction et la zone : amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, et termites en zone concernée." },
+  { q: 'Qui doit payer les diagnostics, le vendeur ou l\'acheteur ?', a: 'Les diagnostics du dossier de vente sont à la charge du vendeur.' },
+  { q: 'Combien de temps faut-il pour obtenir les diagnostics ?', a: 'Chez Soloris, un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.' },
+];
+const jsonLd = [
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
+  faqPage(faq),
+];
+---
+<Base title={g.title} description={g.description} path={g.url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <a href="/guides">Guides</a> <span>/</span> <span aria-current="page">Vendre</span></nav>
+  </div>
+  <article>
+    <section>
+      <div class="wrap prose">
+        <div class="eyebrow">Guide · {g.readMin} min</div>
+        <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
+        <p class="lead">Vous vendez un appartement à Paris ou en Île-de-France ? Voici, en clair, les diagnostics qui composent votre dossier de vente — et ceux qui dépendent de votre bien.</p>
+
+        <h2>La réponse courte</h2>
+        <p>Pour vendre un appartement, vous devez réunir un <strong>dossier de diagnostic technique (DDT)</strong> annexé à la promesse puis à l'acte de vente. Selon le bien, il comprend généralement :</p>
+        <ul>
+          <li><strong>DPE</strong> — Diagnostic de Performance Énergétique (étiquette A à G).</li>
+          <li><strong>ERP</strong> — État des Risques et Pollutions (risques naturels, miniers, technologiques).</li>
+          <li><strong>Amiante</strong> — pour les biens dont le permis de construire est antérieur au 1ᵉʳ juillet 1997.</li>
+          <li><strong>Plomb (CREP)</strong> — pour les logements construits avant le 1ᵉʳ janvier 1949.</li>
+          <li><strong>Électricité & Gaz</strong> — pour les installations de plus de 15 ans.</li>
+          <li><strong>Mesurage Loi Carrez</strong> — surface privative en copropriété.</li>
+          <li><strong>Termites</strong> — dans les zones définies par arrêté préfectoral.</li>
+        </ul>
+        <blockquote>La liste exacte dépend de l'année de construction, du type d'énergie et de la localisation de votre bien. Soloris la détermine précisément au moment du devis.</blockquote>
+
+        <h2>Le détail, diagnostic par diagnostic</h2>
+        <h3>Le DPE</h3>
+        <p>Le DPE attribue à votre logement une étiquette énergie (de A à G) et une étiquette climat. C'est souvent le diagnostic le plus regardé par les acquéreurs. Il est réalisé selon la méthode 3CL et est opposable. Pour aller plus loin, lisez notre guide : <a href="/guides/comprendre-etiquette-dpe">comprendre votre étiquette DPE</a>.</p>
+        <h3>L'ERP</h3>
+        <p>L'État des Risques et Pollutions informe l'acquéreur des risques auxquels le bien est exposé (inondation, mouvement de terrain, risques technologiques…). Chez Soloris, il est <strong>offert dans le pack vente</strong>.</p>
+        <h3>Amiante, plomb, électricité, gaz</h3>
+        <p>Ces diagnostics dépendent de l'âge du bien et de ses installations. Un logement récent n'aura pas besoin du plomb ou de l'amiante ; un logement ancien, oui. Nous vérifions votre situation pour ne facturer que ce qui est utile.</p>
+        <h3>Le mesurage Loi Carrez</h3>
+        <p>En copropriété, la surface privative (Loi Carrez) doit être mentionnée. Une erreur de surface peut avoir des conséquences sur la vente : mieux vaut un mesurage fiable.</p>
+
+        <h2>Combien ça coûte, en combien de temps ?</h2>
+        <p>Chez Soloris, le <a href="/diagnostics-vente">pack vente</a> est <strong>tout compris dès 250 €</strong> pour un studio/T1, déplacement inclus, avec un rendez-vous et un rapport <strong>sous 48 h</strong> dans la plupart des cas. Vous obtenez une estimation immédiate via notre <a href="/devis">formulaire de devis</a>, et le détail figure sur notre page <a href="/tarifs">tarifs</a>.</p>
+
+        <h2>En résumé</h2>
+        <p>Pour vendre, comptez au minimum le DPE et l'ERP, complétés selon votre bien par l'amiante, le plomb, l'électricité, le gaz, le mesurage Carrez et, en zone concernée, les termites. La meilleure façon de connaître votre liste exacte ? Demander un devis : c'est gratuit et sans engagement.</p>
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <h2>Vendez en toute clarté</h2>
+        <p>Pack vente tout compris, rapport opposable sous 48 h.</p>
+        <div class="cta">
+          <a href="/devis?type=vente" class="btn-gold">Estimer mon pack vente</a>
+          <a href="/diagnostics-vente" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir l'offre vente</a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>

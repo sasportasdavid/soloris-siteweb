@@ -1,0 +1,30 @@
+---
+/**
+ * Carte d'offre cliquable (« Quel est votre besoin ? » + maillage interne).
+ */
+import { prixDes } from '../lib/pricing';
+import type { Offer } from '../lib/offers';
+
+interface Props { offer: Offer; icon?: string }
+const { offer } = Astro.props;
+
+// Icônes par demande (traits, cohérent avec l'identité)
+const icons: Record<string, string> = {
+  vente: '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
+  location: '<path d="M3 21h18M6 21V8h12v13M9 12h.01M15 12h.01M9 16h.01M15 16h.01"/>',
+  dpe: '<path d="m13 2-9 12h7l-1 8 9-12h-7z"/>',
+  audit: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+};
+const path = icons[offer.demande] || icons.dpe;
+---
+<a class="need-card" href={offer.url}>
+  <span class="ic" aria-hidden="true">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" set:html={path} />
+  </span>
+  <h3>{offer.nav}</h3>
+  <p>{offer.navDesc}.</p>
+  <span class="go">
+    Dès {prixDes(offer.demande)} € tout compris
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </span>
+</a>

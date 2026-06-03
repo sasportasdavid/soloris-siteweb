@@ -1,0 +1,49 @@
+---
+/**
+ * /guides — hub SEO de fond. Maille vers les offres et tarifs.
+ */
+import Base from '../../layouts/Base.astro';
+import { GUIDES } from '../../lib/guides';
+import { breadcrumb } from '../../lib/jsonld';
+
+const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }])];
+---
+<Base
+  title="Guides des diagnostics immobiliers | Soloris"
+  description="Guides clairs sur les diagnostics immobiliers : diagnostics obligatoires pour vendre, comprendre votre DPE, réforme du DPE. Par Soloris, Paris & Île-de-France."
+  path="/guides"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Guides</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Guides</div>
+      <h1 class="sec-title" style="font-size:44px">Tout comprendre, en toute clarté</h1>
+      <p class="sec-intro">Des réponses simples et fiables aux questions que vous vous posez sur les diagnostics immobiliers.</p>
+
+      <div class="grid grid-3 mt-5">
+        {GUIDES.map((g) => (
+          <a class="need-card" href={g.url}>
+            <span class="muted" style="font-family:var(--sora);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-light)">Guide · {g.readMin} min</span>
+            <h3>{g.h1}</h3>
+            <p>{g.excerpt}</p>
+            <span class="go">Lire le guide
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Une question sur votre bien&nbsp;?</h2>
+      <p>Obtenez une estimation tout compris en 2 minutes.</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+    </div>
+  </section>
+</Base>

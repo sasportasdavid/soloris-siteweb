@@ -1,0 +1,22 @@
+# build output
+dist/
+.vercel/
+.output/
+
+# dependencies
+node_modules/
+
+# astro
+.astro/
+
+# environnement (secrets — ne jamais committer)
+.env
+.env.production
+.env*.local
+
+# logs
+npm-debug.log*
+*.log
+
+# macOS
+.DS_Store

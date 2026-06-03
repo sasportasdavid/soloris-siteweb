@@ -1,0 +1,50 @@
+---
+/**
+ * /confidentialite — politique RGPD. Décrit la collecte des leads, les cookies
+ * (Consent Mode v2), les finalités, durées et droits.
+ */
+import Base from '../layouts/Base.astro';
+import { SITE, fullAddress } from '../lib/site';
+---
+<Base
+  title="Politique de confidentialité | Soloris"
+  description="Politique de confidentialité de Soloris : données collectées, finalités, durées de conservation, cookies et vos droits (RGPD)."
+  path="/confidentialite"
+  noindex={true}
+>
+  <section>
+    <div class="wrap prose">
+      <div class="eyebrow">Vie privée</div>
+      <h1 class="sec-title">Politique de confidentialité</h1>
+      <p class="lead">Chez Soloris, la transparence vaut aussi pour vos données. Voici, clairement, ce que nous collectons et pourquoi.</p>
+
+      <h2>Responsable du traitement</h2>
+      <p>{SITE.legalName} (marque « {SITE.tradeName} »), {fullAddress()}. Contact : {SITE.email}.</p>
+
+      <h2>Données collectées</h2>
+      <p>Via notre formulaire de devis : type de demande, type et typologie du bien, surface, secteur, nom, téléphone, email et message éventuel. Nous enregistrons également, le cas échéant, des données d'attribution publicitaire (paramètres de campagne, identifiants de clic) afin de mesurer l'efficacité de nos campagnes.</p>
+
+      <h2>Finalités</h2>
+      <ul>
+        <li>Traiter votre demande de devis et vous recontacter ;</li>
+        <li>Réaliser la prestation de diagnostic ;</li>
+        <li>Mesurer l'audience du site et l'efficacité de nos campagnes (sous réserve de votre consentement).</li>
+      </ul>
+
+      <h2>Base légale</h2>
+      <p>Mesures précontractuelles et intérêt légitime pour le traitement de votre demande ; consentement pour les cookies de mesure d'audience et de publicité.</p>
+
+      <h2>Durées de conservation</h2>
+      <p>Conformément aux recommandations de la CNIL, les données des prospects non clients sont conservées au maximum <strong>3 ans à compter du dernier contact</strong>. Pour les clients, les données sont conservées pendant la durée de la relation commerciale, puis archivées selon les délais légaux applicables (notamment comptables et fiscaux).</p>
+
+      <h2>Cookies & traceurs</h2>
+      <p>Par défaut, aucun cookie de mesure d'audience ou de publicité n'est déposé. Nous utilisons le mode de consentement Google (Consent Mode v2) : les balises (Google Analytics, Google Ads, Meta Pixel) ne sont activées qu'après votre accord, exprimé via le bandeau de consentement. Vous pouvez accepter, refuser ou personnaliser vos choix à tout moment, et revenir sur votre décision via le bouton « Gérer les cookies » en bas de page.</p>
+
+      <h2>Destinataires & sous-traitants</h2>
+      <p>Vos données sont traitées par Soloris et ses sous-traitants techniques : Supabase (hébergement de la base de données, Union européenne), Vercel (hébergement du site). Les outils de mesure (Google, Meta) ne reçoivent de données qu'avec votre consentement.</p>
+
+      <h2>Vos droits</h2>
+      <p>Vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité. Pour les exercer, écrivez-nous à {SITE.email}. Vous pouvez également introduire une réclamation auprès de la CNIL (cnil.fr).</p>
+    </div>
+  </section>
+</Base>

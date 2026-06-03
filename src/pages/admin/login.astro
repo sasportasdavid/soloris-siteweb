@@ -1,0 +1,59 @@
+---
+/**
+ * /admin/login — connexion Supabase Auth (email/mot de passe).
+ * Si déjà connecté, redirige vers /admin.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Connexion">
+  <div style="max-width:380px;margin:40px auto 0">
+    <h1 style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin-bottom:6px">Back-office</h1>
+    <p class="muted" style="font-size:14px;margin-bottom:24px">Accès réservé à l'équipe Soloris.</p>
+
+    <form id="login-form" class="card" style="padding:24px">
+      <label class="qfield" style="display:block;margin-bottom:14px">
+        <span style="display:block;font-family:var(--sora);font-size:13px;font-weight:500;margin-bottom:7px">Email</span>
+        <input type="email" name="email" required autocomplete="username" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px" />
+      </label>
+      <label class="qfield" style="display:block;margin-bottom:18px">
+        <span style="display:block;font-family:var(--sora);font-size:13px;font-weight:500;margin-bottom:7px">Mot de passe</span>
+        <input type="password" name="password" required autocomplete="current-password" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px" />
+      </label>
+      <button type="submit" class="btn-gold btn-block" id="login-submit">Se connecter</button>
+      <p id="login-error" style="color:#b3261e;font-size:13px;margin-top:12px" hidden></p>
+    </form>
+  </div>
+
+  <script>
+    import { supabase } from '../../lib/supabase';
+
+    const form = document.getElementById('login-form') as HTMLFormElement;
+    const errEl = document.getElementById('login-error') as HTMLParagraphElement;
+    const submit = document.getElementById('login-submit') as HTMLButtonElement;
+
+    // Déjà connecté → tableau de bord
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = '/admin';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.hidden = true;
+      submit.disabled = true;
+      submit.textContent = 'Connexion…';
+      const fd = new FormData(form);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: String(fd.get('email')),
+        password: String(fd.get('password')),
+      });
+      if (error) {
+        errEl.textContent = 'Identifiants incorrects.';
+        errEl.hidden = false;
+        submit.disabled = false;
+        submit.textContent = 'Se connecter';
+        return;
+      }
+      window.location.href = '/admin';
+    });
+  </script>
+</AdminLayout>

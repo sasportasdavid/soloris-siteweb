@@ -1,0 +1,157 @@
+---
+/**
+ * Gabarit commun des pages offres :
+ * hero ciblé → ce qui est inclus → tarif par typologie → cadre légal (neutre)
+ * → process 48 h → FAQ spécifique → CTA + maillage interne.
+ * JSON-LD : Service + FAQPage + BreadcrumbList.
+ */
+import Base from '../layouts/Base.astro';
+import Hero from './Hero.astro';
+import PricingTable from './PricingTable.astro';
+import Faq from './Faq.astro';
+import QuoteForm from './QuoteForm.astro';
+import { getOffer, OFFERS } from '../lib/offers';
+import { prixDes } from '../lib/pricing';
+import { service, faqPage, breadcrumb } from '../lib/jsonld';
+
+interface Props { slug: string }
+const { slug } = Astro.props;
+const offer = getOffer(slug)!;
+const autres = OFFERS.filter((o) => o.slug !== slug);
+
+const jsonLd = [
+  service({ name: offer.nav, description: offer.metaDesc, url: offer.url, priceFrom: prixDes(offer.demande) }),
+  faqPage(offer.faq),
+  breadcrumb([
+    { name: 'Accueil', url: '/' },
+    { name: offer.nav, url: offer.url },
+  ]),
+];
+---
+<Base title={offer.title} description={offer.metaDesc} path={offer.url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+      <a href="/">Accueil</a> <span>/</span> <span aria-current="page">{offer.nav}</span>
+    </nav>
+  </div>
+
+  <Hero
+    tagpill="Certifié COFRAC · Rapport opposable"
+    h1={offer.h1}
+    sub={offer.tagline}
+    primaryHref={`/devis?type=${offer.demande}`}
+    primaryLabel="Obtenir mon devis en 2 min"
+    secondaryHref="#tarifs"
+    secondaryLabel="Voir les tarifs"
+    showTrust={true}
+    sun={true}
+  />
+
+  <!-- Intro -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:760px">
+      <p class="sec-intro" style="font-size:18.5px;color:var(--ink)">{offer.intro}</p>
+    </div>
+  </section>
+
+  <!-- Ce qui est inclus -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Ce qui est inclus</div>
+      <h2 class="sec-title">Le contenu de votre {offer.nav.toLowerCase()}</h2>
+      <p class="sec-intro">La composition exacte dépend de votre bien (année, énergie, zone) et vous est confirmée au devis.</p>
+      <ul class="incl grid grid-2 mt-5">
+        {offer.inclus.map((it) => (
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span><b>{it.label}</b><br /><span class="muted" style="font-size:14px" set:html={it.detail} /></span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Tarif par typologie -->
+  <section class="section-line" id="tarifs">
+    <div class="wrap">
+      <div class="eyebrow">Tarif tout compris</div>
+      <h2 class="sec-title">Combien ça coûte&nbsp;?</h2>
+      <p class="sec-intro">Dès {prixDes(offer.demande)} € tout compris, déplacement inclus. Estimation immédiate via le formulaire.</p>
+      <div class="mt-5">
+        <PricingTable demandes={[offer.demande]} caption={`Tarifs ${offer.nav}`} />
+      </div>
+    </div>
+  </section>
+
+  <!-- Cadre légal (neutre/vérifiable) -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:780px">
+      <div class="eyebrow">Cadre légal</div>
+      <h2 class="sec-title">Ce que dit la réglementation</h2>
+      <div class="mt-4">
+        {offer.cadre.map((p) => <p class="sec-intro" style="margin-top:14px" set:html={p} />)}
+      </div>
+      <p class="muted mt-3" style="font-size:13.5px">La composition exacte du dossier dépend de votre bien (année, énergie, zone). Nous établissons et confirmons la liste applicable au moment du devis, selon la réglementation en vigueur.</p>
+    </div>
+  </section>
+
+  <!-- Process 48 h -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Notre process</div>
+      <h2 class="sec-title">De la demande au rapport, sous 48&nbsp;h</h2>
+      <div class="grid grid-3 mt-5 steps">
+        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Estimation tout compris en 2 minutes, en ligne.</p></div>
+        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Document clair et opposable, livré rapidement.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Formulaire compact -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">Devis en 2 min</div>
+        <h2 class="sec-title">Obtenez votre estimation</h2>
+      </div>
+      <div class="mt-5">
+        <QuoteForm />
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ spécifique -->
+  <Faq items={offer.faq} title="Questions fréquentes" eyebrow="FAQ" />
+
+  <!-- Maillage interne -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Autres prestations</div>
+      <h2 class="sec-title">Vous cherchez autre chose&nbsp;?</h2>
+      <div class="grid grid-3 mt-5">
+        {autres.map((o) => (
+          <a class="need-card" href={o.url}>
+            <h3>{o.nav}</h3>
+            <p>{o.navDesc}.</p>
+            <span class="go">Dès {prixDes(o.demande)} € tout compris
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+      </div>
+      <p class="mt-4"><a href="/tarifs" class="btn-ghost">Voir tous les tarifs</a></p>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Votre {offer.nav.toLowerCase()}, en toute clarté</h2>
+      <p>Estimation tout compris en 2 minutes, sans engagement.</p>
+      <div class="cta">
+        <a href={`/devis?type=${offer.demande}`} class="btn-gold">Obtenir mon devis</a>
+      </div>
+    </div>
+  </section>
+</Base>

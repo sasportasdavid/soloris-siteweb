@@ -1,0 +1,33 @@
+---
+/**
+ * Tableau de tarifs « dès » par typologie. Prix honnêtes et atteignables.
+ * Affiche « dès X € » — jamais un montant faussement précis.
+ */
+import { GRILLE, TYPO_LABELS, DEMANDE_LABELS, type Demande } from '../lib/pricing';
+
+interface Props { demandes?: Demande[]; caption?: string }
+const { demandes = ['vente', 'location', 'dpe', 'audit'], caption } = Astro.props;
+const typos: (keyof typeof TYPO_LABELS)[] = ['t1', 't2', 't3', 't4'];
+---
+<div style="overflow-x:auto">
+  <table class="ptable">
+    {caption && <caption class="visually-hidden">{caption}</caption>}
+    <thead>
+      <tr>
+        <th scope="col">Prestation</th>
+        {typos.map((t) => <th scope="col">{TYPO_LABELS[t]}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {demandes.map((d) => (
+        <tr>
+          <th scope="row" style="font-family:var(--sora);font-weight:600;color:var(--blue)">{DEMANDE_LABELS[d]}</th>
+          {typos.map((t) => (
+            <td class="price">dès {GRILLE[d][t]} €</td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+<p class="price-note">Tarifs TTC, déplacement inclus, à Paris et en Île-de-France. « Dès » = à partir de ; le prix exact dépend des diagnostics applicables à votre bien et vous est confirmé au devis, sans engagement.</p>

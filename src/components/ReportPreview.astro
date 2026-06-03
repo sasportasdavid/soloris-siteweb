@@ -1,0 +1,38 @@
+---
+/**
+ * Aperçu d'un rapport type (en-tête de rapport de l'identité).
+ * ⚠️ Données fictives et étiquette neutre « (exemple) ». Aucune promesse de
+ * résultat. Le n° et le diagnostiqueur sont des exemples [À REMPLACER].
+ */
+import EnergyScale from './EnergyScale.astro';
+---
+<div class="report">
+  <div class="top">
+    <div>
+      <div class="doc">Rapport de diagnostic — exemple</div>
+      <h3>Diagnostic de Performance Énergétique</h3>
+      <div class="logo-word" style="font-size:18px;color:#fff;margin-top:18px">
+        <span class="mk" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none"><path d="M 53 47 L 84 16" stroke="#FFC94D" stroke-width="9" stroke-linecap="round"/><path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke="#fff" stroke-width="9" stroke-linecap="round"/></svg>
+        </span>soloris
+      </div>
+    </div>
+    <div class="ref">Exemple illustratif<br />Méthode 3CL-DPE<br />Valable 10 ans</div>
+  </div>
+  <div class="gridr">
+    <div class="meta-blk">
+      <div class="kv"><span>Bien</span><b>Appartement · 64 m²</b></div>
+      <div class="kv"><span>Adresse</span><b>Paris (exemple)</b></div>
+      <div class="kv"><span>Méthode</span><b>3CL-DPE · opposable</b></div>
+      <div class="kv"><span>Diagnostiqueur</span><b>Certifié COFRAC</b></div>
+    </div>
+    <div class="energy">
+      <div class="et">Étiquette énergie (exemple)</div>
+      <EnergyScale highlight="D" />
+    </div>
+  </div>
+  <div class="foot">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Document opposable · Diagnostiqueur certifié COFRAC · soloris.fr — exemple, l'étiquette reflète toujours l'état réel du logement.
+  </div>
+</div>

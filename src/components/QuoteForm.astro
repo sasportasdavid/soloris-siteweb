@@ -1,0 +1,292 @@
+---
+/**
+ * Formulaire de devis multi-étapes + estimation indicative immédiate.
+ * - 5 étapes : demande → bien → typologie (+estimation) → secteur → coordonnées.
+ * - Estimation « à partir de X € » (jamais un prix ferme) à l'étape 3.
+ * - Champs cachés d'attribution (utm/gclid/fbclid) injectés depuis sessionStorage.
+ * - Soumission JSON vers /api/lead (validation + anti-spam côté serveur).
+ * - Conversions ads déclenchées après consentement (Consent Mode v2 / fbq).
+ * Préselection possible via ?type=vente|location|dpe|audit.
+ */
+import { GRILLE, TYPO_LABELS, DEMANDE_LABELS } from '../lib/pricing';
+
+const GADS = import.meta.env.PUBLIC_GADS_ID;
+const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
+const PLACEHOLDER = '__A_REMPLACER__';
+const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLACEHOLDER ? `${GADS}/${GADS_LABEL}` : '';
+---
+<div class="qform card" id="qform">
+  <form id="quote-form" novalidate>
+    <!-- Indicateur d'étapes -->
+    <div class="qsteps" aria-hidden="true">
+      <span class="dot active" data-dot="1"></span>
+      <span class="dot" data-dot="2"></span>
+      <span class="dot" data-dot="3"></span>
+      <span class="dot" data-dot="4"></span>
+      <span class="dot" data-dot="5"></span>
+    </div>
+
+    <!-- Étape 1 — Type de demande -->
+    <fieldset class="qstep" data-step="1">
+      <legend>De quoi avez-vous besoin&nbsp;?</legend>
+      <div class="qgrid">
+        {Object.entries(DEMANDE_LABELS).map(([val, label]) => (
+          <label class="qopt">
+            <input type="radio" name="type_demande" value={val} required />
+            <span class="qopt-body"><b>{label}</b></span>
+          </label>
+        ))}
+      </div>
+      <div class="qnav"><span></span><button type="button" class="btn-blue" data-next>Continuer</button></div>
+    </fieldset>
+
+    <!-- Étape 2 — Type de bien -->
+    <fieldset class="qstep" data-step="2" hidden>
+      <legend>Quel type de bien&nbsp;?</legend>
+      <div class="qgrid qgrid-2">
+        <label class="qopt"><input type="radio" name="type_bien" value="appartement" required /><span class="qopt-body"><b>Appartement</b></span></label>
+        <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b></span></label>
+      </div>
+      <p class="qhint" id="maison-hint" hidden>Pour une maison, l'estimation se fait sur devis personnalisé&nbsp;: on vous rappelle rapidement.</p>
+      <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
+    </fieldset>
+
+    <!-- Étape 3 — Typologie + estimation -->
+    <fieldset class="qstep" data-step="3" hidden>
+      <legend>Quelle est la typologie&nbsp;?</legend>
+      <div class="qgrid qgrid-2">
+        {Object.entries(TYPO_LABELS).map(([val, label]) => (
+          <label class="qopt"><input type="radio" name="typologie" value={val} required /><span class="qopt-body"><b>{label}</b></span></label>
+        ))}
+      </div>
+      <label class="qfield">
+        <span>Surface (m²) — optionnel</span>
+        <input type="number" name="surface" min="1" max="2000" inputmode="numeric" placeholder="ex : 48" />
+      </label>
+
+      <div class="qestim" id="estim" hidden>
+        <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
+        <p class="qestim-note">Estimation indicative tout compris, déplacement inclus. Devis exact confirmé immédiatement, sans engagement.</p>
+      </div>
+
+      <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
+    </fieldset>
+
+    <!-- Étape 4 — Secteur -->
+    <fieldset class="qstep" data-step="4" hidden>
+      <legend>Où se situe le bien&nbsp;?</legend>
+      <label class="qfield">
+        <span>Arrondissement de Paris ou commune d'Île-de-France</span>
+        <input type="text" name="secteur" required placeholder="ex : Paris 11e, Montreuil, Boulogne…" autocomplete="address-level2" />
+      </label>
+      <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
+    </fieldset>
+
+    <!-- Étape 5 — Coordonnées -->
+    <fieldset class="qstep" data-step="5" hidden>
+      <legend>Vos coordonnées</legend>
+      <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
+      <label class="qfield"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /></label>
+      <label class="qfield"><span>Message (optionnel)</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
+
+      <!-- Honeypot anti-spam (caché, ne pas remplir) -->
+      <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+
+      <!-- Champs cachés d'attribution -->
+      <input type="hidden" name="source" /><input type="hidden" name="medium" />
+      <input type="hidden" name="campaign" /><input type="hidden" name="term" /><input type="hidden" name="content" />
+      <input type="hidden" name="gclid" /><input type="hidden" name="fbclid" /><input type="hidden" name="landing_path" />
+      <input type="hidden" name="estimation" />
+
+      <p class="qconsent">En envoyant ce formulaire, vous acceptez d'être recontacté par Soloris au sujet de votre demande. Vos données sont traitées conformément à notre <a href="/confidentialite">politique de confidentialité</a>.</p>
+
+      <div class="qnav">
+        <button type="button" class="btn-ghost" data-prev>Retour</button>
+        <button type="submit" class="btn-gold" id="qsubmit">Obtenir mon devis</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- Écran de remerciement -->
+  <div class="qthanks" id="qthanks" hidden>
+    <div class="qthanks-ic" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h3>Merci, c'est noté&nbsp;!</h3>
+    <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous recontacte très vite pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
+    <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
+  </div>
+</div>
+
+<style>
+  .qform { padding: 30px 30px 28px; max-width: 600px; margin: 0 auto; }
+  .qsteps { display: flex; gap: 8px; justify-content: center; margin-bottom: 26px; }
+  .qsteps .dot { width: 30px; height: 5px; border-radius: 4px; background: var(--line); transition: background .2s; }
+  .qsteps .dot.active { background: var(--gold); }
+  .qstep { border: none; }
+  .qstep legend { font-family: var(--sora); font-weight: 600; font-size: 22px; color: var(--blue); margin-bottom: 18px; padding: 0; letter-spacing: -.01em; }
+  .qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .qgrid-2 { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 480px) { .qgrid, .qgrid-2 { grid-template-columns: 1fr; } }
+  .qopt { position: relative; cursor: pointer; }
+  .qopt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .qopt-body { display: block; border: 1.5px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, background .15s; }
+  .qopt-body b { font-family: var(--sora); font-weight: 600; color: var(--blue); font-size: 15px; }
+  .qopt:hover .qopt-body { border-color: var(--blue-light); }
+  .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
+  .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
+  .qfield { display: block; margin-top: 16px; }
+  .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
+  .qfield input, .qfield textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
+  .qfield input:focus, .qfield textarea:focus { outline: none; border-color: var(--blue-light); }
+  .qhint { margin-top: 14px; font-size: 14px; color: var(--blue-light); background: rgba(46,111,174,.08); padding: 12px 14px; border-radius: 10px; }
+  .qestim { margin-top: 20px; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 18px 20px; background: var(--paper); }
+  .qestim-amount { font-family: var(--sora); font-size: 16px; color: var(--ink-soft); }
+  .qestim-amount strong { font-size: 30px; font-weight: 600; color: var(--blue); }
+  .qestim-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; }
+  .qnav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
+  .qnav .btn-blue, .qnav .btn-gold { margin-left: auto; }
+  .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 18px; line-height: 1.55; }
+  .qconsent a { color: var(--blue-light); text-decoration: underline; }
+  .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .qerror { color: #b3261e; font-size: 13px; margin-top: 12px; }
+  .qthanks { text-align: center; padding: 20px 10px; }
+  .qthanks-ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+  .qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }
+  .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+</style>
+
+<script is:inline define:vars={{ GRILLE, sendTo, META_AVAILABLE: true }}>
+  (function () {
+    var form = document.getElementById('quote-form');
+    if (!form) return;
+    var steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
+    var dots = Array.prototype.slice.call(form.querySelectorAll('.dot'));
+    var current = 0;
+
+    function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
+
+    function showStep(i) {
+      steps.forEach(function (s, idx) { s.hidden = idx !== i; });
+      dots.forEach(function (d, idx) { d.classList.toggle('active', idx <= i); });
+      current = i;
+      var firstInput = steps[i].querySelector('input, textarea, button');
+      if (firstInput) firstInput.focus();
+      document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function validStep(i) {
+      var step = steps[i];
+      var required = Array.prototype.slice.call(step.querySelectorAll('[required]'));
+      // groupes radio : au moins un coché
+      var radios = {};
+      var ok = true;
+      required.forEach(function (el) {
+        if (el.type === 'radio') {
+          radios[el.name] = radios[el.name] || form.querySelector('input[name="' + el.name + '"]:checked');
+        } else if (!el.value.trim() || (el.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value))) {
+          ok = false; el.style.borderColor = '#b3261e';
+        } else { el.style.borderColor = ''; }
+      });
+      Object.keys(radios).forEach(function (k) { if (!radios[k]) ok = false; });
+      return ok;
+    }
+
+    function currentDemande() { var el = form.querySelector('input[name="type_demande"]:checked'); return el ? el.value : null; }
+    function currentTypo() { var el = form.querySelector('input[name="typologie"]:checked'); return el ? el.value : null; }
+    function currentBien() { var el = form.querySelector('input[name="type_bien"]:checked'); return el ? el.value : null; }
+
+    function updateEstimation() {
+      var d = currentDemande(), t = currentTypo();
+      var box = document.getElementById('estim');
+      var amount = document.getElementById('estim-amount');
+      var hidden = form.querySelector('input[name="estimation"]');
+      if (currentBien() === 'maison') { box.hidden = true; if (hidden) hidden.value = ''; return; }
+      if (d && t && GRILLE[d] && GRILLE[d][t]) {
+        var val = GRILLE[d][t];
+        amount.textContent = fmtEUR(val);
+        box.hidden = false;
+        if (hidden) hidden.value = String(val);
+      } else { box.hidden = true; }
+    }
+
+    // Maison → message + saut de l'estimation
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'type_bien') {
+        document.getElementById('maison-hint').hidden = e.target.value !== 'maison';
+      }
+      if (e.target.name === 'typologie' || e.target.name === 'type_demande') updateEstimation();
+    });
+
+    form.addEventListener('click', function (e) {
+      if (e.target.matches('[data-next]')) {
+        if (!validStep(current)) return;
+        if (current === 2) updateEstimation();
+        if (current < steps.length - 1) showStep(current + 1);
+      } else if (e.target.matches('[data-prev]')) {
+        if (current > 0) showStep(current - 1);
+      }
+    });
+
+    // Pré-remplissage attribution + préselection ?type=
+    function fillAttribution() {
+      var store = {};
+      try { store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}'); } catch (e) {}
+      var map = { source: 'utm_source', medium: 'utm_medium', campaign: 'utm_campaign', term: 'utm_term', content: 'utm_content', gclid: 'gclid', fbclid: 'fbclid', landing_path: 'landing_path' };
+      Object.keys(map).forEach(function (field) {
+        var input = form.querySelector('input[name="' + field + '"]');
+        if (input && store[map[field]]) input.value = store[map[field]];
+      });
+    }
+    function preselectType() {
+      var t = new URLSearchParams(window.location.search).get('type');
+      if (!t) return;
+      var radio = form.querySelector('input[name="type_demande"][value="' + t + '"]');
+      if (radio) radio.checked = true;
+    }
+    fillAttribution();
+    preselectType();
+
+    // Soumission
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!validStep(current)) return;
+      var submitBtn = document.getElementById('qsubmit');
+      submitBtn.disabled = true; submitBtn.textContent = 'Envoi…';
+
+      var fd = new FormData(form);
+      var payload = {};
+      fd.forEach(function (v, k) { payload[k] = v; });
+
+      fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
+          // Conversions ads — respectent automatiquement le Consent Mode v2
+          try {
+            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo });
+            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: Number(payload.estimation || 0) });
+            if (window.fbq) window.fbq('track', 'Lead');
+          } catch (err) {}
+          form.hidden = true;
+          document.getElementById('qthanks').hidden = false;
+          document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        })
+        .catch(function () {
+          submitBtn.disabled = false; submitBtn.textContent = 'Obtenir mon devis';
+          var err = document.createElement('p');
+          err.className = 'qerror';
+          err.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+          var nav = steps[steps.length - 1].querySelector('.qnav');
+          if (!steps[steps.length - 1].querySelector('.qerror')) nav.parentNode.insertBefore(err, nav);
+        });
+    });
+
+    showStep(0);
+  })();
+</script>

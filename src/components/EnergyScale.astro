@@ -1,0 +1,30 @@
+---
+/**
+ * Échelle énergie A→G (reprise de l'identité).
+ * ⚠️ Conformité : l'étiquette affichée est NEUTRE / illustrative — on ne suggère
+ * jamais un résultat « favorable » garanti. Par défaut, aucune classe surlignée
+ * sauf si `highlight` est explicitement passé pour une démo neutre.
+ */
+interface Props {
+  highlight?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | null;
+}
+const { highlight = null } = Astro.props;
+const rows: { lt: string; width: number }[] = [
+  { lt: 'A', width: 34 },
+  { lt: 'B', width: 46 },
+  { lt: 'C', width: 58 },
+  { lt: 'D', width: 70 },
+  { lt: 'E', width: 82 },
+  { lt: 'F', width: 90 },
+  { lt: 'G', width: 100 },
+];
+---
+<div class="escale">
+  {rows.map((r) => (
+    <div class={`row ${highlight === r.lt ? 'on' : ''}`}>
+      <span class="lt">{r.lt}</span>
+      <div class="track" style={`width:${r.width}%`}></div>
+      {highlight === r.lt && <span class="tag">Classe {r.lt} (exemple)</span>}
+    </div>
+  ))}
+</div>

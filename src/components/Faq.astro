@@ -1,0 +1,27 @@
+---
+/**
+ * FAQ accessible (details/summary). Le balisage FAQPage (JSON-LD) est injecté
+ * au niveau de la page via le composant Seo (helper faqPage()).
+ * Réponses directes et factuelles → citabilité GEO/AEO.
+ */
+interface Props {
+  items: { q: string; a: string }[];
+  title?: string;
+  eyebrow?: string;
+}
+const { items, title = 'Questions fréquentes', eyebrow = 'FAQ' } = Astro.props;
+---
+<section class="section-line" id="faq">
+  <div class="wrap">
+    <div class="eyebrow">{eyebrow}</div>
+    <h2 class="sec-title">{title}</h2>
+    <div class="mt-4" style="max-width:820px">
+      {items.map((it) => (
+        <details class="faq-item">
+          <summary>{it.q}<span class="plus" aria-hidden="true"></span></summary>
+          <div class="answer" set:html={it.a} />
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

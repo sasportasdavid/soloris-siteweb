@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "mcp__74be5ac5-a976-4374-9892-d9c4a4bc274e__list_projects",
+      "mcp__74be5ac5-a976-4374-9892-d9c4a4bc274e__apply_migration",
+      "mcp__74be5ac5-a976-4374-9892-d9c4a4bc274e__get_publishable_keys",
+      "mcp__74be5ac5-a976-4374-9892-d9c4a4bc274e__execute_sql",
+      "Bash(npm install *)",
+      "Bash(magick -background none favicon.svg -resize 16x16 favicon-16.png)",
+      "Bash(magick -background none favicon.svg -resize 32x32 favicon-32.png)",
+      "Bash(magick -background none favicon.svg -resize 180x180 apple-touch-icon.png)",
+      "Bash(magick -background none favicon.svg -resize 192x192 icon-192.png)",
+      "Bash(magick -background none favicon.svg -resize 512x512 icon-512.png)",
+      "Bash(magick -background \"#0B2A4A\" og-default.svg -resize 1200x630 og-default.png)",
+      "Bash(ls /System/Library/Fonts/Supplemental/ 2>/dev/null | grep -iE \"arial|helvetica|georgia|times\" | head; echo \"---core---\"; ls /System/Library/Fonts/ | grep -iE \"helvetica|geneva|times\" | head)"
+    ]
+  }
+}
