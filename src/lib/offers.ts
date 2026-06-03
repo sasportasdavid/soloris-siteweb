@@ -15,6 +15,7 @@ export interface Offer {
   demande: Demande;
   nav: string;
   navDesc: string;
+  shortLabel: string; // libellé propre pour « votre … » (titres, CTA)
   h1: string;
   title: string;
   metaDesc: string;
@@ -34,6 +35,7 @@ export const OFFERS: Offer[] = [
     demande: 'vente',
     nav: 'Diagnostics pour vendre',
     navDesc: 'Le pack complet, tout compris, sous 48 h',
+    shortLabel: 'dossier de diagnostics pour vendre',
     h1: 'Diagnostics pour vendre — le pack complet',
     title: 'Diagnostics pour vendre à Paris & IDF | Soloris',
     metaDesc:
@@ -80,6 +82,7 @@ export const OFFERS: Offer[] = [
     demande: 'location',
     nav: 'Diagnostics pour louer',
     navDesc: 'Le pack bailleur, clair et rapide',
+    shortLabel: 'dossier de diagnostics pour louer',
     h1: 'Diagnostics pour louer — le pack bailleur',
     title: 'Diagnostics pour louer (pack bailleur) | Soloris',
     metaDesc:
@@ -129,6 +132,7 @@ export const OFFERS: Offer[] = [
     demande: 'dpe',
     nav: 'DPE seul',
     navDesc: 'Rapide, sous 48 h',
+    shortLabel: 'DPE',
     h1: 'DPE à Paris et en Île-de-France, sous 48 h',
     title: 'DPE à Paris & Île-de-France sous 48 h | Soloris',
     metaDesc:
@@ -172,6 +176,7 @@ export const OFFERS: Offer[] = [
     demande: 'audit',
     nav: 'Audit énergétique',
     navDesc: "Pour les logements énergivores",
+    shortLabel: 'audit énergétique',
     h1: 'Audit énergétique — par un expert certifié',
     title: 'Audit énergétique à Paris & Île-de-France | Soloris',
     metaDesc:

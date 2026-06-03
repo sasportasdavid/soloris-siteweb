@@ -1,0 +1,47 @@
+---
+/**
+ * Bloc avis clients : note Google agrégée + cartes d'avis réels.
+ * Source unique : SITE.rating (note/nb) + REVIEWS. N'affiche que du réel.
+ */
+import { SITE } from '../lib/site';
+import { REVIEWS } from '../lib/reviews';
+
+interface Props {
+  limit?: number;
+  title?: string;
+  eyebrow?: string;
+  compact?: boolean; // version réduite (pour les pages offres, avant le formulaire)
+}
+const { limit = 3, title = 'Ce que disent nos clients', eyebrow = 'Avis vérifiés', compact = false } = Astro.props;
+const items = REVIEWS.slice(0, limit);
+const hasReviews = Number(SITE.rating.count) > 0;
+---
+{hasReviews && (
+  <section class:list={[compact ? '' : 'section-line']}>
+    <div class="wrap">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="eyebrow">{eyebrow}</div>
+          <h2 class="sec-title" style={compact ? 'font-size:28px' : ''}>{title}</h2>
+        </div>
+        <div class="rating-agg">
+          <span class="big">{SITE.rating.value}</span>
+          <span class="muted" style="font-size:14px">Note Google<br /><span style="font-size:12px">{SITE.rating.count} avis</span></span>
+        </div>
+      </div>
+      <div class="grid grid-3 mt-5">
+        {items.map((a) => (
+          <div class="review">
+            <div class="stars" aria-label="5 étoiles sur 5">
+              {[0, 1, 2, 3, 4].map(() => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F5A623" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>
+              ))}
+            </div>
+            <p>« {a.txt} »</p>
+            <div class="who">{a.who}<span>{a.sub}</span></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}

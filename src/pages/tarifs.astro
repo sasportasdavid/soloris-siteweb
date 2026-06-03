@@ -4,6 +4,8 @@
  */
 import Base from '../layouts/Base.astro';
 import PricingTable from '../components/PricingTable.astro';
+import ReassuranceBar from '../components/ReassuranceBar.astro';
+import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
 import { ADDONS, GRILLE } from '../lib/pricing';
 import { SITE } from '../lib/site';
@@ -47,9 +49,11 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
     <div class="wrap">
       <div class="eyebrow">Tarifs</div>
       <h1 class="sec-title" style="font-size:44px">Tarifs tout compris, déplacement inclus</h1>
-      <p class="sec-intro">Le prix que vous voyez est le prix que vous payez. Jamais les moins chers, jamais le luxe : un tarif juste, et la transparence en prime.</p>
+      <p class="sec-intro">Le prix que vous voyez est le prix que vous payez. Jamais le luxe, jamais l'à-peu-près : un tarif juste, et la transparence en prime.</p>
     </div>
   </section>
+
+  <ReassuranceBar />
 
   <section class="section-line">
     <div class="wrap">
@@ -79,6 +83,8 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
       <p class="price-note">Montants TTC indicatifs. La liste exacte applicable à votre bien est confirmée au devis.</p>
     </div>
   </section>
+
+  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
 
   <section class="cta-final">
     <div class="wrap">
