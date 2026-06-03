@@ -4,7 +4,8 @@
  * - Google Consent Mode v2 : tout en `denied` par défaut, défini AVANT toute balise.
  * - Google Tag Manager (GTM) : conteneur qui gère GA4 et les tags configurés
  *   dans l'interface GTM ; il respecte le Consent Mode défini ci-dessus.
- * - gtag (Google Ads) : chargé pour la conversion directe sur soumission du formulaire.
+ * - gtag (Google Ads) : conversions directes — soumission du formulaire (label
+ *   formulaire) et clic sur un lien tel: (label « appel » distinct, PHONE_SEND_TO).
  * - Meta Pixel : chargé UNIQUEMENT après consentement publicité.
  * - Capture utm_* / gclid / fbclid → sessionStorage → champs cachés du formulaire.
  * GTM et gtag partagent le même dataLayer et le même état de consentement.
@@ -12,16 +13,22 @@
 const GTM = import.meta.env.PUBLIC_GTM_ID;
 const GA4 = import.meta.env.PUBLIC_GA4_ID;
 const GADS = import.meta.env.PUBLIC_GADS_ID;
+const GADS_PHONE_LABEL = import.meta.env.PUBLIC_GADS_PHONE_LABEL;
 const META = import.meta.env.PUBLIC_META_PIXEL_ID;
 
 const PLACEHOLDER = '__A_REMPLACER__';
 const hasGTM = !!GTM && GTM !== PLACEHOLDER;
 const hasGtag = (!!GA4 && GA4 !== PLACEHOLDER) || (!!GADS && GADS !== PLACEHOLDER);
 const hasMeta = !!META && META !== PLACEHOLDER;
+// send_to dédié au clic téléphone (action de conversion distincte du formulaire)
+const PHONE_SEND_TO =
+  GADS && GADS !== PLACEHOLDER && GADS_PHONE_LABEL && GADS_PHONE_LABEL !== PLACEHOLDER
+    ? `${GADS}/${GADS_PHONE_LABEL}`
+    : '';
 ---
 
 <!-- Bootstrap Consent Mode v2 — exécuté avant toute balise, tout en "denied" -->
-<script is:inline define:vars={{ GA4, GADS, META, hasGtag, hasMeta }}>
+<script is:inline define:vars={{ GA4, GADS, META, hasGtag, hasMeta, PHONE_SEND_TO }}>
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
   window.gtag = gtag;
@@ -81,6 +88,21 @@ const hasMeta = !!META && META !== PLACEHOLDER;
     if (consent.ads) window.solorisLoadMetaPixel();
     try { localStorage.setItem('soloris_consent', JSON.stringify(consent)); } catch (e) {}
   };
+
+  // ── Conversion « Appel » : clic sur un lien tel: ────────────────────
+  // Action de conversion Google Ads DISTINCTE du formulaire (label dédié).
+  // gtag respecte le Consent Mode v2 : rien n'est envoyé tant que le
+  // consentement publicité n'est pas accordé via le bandeau.
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest ? e.target.closest('a[href^="tel:"]') : null;
+    if (!link) return;
+    try {
+      if (window.gtag && PHONE_SEND_TO) {
+        window.gtag('event', 'conversion', { send_to: PHONE_SEND_TO, value: 1.0, currency: 'EUR' });
+      }
+      if (window.dataLayer) window.dataLayer.push({ event: 'soloris_phone_call' });
+    } catch (err) { /* on n'empêche jamais l'appel */ }
+  }, true);
 </script>
 
 <!-- Google Tag Manager (après le Consent Mode : les tags GTM respectent le consentement) -->
