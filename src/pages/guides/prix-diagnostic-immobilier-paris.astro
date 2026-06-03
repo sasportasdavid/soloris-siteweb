@@ -10,11 +10,11 @@ const g = getGuide('prix-diagnostic-immobilier-paris')!;
 const faq = [
   {
     q: 'Combien coûte un DPE à Paris ?',
-    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} € (studio/T1), déplacement inclus, le prix variant selon la typologie. Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
+    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (120 à 190 €). Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
   },
   {
     q: 'Quel est le prix d\'un pack de diagnostics pour vendre ?',
-    a: `Le pack vente Soloris démarre à ${prixDes('vente')} € tout compris pour un studio/T1, déplacement inclus. Le prix dépend de la typologie et des diagnostics réellement applicables à votre bien (année, énergie, zone).`,
+    a: `Le pack vente Soloris démarre à ${prixDes('vente')} € tout compris (petit logement de moins de 15 ans), déplacement inclus. Le prix dépend de la surface et de l'âge du bien, car les diagnostics obligatoires varient (amiante et plomb sur les biens anciens).`,
   },
   {
     q: 'Le déplacement est-il inclus dans le prix ?',
@@ -48,18 +48,18 @@ const jsonLd = [
         <p class="lead">Vous préparez une vente ou une location à Paris et vous voulez savoir à quoi vous attendre côté budget ? Voici les fourchettes de prix 2026, ce qui les fait varier, et comment obtenir un montant ferme en 2 minutes.</p>
 
         <h2>Combien coûte un diagnostic immobilier à Paris ?</h2>
-        <p>Le prix dépend de la prestation (un DPE seul ou un pack complet), de la taille du logement et des diagnostics réellement applicables. À titre de repère, sur le marché parisien, un <strong>DPE</strong> se situe le plus souvent entre <strong>100 et 160 €</strong>, et un <strong>pack vente complet</strong> entre environ <strong>250 et 400 €</strong> selon le bien.</p>
-        <p>Voici la grille Soloris, <strong>tout compris, déplacement inclus</strong> :</p>
+        <p>Chez Soloris, le prix d'un pack de diagnostics dépend de deux choses : la <strong>surface</strong> du logement et son <strong>âge</strong>. Pourquoi l'âge ? Parce que les diagnostics obligatoires changent : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un pack vente démarre ainsi à <strong>{prixDes('vente')} €</strong> (petit logement de moins de 15 ans) et augmente avec la surface et l'ancienneté.</p>
+        <p>Voici la grille Soloris, <strong>tout compris, déplacement inclus</strong> (appartements et maisons) :</p>
         <div style="margin:8px 0 10px">
           <PricingTable caption="Grille tarifaire Soloris" />
         </div>
 
         <h2>Ce qui fait varier le prix</h2>
         <ul>
-          <li><strong>La typologie</strong> — plus le logement compte de pièces, plus la visite et les relevés sont longs : le prix augmente du studio au T4 et plus.</li>
-          <li><strong>L'année de construction et l'énergie</strong> — un bien ancien peut nécessiter des diagnostics supplémentaires (plomb avant 1949, amiante pour les permis antérieurs au 1ᵉʳ juillet 1997, électricité/gaz au-delà de 15 ans).</li>
+          <li><strong>L'âge du bien</strong> — c'est le facteur clé. <em>Avant 1949</em> : amiante + plomb requis (prix le plus élevé). <em>De 1949 à moins de 15 ans</em> : amiante requis, plomb non. <em>Moins de 15 ans</em> : ni amiante ni plomb (le plus accessible).</li>
+          <li><strong>La surface</strong> — plus le logement est grand, plus la visite et les relevés sont longs : le prix augmente par tranches de surface.</li>
+          <li><strong>Le type de bien</strong> — une maison correspond au tarif d'un appartement de même surface et même âge, majoré de 30 € (et 20 € de plus en copropriété).</li>
           <li><strong>La localisation</strong> — en Île-de-France, les tarifs sont généralement <strong>15 à 20 % plus élevés</strong> que dans le reste de la France.</li>
-          <li><strong>Le nombre de diagnostics</strong> — regrouper les diagnostics dans un pack revient à un tarif plus avantageux que de les commander un par un.</li>
         </ul>
 
         <h2>Pourquoi le « tout compris » change tout</h2>

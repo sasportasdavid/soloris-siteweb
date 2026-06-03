@@ -60,30 +60,47 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
   } catch { dateHeure = new Date().toISOString(); }
 
   // Texte brut : Telegram rend cliquables les numéros et emails sur mobile.
-  const channel = rec.source === 'chat' ? 'CHAT' : rec.source === 'contact' ? 'CONTACT' : null;
-  const lines = (channel
-    ? [
-        `${channel === 'CHAT' ? '💬' : '📨'} Nouveau ${channel} Soloris`,
-        `👤 ${rec.nom || '—'}`,
-        `📞 ${rec.telephone || '—'}`,
-        rec.email ? `✉️ ${rec.email}` : '',
-        rec.message ? `💬 ${rec.message}` : '',
-        `🔗 ${rec.landing_path || '/'}`,
-        `🕒 ${dateHeure}`,
-      ]
-    : [
-        '🔔 Nouveau lead Soloris',
-        `📋 ${rec.type_demande || '—'} · ${rec.type_bien || '—'} · CP ${cp}`,
-        `👤 ${rec.nom || '—'} (${prenom})`,
-        `📞 ${rec.telephone || '—'}`,
-        `✉️ ${rec.email || '—'}`,
-        rec.secteur ? `📍 ${rec.secteur}` : '',
-        rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
-        rec.message ? `💬 ${rec.message}` : '',
-        `🔗 ${rec.landing_path || '/'}`,
-        `🕒 ${dateHeure}`,
-      ]
-  ).filter(Boolean);
+  const ageLbl: Record<string, string> = { avant1949: 'avant 1949', intermediaire: '1949 à <15 ans', recent: '<15 ans' };
+  const bienLine = [rec.type_demande || '—', rec.type_bien, rec.age_bien ? ageLbl[rec.age_bien] || rec.age_bien : '', rec.surface ? `${rec.surface} m²` : '']
+    .filter(Boolean).join(' · ');
+
+  let lines: string[];
+  if (rec.source === 'devis-partiel') {
+    lines = [
+      '🟡 Lead PARTIEL (abandon) Soloris',
+      `📞 ${rec.telephone || '—'}`,
+      `📋 ${bienLine}`,
+      rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
+      rec.secteur ? `📍 ${rec.secteur}` : '',
+      `🔗 ${rec.landing_path || '/'}`,
+      `🕒 ${dateHeure}`,
+    ];
+  } else if (rec.source === 'chat' || rec.source === 'contact') {
+    const isChatCh = rec.source === 'chat';
+    lines = [
+      `${isChatCh ? '💬' : '📨'} Nouveau ${isChatCh ? 'CHAT' : 'CONTACT'} Soloris`,
+      `👤 ${rec.nom || '—'}`,
+      `📞 ${rec.telephone || '—'}`,
+      rec.email ? `✉️ ${rec.email}` : '',
+      rec.message ? `💬 ${rec.message}` : '',
+      `🔗 ${rec.landing_path || '/'}`,
+      `🕒 ${dateHeure}`,
+    ];
+  } else {
+    lines = [
+      '🔔 Nouveau lead Soloris',
+      `📋 ${bienLine} · CP ${cp}`,
+      `👤 ${rec.nom || '—'} (${prenom})`,
+      `📞 ${rec.telephone || '—'}`,
+      rec.email ? `✉️ ${rec.email}` : '',
+      rec.secteur ? `📍 ${rec.secteur}` : '',
+      rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
+      rec.message ? `💬 ${rec.message}` : '',
+      `🔗 ${rec.landing_path || '/'}`,
+      `🕒 ${dateHeure}`,
+    ];
+  }
+  lines = lines.filter(Boolean);
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000); // ne pas retarder la réponse
@@ -125,15 +142,23 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (type_bien && !BIENS.includes(type_bien)) return json({ error: 'Type de bien invalide.' }, 400);
   if (typologie && !TYPOS.includes(typologie)) return json({ error: 'Typologie invalide.' }, 400);
 
-  // Coordonnées obligatoires (email facultatif pour le canal chat)
+  // Coordonnées (email obligatoire seulement pour le formulaire de contact)
   const source = clean(body.source, 120);
-  const isChat = source === 'chat';
+  const isContact = source === 'contact';
+  const isPartial = source === 'devis-partiel';
   const nom = clean(body.nom, 120);
   const telephone = clean(body.telephone, 40);
   const email = clean(body.email, 160);
-  if (!nom || !telephone) return json({ error: 'Nom et téléphone sont requis.' }, 400);
-  if (!isChat && !email) return json({ error: 'Nom, téléphone et email sont requis.' }, 400);
+  if (!telephone) return json({ error: 'Le téléphone est requis.' }, 400);
+  if (!isPartial && !nom) return json({ error: 'Le nom est requis.' }, 400);
+  if (isContact && !email) return json({ error: "L'email est requis." }, 400);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
+
+  // Âge du bien (liste blanche)
+  const age_bien = clean(body.age_bien, 20);
+  if (age_bien && !['avant1949', 'intermediaire', 'recent'].includes(age_bien)) {
+    return json({ error: 'Âge du bien invalide.' }, 400);
+  }
 
   const surfaceNum = Number(body.surface);
   const estimationNum = Number(body.estimation);
@@ -142,6 +167,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     type_demande,
     type_bien,
     typologie,
+    age_bien,
     surface: Number.isFinite(surfaceNum) && surfaceNum > 0 ? Math.round(surfaceNum) : null,
     secteur: clean(body.secteur, 120),
     estimation: Number.isFinite(estimationNum) && estimationNum > 0 ? Math.round(estimationNum) : null,

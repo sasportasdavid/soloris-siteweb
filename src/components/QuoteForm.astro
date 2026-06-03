@@ -1,16 +1,25 @@
 ---
 /**
- * Formulaire de devis multi-étapes + estimation indicative immédiate.
- * - 5 étapes : demande → bien → typologie (+estimation) → secteur → coordonnées.
- * - Estimation « à partir de X € » (jamais un prix ferme) à l'étape 3.
- * - Champs cachés d'attribution (utm/gclid/fbclid) injectés depuis sessionStorage.
- * - Soumission JSON vers /api/lead (validation + anti-spam côté serveur).
- * - Conversions ads déclenchées après consentement (Consent Mode v2 / fbq).
- * Préselection possible via ?type=vente|location|dpe|audit.
+ * Formulaire de devis multi-étapes + estimation immédiate (grille ÂGE × SURFACE).
+ * Étapes : projet → type de bien → surface (+ âge si vente/location) → adresse → coordonnées.
+ * - Estimation « à partir de X € » (ou « sur devis » > 239 m²), jamais un prix ferme.
+ * - Attribution utm/gclid/fbclid → champs cachés → leads.
+ * - Conversions ads après consentement (Consent Mode v2).
+ * - CRO : email facultatif, micro-réassurance, note 4,9★ en en-tête,
+ *   capture anticipée du téléphone (lead « partiel » si abandon), A/B test du CTA.
+ * Préselection via ?type=vente|location|dpe|audit.
  */
-import { GRILLE, TYPO_LABELS, DEMANDE_LABELS } from '../lib/pricing';
+import {
+  DEMANDE_LABELS, AGE_LABELS, AGE_DESC, SURFACE_BANDS, APPART_GRID,
+  MAISON_SUPP, AUDIT_FROM,
+} from '../lib/pricing';
+import { SITE } from '../lib/site';
 
-// Descriptions en langage clair sous chaque choix (étape 1)
+const GADS = import.meta.env.PUBLIC_GADS_ID;
+const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
+const PLACEHOLDER = '__A_REMPLACER__';
+const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLACEHOLDER ? `${GADS}/${GADS_LABEL}` : '';
+
 const DEMANDE_DESC: Record<string, string> = {
   vente: 'Je vends un bien',
   location: 'Je mets en location',
@@ -18,31 +27,26 @@ const DEMANDE_DESC: Record<string, string> = {
   audit: 'Logement classé F, G ou E',
 };
 
-// Repère « nombre de pièces » sous chaque typologie (étape 3)
-const TYPO_DESC: Record<string, string> = {
-  t1: '1 pièce principale',
-  t2: '2 pièces',
-  t3: '3 pièces',
-  t4: '4 pièces et plus',
-};
-
-const GADS = import.meta.env.PUBLIC_GADS_ID;
-const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
-const PLACEHOLDER = '__A_REMPLACER__';
-const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLACEHOLDER ? `${GADS}/${GADS_LABEL}` : '';
+const hasReviews = Number(SITE.rating.count) > 0;
+const surfaceBands = SURFACE_BANDS.map((b) => b.label);
 ---
 <div class="qform card" id="qform">
+  {hasReviews && (
+    <div class="qrating">
+      <span class="stars" aria-hidden="true">
+        {[0,1,2,3,4].map(() => <svg width="14" height="14" viewBox="0 0 24 24" fill="#F5A623"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+      </span>
+      <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
+    </div>
+  )}
+
   <form id="quote-form" novalidate>
-    <!-- Indicateur d'étapes -->
     <div class="qsteps" aria-hidden="true">
-      <span class="dot active" data-dot="1"></span>
-      <span class="dot" data-dot="2"></span>
-      <span class="dot" data-dot="3"></span>
-      <span class="dot" data-dot="4"></span>
-      <span class="dot" data-dot="5"></span>
+      <span class="dot active" data-dot="1"></span><span class="dot" data-dot="2"></span>
+      <span class="dot" data-dot="3"></span><span class="dot" data-dot="4"></span><span class="dot" data-dot="5"></span>
     </div>
 
-    <!-- Étape 1 — Type de demande -->
+    <!-- Étape 1 — Projet -->
     <fieldset class="qstep" data-step="1">
       <legend>Quel est votre projet&nbsp;?</legend>
       <p class="qsub">Choisissez votre situation : on calcule le bon tarif, tout compris.</p>
@@ -63,25 +67,32 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
       <p class="qsub">Le tarif dépend du type de logement.</p>
       <div class="qgrid qgrid-2">
         <label class="qopt"><input type="radio" name="type_bien" value="appartement" required /><span class="qopt-body"><b>Appartement</b><span class="qopt-desc">En immeuble / copropriété</span></span></label>
-        <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b><span class="qopt-desc">Individuelle — devis sur mesure</span></span></label>
+        <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b><span class="qopt-desc">Individuelle</span></span></label>
       </div>
-      <p class="qhint" id="maison-hint" hidden>Pour une maison, l'estimation se fait sur devis personnalisé&nbsp;: on vous rappelle rapidement.</p>
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
-    <!-- Étape 3 — Typologie + estimation -->
+    <!-- Étape 3 — Surface + âge + estimation -->
     <fieldset class="qstep" data-step="3" hidden>
-      <legend>Quelle est la taille du logement&nbsp;?</legend>
-      <p class="qsub">Indiquez le nombre de pièces principales (hors cuisine et salle de bain).</p>
-      <div class="qgrid qgrid-2">
-        {Object.entries(TYPO_LABELS).map(([val, label]) => (
-          <label class="qopt"><input type="radio" name="typologie" value={val} required /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{TYPO_DESC[val]}</span></span></label>
-        ))}
-      </div>
+      <legend>Votre logement</legend>
+      <p class="qsub" id="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
+
       <label class="qfield">
-        <span>Surface (m²) — optionnel</span>
-        <input type="number" name="surface" min="1" max="2000" inputmode="numeric" placeholder="ex : 48" />
+        <span>Surface du bien</span>
+        <select name="surface_band" required>
+          <option value="" disabled selected>Choisissez une tranche de surface</option>
+          {surfaceBands.map((label, i) => <option value={i}>{label}</option>)}
+        </select>
       </label>
+
+      <div id="age-block" class="qfield-group" hidden>
+        <span class="qgroup-label">Âge du bien</span>
+        <div class="qgrid qgrid-2">
+          {Object.entries(AGE_LABELS).map(([val, label]) => (
+            <label class="qopt"><input type="radio" name="age_bien" value={val} /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{AGE_DESC[val]}</span></span></label>
+          ))}
+        </div>
+      </div>
 
       <div class="qestim" id="estim" hidden>
         <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
@@ -91,24 +102,12 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
-    <!-- Étape 4 — Secteur (autocomplétion adresse via Base Adresse Nationale) -->
+    <!-- Étape 4 — Adresse (autocomplétion BAN) -->
     <fieldset class="qstep" data-step="4" hidden>
       <legend>Où se situe le bien&nbsp;?</legend>
       <div class="qfield qac">
         <span id="secteur-label">Adresse du bien (Paris ou Île-de-France)</span>
-        <input
-          type="text"
-          name="secteur"
-          id="secteur-input"
-          required
-          placeholder="Commencez à taper votre adresse…"
-          autocomplete="off"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded="false"
-          aria-controls="secteur-list"
-          aria-labelledby="secteur-label"
-        />
+        <input type="text" name="secteur" id="secteur-input" required placeholder="Commencez à taper votre adresse…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="secteur-list" aria-labelledby="secteur-label" />
         <ul id="secteur-list" class="qac-list" role="listbox" aria-label="Suggestions d'adresses" hidden></ul>
       </div>
       <p class="qhint">Nous intervenons à Paris et en Île-de-France. Sélectionnez votre adresse dans la liste, ou saisissez-la manuellement.</p>
@@ -120,18 +119,20 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
       <legend>Vos coordonnées</legend>
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
       <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
-      <label class="qfield"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /></label>
+      <label class="qfield"><span>Email <span class="qopt-tag">facultatif</span></span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
       <label class="qfield"><span>Message (optionnel)</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
 
-      <!-- Honeypot anti-spam (caché, ne pas remplir) -->
       <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
 
-      <!-- Champs cachés d'attribution -->
-      <input type="hidden" name="source" /><input type="hidden" name="medium" />
-      <input type="hidden" name="campaign" /><input type="hidden" name="term" /><input type="hidden" name="content" />
+      <input type="hidden" name="source" value="devis" />
+      <input type="hidden" name="surface" /><input type="hidden" name="age_bien_h" /><input type="hidden" name="estimation" />
+      <input type="hidden" name="utm_source" /><input type="hidden" name="medium" /><input type="hidden" name="campaign" />
+      <input type="hidden" name="term" /><input type="hidden" name="content" />
       <input type="hidden" name="gclid" /><input type="hidden" name="fbclid" /><input type="hidden" name="landing_path" />
-      <input type="hidden" name="estimation" />
 
+      <div class="qreassure">
+        <span>🔒 Sans engagement</span><span>· Vos données restent confidentielles</span><span>· Réponse sous 48 h</span>
+      </div>
       <p class="qconsent">En envoyant ce formulaire, vous acceptez d'être recontacté par Soloris au sujet de votre demande. Vos données sont traitées conformément à notre <a href="/confidentialite">politique de confidentialité</a>.</p>
 
       <div class="qnav">
@@ -141,11 +142,8 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
     </fieldset>
   </form>
 
-  <!-- Écran de remerciement -->
   <div class="qthanks" id="qthanks" hidden>
-    <div class="qthanks-ic" aria-hidden="true">
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-    </div>
+    <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h3>Merci, c'est noté&nbsp;!</h3>
     <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous recontacte très vite pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
@@ -153,16 +151,18 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
 </div>
 
 <style>
-  .qform { padding: 30px 30px 28px; max-width: 600px; margin: 0 auto; }
-  .qsteps { display: flex; gap: 8px; justify-content: center; margin-bottom: 26px; }
+  .qform { padding: 24px 30px 28px; max-width: 600px; margin: 0 auto; }
+  .qrating { display: flex; align-items: center; gap: 8px; justify-content: center; font-family: var(--sora); font-size: 13px; color: var(--ink-soft); padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .qrating .stars { display: inline-flex; gap: 1px; }
+  .qrating strong { color: var(--blue); }
+  .qsteps { display: flex; gap: 8px; justify-content: center; margin: 8px 0 26px; }
   .qsteps .dot { width: 30px; height: 5px; border-radius: 4px; background: var(--line); transition: background .2s; }
   .qsteps .dot.active { background: var(--gold); }
   .qstep { border: none; }
   .qstep legend { font-family: var(--sora); font-weight: 600; font-size: 22px; color: var(--blue); margin-bottom: 6px; padding: 0; letter-spacing: -.01em; }
   .qsub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
   .qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .qgrid-2 { grid-template-columns: 1fr 1fr; }
-  @media (max-width: 480px) { .qgrid, .qgrid-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .qgrid { grid-template-columns: 1fr; } }
   .qopt { position: relative; cursor: pointer; }
   .qopt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
   .qopt-body { display: block; border: 1.5px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, background .15s; }
@@ -171,12 +171,15 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qopt:hover .qopt-body { border-color: var(--blue-light); }
   .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
   .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
+  .qopt-tag { font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); }
   .qfield { display: block; margin-top: 16px; }
+  .qfield:first-of-type { margin-top: 0; }
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
-  .qfield input, .qfield textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
-  .qfield input:focus, .qfield textarea:focus { outline: none; border-color: var(--blue-light); }
+  .qfield input, .qfield textarea, .qfield select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
+  .qfield input:focus, .qfield textarea:focus, .qfield select:focus { outline: none; border-color: var(--blue-light); }
+  .qfield-group { margin-top: 18px; }
+  .qgroup-label { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 9px; }
   .qhint { margin-top: 14px; font-size: 14px; color: var(--blue-light); background: rgba(46,111,174,.08); padding: 12px 14px; border-radius: 10px; }
-  /* Autocomplétion adresse */
   .qac { position: relative; }
   .qac-list { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-soft); max-height: 252px; overflow-y: auto; list-style: none; padding: 5px; }
   .qac-list li { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--ink); line-height: 1.35; display: flex; align-items: center; gap: 10px; }
@@ -184,14 +187,14 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qac-list li:hover, .qac-list li[aria-selected="true"] { background: var(--paper); }
   .qac-list li b { font-weight: 500; }
   .qac-list li .ac-ctx { color: var(--ink-soft); font-size: 12.5px; }
-  .qac-empty { padding: 12px; font-size: 13px; color: var(--ink-soft); }
   .qestim { margin-top: 20px; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 18px 20px; background: var(--paper); }
   .qestim-amount { font-family: var(--sora); font-size: 16px; color: var(--ink-soft); }
   .qestim-amount strong { font-size: 30px; font-weight: 600; color: var(--blue); }
   .qestim-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; }
   .qnav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
   .qnav .btn-blue, .qnav .btn-gold { margin-left: auto; }
-  .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 18px; line-height: 1.55; }
+  .qreassure { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 18px; font-family: var(--sora); font-size: 12px; font-weight: 500; color: var(--blue-light); }
+  .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 12px; line-height: 1.55; }
   .qconsent a { color: var(--blue-light); text-decoration: underline; }
   .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
   .qerror { color: #b3261e; font-size: 13px; margin-top: 12px; }
@@ -201,157 +204,144 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ GRILLE, sendTo, META_AVAILABLE: true }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), sendTo }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
     var steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
     var dots = Array.prototype.slice.call(form.querySelectorAll('.dot'));
     var current = 0;
+    var submitted = false;
+    var reachedEstimation = false;
+    var AGE_IDX = { avant1949: 0, intermediaire: 1, recent: 2 };
 
     function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
+    function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
+    function checkedVal(name) { var el = form.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
+    function demande() { return checkedVal('type_demande'); }
+    function bien() { return checkedVal('type_bien'); }
+    function ageNeeded() { var d = demande(); return d === 'vente' || d === 'location'; }
+    function bandIndex() { var s = form.querySelector('[name="surface_band"]'); return s && s.value !== '' ? Number(s.value) : null; }
 
     function showStep(i) {
       steps.forEach(function (s, idx) { s.hidden = idx !== i; });
       dots.forEach(function (d, idx) { d.classList.toggle('active', idx <= i); });
       current = i;
-      var firstInput = steps[i].querySelector('input, textarea, button');
-      if (firstInput) firstInput.focus();
+      if (i >= 2) reachedEstimation = true;
+      var f = steps[i].querySelector('input, select, textarea, button');
+      if (f) f.focus();
       document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function validStep(i) {
       var step = steps[i];
-      var required = Array.prototype.slice.call(step.querySelectorAll('[required]'));
-      // groupes radio : au moins un coché
-      var radios = {};
       var ok = true;
-      required.forEach(function (el) {
-        if (el.type === 'radio') {
-          radios[el.name] = radios[el.name] || form.querySelector('input[name="' + el.name + '"]:checked');
-        } else if (!el.value.trim() || (el.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value))) {
-          ok = false; el.style.borderColor = '#b3261e';
-        } else { el.style.borderColor = ''; }
+      // radios requis
+      var radioNames = {};
+      step.querySelectorAll('input[type="radio"][required]').forEach(function (el) { radioNames[el.name] = true; });
+      Object.keys(radioNames).forEach(function (n) { if (!form.querySelector('input[name="' + n + '"]:checked')) ok = false; });
+      // champs texte/select requis
+      step.querySelectorAll('input[required]:not([type="radio"]), select[required], textarea[required]').forEach(function (el) {
+        if (!el.value.trim()) { ok = false; el.style.borderColor = '#b3261e'; } else { el.style.borderColor = ''; }
+        if (el.type === 'email' && el.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value)) { ok = false; el.style.borderColor = '#b3261e'; }
       });
-      Object.keys(radios).forEach(function (k) { if (!radios[k]) ok = false; });
+      // étape 3 : âge requis seulement pour vente/location
+      if (step.getAttribute('data-step') === '3' && ageNeeded() && !checkedVal('age_bien')) ok = false;
       return ok;
     }
 
-    function currentDemande() { var el = form.querySelector('input[name="type_demande"]:checked'); return el ? el.value : null; }
-    function currentTypo() { var el = form.querySelector('input[name="typologie"]:checked'); return el ? el.value : null; }
-    function currentBien() { var el = form.querySelector('input[name="type_bien"]:checked'); return el ? el.value : null; }
+    function dpeByBand(bi) { if (bi <= 1) return 120; if (bi <= 3) return 150; if (bi <= 5) return 170; return 190; }
 
     function updateEstimation() {
-      var d = currentDemande(), t = currentTypo();
       var box = document.getElementById('estim');
       var amount = document.getElementById('estim-amount');
-      var hidden = form.querySelector('input[name="estimation"]');
-      if (currentBien() === 'maison') { box.hidden = true; if (hidden) hidden.value = ''; return; }
-      if (d && t && GRILLE[d] && GRILLE[d][t]) {
-        var val = GRILLE[d][t];
-        amount.textContent = fmtEUR(val);
-        box.hidden = false;
-        if (hidden) hidden.value = String(val);
-      } else { box.hidden = true; }
+      var hEst = form.querySelector('[name="estimation"]');
+      var hSurf = form.querySelector('[name="surface"]');
+      var ageBlock = document.getElementById('age-block');
+      var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien');
+
+      // affichage du bloc âge selon le projet
+      if (ageBlock) ageBlock.hidden = !ageNeeded();
+      if (hSurf && bi != null) hSurf.value = String(BANDS_MAX[bi]);
+
+      var value = null, surDevis = false;
+      if (d === 'audit') { value = AUDIT_FROM; }
+      else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = dpeByBand(bi); }
+      else { // vente / location
+        if (bi == null || (ageNeeded() && !age)) { box.hidden = true; return; }
+        var row = APPART_GRID[bi];
+        if (!row) { surDevis = true; }
+        else { value = row[AGE_IDX[age]]; if (b === 'maison') value += MAISON_SUPP; }
+      }
+      if (surDevis) { amount.textContent = 'sur devis'; if (hEst) hEst.value = ''; }
+      else { amount.textContent = fmtEUR(value); if (hEst) hEst.value = String(value); }
+      box.hidden = false;
     }
 
-    // Maison → message + saut de l'estimation
     form.addEventListener('change', function (e) {
-      if (e.target.name === 'type_bien') {
-        document.getElementById('maison-hint').hidden = e.target.value !== 'maison';
+      if (['type_demande', 'type_bien', 'surface_band', 'age_bien'].indexOf(e.target.name) > -1) {
+        if (current >= 2) updateEstimation();
       }
-      if (e.target.name === 'typologie' || e.target.name === 'type_demande') updateEstimation();
     });
 
     form.addEventListener('click', function (e) {
       if (e.target.matches('[data-next]')) {
         if (!validStep(current)) return;
-        if (current === 2) updateEstimation();
-        if (current < steps.length - 1) showStep(current + 1);
+        if (current === 1) { /* projet/bien choisis */ }
+        if (current < steps.length - 1) { showStep(current + 1); if (current === 2) updateEstimation(); }
       } else if (e.target.matches('[data-prev]')) {
         if (current > 0) showStep(current - 1);
       }
     });
 
-    // Pré-remplissage attribution + préselection ?type=
-    function fillAttribution() {
+    // Attribution + préselection
+    (function fillAttribution() {
       var store = {};
       try { store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}'); } catch (e) {}
-      var map = { source: 'utm_source', medium: 'utm_medium', campaign: 'utm_campaign', term: 'utm_term', content: 'utm_content', gclid: 'gclid', fbclid: 'fbclid', landing_path: 'landing_path' };
+      var map = { utm_source: 'utm_source', medium: 'utm_medium', campaign: 'utm_campaign', term: 'utm_term', content: 'utm_content', gclid: 'gclid', fbclid: 'fbclid', landing_path: 'landing_path' };
       Object.keys(map).forEach(function (field) {
-        var input = form.querySelector('input[name="' + field + '"]');
-        if (input && store[map[field]]) input.value = store[map[field]];
+        var input = form.querySelector('[name="' + field + '"]');
+        if (input) input.value = store[map[field]] || (field === 'landing_path' ? window.location.pathname : '');
       });
-    }
-    function preselectType() {
+    })();
+    (function preselect() {
       var t = new URLSearchParams(window.location.search).get('type');
       if (!t) return;
       var radio = form.querySelector('input[name="type_demande"][value="' + t + '"]');
       if (radio) radio.checked = true;
-    }
-    fillAttribution();
-    preselectType();
+    })();
 
-    // ── Autocomplétion d'adresse (Base Adresse Nationale, gratuite, sans clé) ──
+    // ── Autocomplétion d'adresse (Base Adresse Nationale) ──
     (function setupAddressAutocomplete() {
-      var input = form.querySelector('#secteur-input');
-      var list = form.querySelector('#secteur-list');
+      var input = form.querySelector('#secteur-input'); var list = form.querySelector('#secteur-list');
       if (!input || !list) return;
-      var IDF = ['75', '77', '78', '91', '92', '93', '94', '95']; // Paris + IDF
+      var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
       var PIN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
       var timer, items = [], active = -1, lastQuery = '';
-
       function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
       function close() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); active = -1; }
       function open() { if (items.length) { list.hidden = false; input.setAttribute('aria-expanded', 'true'); } }
-
       function render() {
         list.innerHTML = items.map(function (f, i) {
-          var p = f.properties;
-          var ctx = [p.postcode, p.city].filter(Boolean).join(' ');
-          return '<li role="option" id="ac-opt-' + i + '" data-label="' + esc(p.label) + '">' + PIN +
-            '<span><b>' + esc(p.name || p.label) + '</b>' + (ctx ? ' <span class="ac-ctx">· ' + esc(ctx) + '</span>' : '') + '</span></li>';
-        }).join('');
-        open();
+          var p = f.properties; var ctx = [p.postcode, p.city].filter(Boolean).join(' ');
+          return '<li role="option" id="ac-opt-' + i + '" data-label="' + esc(p.label) + '">' + PIN + '<span><b>' + esc(p.name || p.label) + '</b>' + (ctx ? ' <span class="ac-ctx">· ' + esc(ctx) + '</span>' : '') + '</span></li>';
+        }).join(''); open();
       }
-
       function choose(label) { input.value = label; input.style.borderColor = ''; items = []; close(); }
-
-      function highlight() {
-        Array.prototype.forEach.call(list.children, function (li, i) {
-          var on = i === active;
-          li.setAttribute('aria-selected', on ? 'true' : 'false');
-          if (on) { input.setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block: 'nearest' }); }
-        });
-      }
-
+      function highlight() { Array.prototype.forEach.call(list.children, function (li, i) { var on = i === active; li.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) { input.setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block: 'nearest' }); } }); }
       input.addEventListener('input', function () {
-        var q = input.value.trim();
-        if (q.length < 3) { items = []; close(); return; }
+        var q = input.value.trim(); if (q.length < 3) { items = []; close(); return; }
         clearTimeout(timer);
         timer = setTimeout(function () {
           lastQuery = q;
-          fetch('https://api-adresse.data.gouv.fr/search/?limit=8&q=' + encodeURIComponent(q))
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-              if (lastQuery !== q) return; // ignore les réponses périmées
-              items = (data.features || []).filter(function (f) {
-                var pc = f.properties.postcode || '';
-                return IDF.indexOf(pc.slice(0, 2)) > -1;
-              }).slice(0, 6);
-              active = -1;
-              if (items.length) render(); else close();
-            })
-            .catch(function () { close(); }); // hors-ligne : saisie manuelle possible
+          fetch('https://api-adresse.data.gouv.fr/search/?limit=8&q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (data) {
+            if (lastQuery !== q) return;
+            items = (data.features || []).filter(function (f) { var pc = f.properties.postcode || ''; return IDF.indexOf(pc.slice(0, 2)) > -1; }).slice(0, 6);
+            active = -1; if (items.length) render(); else close();
+          }).catch(function () { close(); });
         }, 250);
       });
-
-      // mousedown (avant le blur) pour valider le clic sur une suggestion
-      list.addEventListener('mousedown', function (e) {
-        var li = e.target.closest('li');
-        if (li && li.getAttribute('data-label')) choose(li.getAttribute('data-label'));
-      });
-
+      list.addEventListener('mousedown', function (e) { var li = e.target.closest('li'); if (li && li.getAttribute('data-label')) choose(li.getAttribute('data-label')); });
       input.addEventListener('keydown', function (e) {
         if (list.hidden || !items.length) return;
         if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, items.length - 1); highlight(); }
@@ -359,36 +349,64 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
         else if (e.key === 'Enter' && active > -1) { e.preventDefault(); choose(list.children[active].getAttribute('data-label')); }
         else if (e.key === 'Escape') { close(); }
       });
-
       input.addEventListener('blur', function () { setTimeout(close, 150); });
     })();
 
-    // Soumission
+    // ── A/B test du CTA (variante stockée en cookie strictement nécessaire) ──
+    (function abCta() {
+      var name = 'soloris_ab_cta';
+      var v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
+      if (v !== 'A' && v !== 'B') {
+        v = Math.random() < 0.5 ? 'A' : 'B';
+        var d = new Date(); d.setTime(d.getTime() + 90 * 864e5);
+        document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+      }
+      var btn = document.getElementById('qsubmit');
+      if (btn && v === 'B') btn.textContent = 'Recevoir mon estimation gratuite';
+      try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'cta_devis', variant: v }); } catch (e) {}
+    })();
+
+    // ── Capture anticipée : lead « partiel » si abandon après l'estimation ──
+    function sendPartial() {
+      if (submitted || !reachedEstimation) return;
+      var tel = val('telephone').trim();
+      if (!tel) return;
+      try {
+        var payload = {
+          source: 'devis-partiel', telephone: tel, nom: val('nom') || 'Lead partiel',
+          type_demande: demande(), type_bien: bien(), age_bien: checkedVal('age_bien') || '',
+          surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
+          gclid: val('gclid'), fbclid: val('fbclid'), landing_path: val('landing_path'),
+        };
+        navigator.sendBeacon('/api/lead', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+        submitted = true; // évite le doublon avec une soumission complète
+      } catch (e) {}
+    }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') sendPartial(); });
+    window.addEventListener('pagehide', sendPartial);
+
+    // ── Soumission complète ──
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!validStep(current)) return;
-      var submitBtn = document.getElementById('qsubmit');
-      submitBtn.disabled = true; submitBtn.textContent = 'Envoi…';
+      var btn = document.getElementById('qsubmit'); btn.disabled = true; btn.textContent = 'Envoi…';
+      submitted = true; // n'envoie plus de partiel
 
-      var fd = new FormData(form);
-      var payload = {};
-      fd.forEach(function (v, k) { payload[k] = v; });
+      var fd = new FormData(form); var payload = {};
+      fd.forEach(function (v2, k) { payload[k] = v2; });
+      // mappe utm_source → source ? non : source="devis" déjà ; on garde utm_source à part
+      payload.source = payload.utm_source || 'devis';
+      payload.age_bien = checkedVal('age_bien') || '';
 
-      fetch('/api/lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
           if (!res.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
-          // Conversions ads — respectent automatiquement le Consent Mode v2
           try {
-            var val = Number(payload.estimation || 0);
-            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo, value: val, currency: 'EUR' });
-            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: val });
-            // Événement dataLayer pour GTM (déclencheur "soloris_lead" côté GTM)
-            if (window.dataLayer) window.dataLayer.push({ event: 'soloris_lead', value: val, currency: 'EUR', type_demande: payload.type_demande || '' });
+            var v3 = Number(payload.estimation || 0);
+            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo, value: v3, currency: 'EUR' });
+            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: v3 });
+            if (window.dataLayer) window.dataLayer.push({ event: 'soloris_lead', value: v3, currency: 'EUR', type_demande: payload.type_demande || '' });
             if (window.fbq) window.fbq('track', 'Lead');
           } catch (err) {}
           form.hidden = true;
@@ -396,12 +414,13 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
           document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'start' });
         })
         .catch(function () {
-          submitBtn.disabled = false; submitBtn.textContent = 'Obtenir mon devis';
-          var err = document.createElement('p');
-          err.className = 'qerror';
-          err.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+          submitted = false; btn.disabled = false; btn.textContent = 'Obtenir mon devis';
           var nav = steps[steps.length - 1].querySelector('.qnav');
-          if (!steps[steps.length - 1].querySelector('.qerror')) nav.parentNode.insertBefore(err, nav);
+          if (!steps[steps.length - 1].querySelector('.qerror')) {
+            var err = document.createElement('p'); err.className = 'qerror';
+            err.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+            nav.parentNode.insertBefore(err, nav);
+          }
         });
     });
 

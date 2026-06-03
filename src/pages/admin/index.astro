@@ -124,7 +124,7 @@ const STATUT_LABELS: Record<string, string> = {
           : `<span style="background:rgba(46,111,174,.1);color:var(--blue-light);font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Organique</span>`;
         return `<tr>
           <td>${date}</td>
-          <td>${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.typologie || '')} ${esc(l.type_bien || '')}</span></td>
+          <td>${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span></td>
           <td>${esc(l.secteur || '—')}</td>
           <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
           <td><b>${esc(l.nom || '—')}</b><br><a href="tel:${esc(l.telephone)}">${esc(l.telephone || '')}</a><br><a href="mailto:${esc(l.email)}" style="font-size:11px">${esc(l.email || '')}</a></td>

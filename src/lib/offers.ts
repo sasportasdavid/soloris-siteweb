@@ -72,7 +72,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack vente ?',
-        a: 'À partir de 250 € tout compris pour un studio/T1, déplacement inclus. Le prix dépend de la typologie et des diagnostics applicables — estimation immédiate via notre formulaire de devis.',
+        a: 'À partir de 159 € tout compris, déplacement inclus. Le prix dépend de la surface et de l\'âge du bien (les diagnostics obligatoires varient) — estimation immédiate via notre formulaire de devis.',
       },
     ],
   },
@@ -122,7 +122,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack location ?',
-        a: 'À partir de 180 € tout compris pour un studio/T1, déplacement inclus. Estimation immédiate via le formulaire de devis.',
+        a: 'À partir de 159 € tout compris, déplacement inclus. Le prix dépend de la surface et de l\'âge du bien — estimation immédiate via le formulaire de devis.',
       },
     ],
   },
@@ -158,7 +158,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Quel est le prix d\'un DPE ?',
-        a: 'À partir de 120 € tout compris pour un studio/T1, déplacement inclus. Le prix varie selon la typologie. Estimation immédiate via le formulaire.',
+        a: 'À partir de 120 € tout compris, déplacement inclus. Le prix varie selon la surface (120 à 190 €). Estimation immédiate via le formulaire.',
       },
       {
         q: 'Pouvez-vous me garantir une bonne étiquette ?',

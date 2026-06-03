@@ -1,33 +1,96 @@
 ---
 /**
- * Tableau de tarifs « dès » par typologie. Prix honnêtes et atteignables.
- * Affiche « dès X € » — jamais un montant faussement précis.
+ * Grille tarifaire par ÂGE × SURFACE, onglets Appartement / Maison (mobile-first).
+ * Source : src/lib/pricing.ts. Maison = appartement + 30 €. > 239 m² = sur devis.
+ * Prix honnêtes et atteignables ; jamais de prix barré / promo.
  */
-import { GRILLE, TYPO_LABELS, DEMANDE_LABELS, type Demande } from '../lib/pricing';
+import { SURFACE_BANDS, APPART_GRID, AGE_COLUMNS, MAISON_SUPP, FIXED } from '../lib/pricing';
 
-interface Props { demandes?: Demande[]; caption?: string }
-const { demandes = ['vente', 'location', 'dpe', 'audit'], caption } = Astro.props;
-const typos: (keyof typeof TYPO_LABELS)[] = ['t1', 't2', 't3', 't4'];
+interface Props { caption?: string; showMentions?: boolean }
+const { caption, showMentions = true } = Astro.props;
+
+// Pré-calcule les lignes pour appartement et maison
+const rows = SURFACE_BANDS.map((band, i) => {
+  const row = APPART_GRID[i];
+  return {
+    surface: band.label,
+    appart: row ? row.map((p) => `${p} €`) : ['Sur devis', 'Sur devis', 'Sur devis'],
+    maison: row ? row.map((p) => `${p + MAISON_SUPP} €`) : ['Sur devis', 'Sur devis', 'Sur devis'],
+    surDevis: !row,
+  };
+});
 ---
-<div style="overflow-x:auto">
-  <table class="ptable">
-    {caption && <caption class="visually-hidden">{caption}</caption>}
-    <thead>
-      <tr>
-        <th scope="col">Prestation</th>
-        {typos.map((t) => <th scope="col">{TYPO_LABELS[t]}</th>)}
-      </tr>
-    </thead>
-    <tbody>
-      {demandes.map((d) => (
-        <tr>
-          <th scope="row" style="font-family:var(--sora);font-weight:600;color:var(--blue)">{DEMANDE_LABELS[d]}</th>
-          {typos.map((t) => (
-            <td class="price">dès {GRILLE[d][t]} €</td>
+<div class="pgrid">
+  <div class="ptabs" role="tablist" aria-label="Type de bien">
+    <button type="button" class="ptab active" data-bien="appart" role="tab" aria-selected="true">Appartement</button>
+    <button type="button" class="ptab" data-bien="maison" role="tab" aria-selected="false">Maison</button>
+  </div>
+
+  {(['appart', 'maison'] as const).map((bien) => (
+    <div class="ptable-wrap" data-pane={bien} hidden={bien === 'maison'}>
+      <table class="ptable ptable-age">
+        {caption && <caption class="visually-hidden">{caption} — {bien === 'appart' ? 'appartements' : 'maisons'}</caption>}
+        <thead>
+          <tr>
+            <th scope="col">Surface</th>
+            {AGE_COLUMNS.map((c) => <th scope="col">{c.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <th scope="row">{r.surface}</th>
+              {(bien === 'appart' ? r.appart : r.maison).map((cell) => (
+                <td class="price">{cell}</td>
+              ))}
+            </tr>
           ))}
-        </tr>
-      ))}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  ))}
+
+  {showMentions && (
+    <ul class="pmentions">
+      <li><b>Diagnostic cave / parking</b> : {FIXED.caveParking} €</li>
+      <li><b>Maison en copropriété</b> : + {FIXED.coproSupp} €</li>
+      <li><b>ERP</b> (état des risques) : <b>offert dans les packs</b></li>
+      <li>Rapport envoyé <b>sous 48 h</b> après réception du paiement</li>
+    </ul>
+  )}
+  <p class="price-note">Tarifs TTC, déplacement inclus, à Paris et en Île-de-France (93). Au-delà de 239 m² : sur devis. Le prix exact, tout compris, vous est confirmé au devis, sans engagement.</p>
 </div>
-<p class="price-note">Tarifs TTC, déplacement inclus, à Paris et en Île-de-France. « Dès » = à partir de ; le prix exact dépend des diagnostics applicables à votre bien et vous est confirmé au devis, sans engagement.</p>
+
+<style>
+  .ptabs { display: inline-flex; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 18px; }
+  .ptab { font-family: var(--sora); font-weight: 600; font-size: 14px; color: var(--ink-soft); background: none; border: none; border-radius: 9px; padding: 9px 22px; cursor: pointer; }
+  .ptab.active { background: #fff; color: var(--blue); box-shadow: 0 2px 8px -4px rgba(11,42,74,.3); }
+  .ptable-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ptable-age th[scope="row"] { font-family: var(--sora); font-weight: 600; color: var(--blue); white-space: nowrap; }
+  .ptable-age td.price { font-family: var(--sora); font-weight: 600; color: var(--blue); white-space: nowrap; }
+  .ptable-age thead th { font-size: 12.5px; }
+  @media (max-width: 560px) {
+    .ptable-age th, .ptable-age td { padding: 11px 12px; font-size: 13px; }
+    .ptable-age thead th { font-size: 11.5px; }
+  }
+  .pmentions { list-style: none; display: grid; gap: 8px; margin: 18px 0 0; }
+  .pmentions li { font-size: 14px; color: var(--ink-soft); padding-left: 18px; position: relative; }
+  .pmentions li::before { content: "•"; color: var(--gold); position: absolute; left: 4px; font-weight: 700; }
+  .pmentions b { color: var(--blue); font-weight: 600; }
+</style>
+
+<script is:inline>
+  (function () {
+    document.querySelectorAll('.pgrid').forEach(function (grid) {
+      var tabs = grid.querySelectorAll('.ptab');
+      var panes = grid.querySelectorAll('[data-pane]');
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var bien = tab.getAttribute('data-bien');
+          tabs.forEach(function (t) { var on = t === tab; t.classList.toggle('active', on); t.setAttribute('aria-selected', String(on)); });
+          panes.forEach(function (p) { p.hidden = p.getAttribute('data-pane') !== (bien === 'appart' ? 'appart' : 'maison'); });
+        });
+      });
+    });
+  })();
+</script>
