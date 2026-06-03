@@ -72,13 +72,27 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
-    <!-- Étape 4 — Secteur -->
+    <!-- Étape 4 — Secteur (autocomplétion adresse via Base Adresse Nationale) -->
     <fieldset class="qstep" data-step="4" hidden>
       <legend>Où se situe le bien&nbsp;?</legend>
-      <label class="qfield">
-        <span>Arrondissement de Paris ou commune d'Île-de-France</span>
-        <input type="text" name="secteur" required placeholder="ex : Paris 11e, Montreuil, Boulogne…" autocomplete="address-level2" />
-      </label>
+      <div class="qfield qac">
+        <span id="secteur-label">Adresse du bien (Paris ou Île-de-France)</span>
+        <input
+          type="text"
+          name="secteur"
+          id="secteur-input"
+          required
+          placeholder="Commencez à taper votre adresse…"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="secteur-list"
+          aria-labelledby="secteur-label"
+        />
+        <ul id="secteur-list" class="qac-list" role="listbox" aria-label="Suggestions d'adresses" hidden></ul>
+      </div>
+      <p class="qhint">Nous intervenons à Paris et en Île-de-France. Sélectionnez votre adresse dans la liste, ou saisissez-la manuellement.</p>
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
@@ -141,6 +155,15 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
   .qfield input, .qfield textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
   .qfield input:focus, .qfield textarea:focus { outline: none; border-color: var(--blue-light); }
   .qhint { margin-top: 14px; font-size: 14px; color: var(--blue-light); background: rgba(46,111,174,.08); padding: 12px 14px; border-radius: 10px; }
+  /* Autocomplétion adresse */
+  .qac { position: relative; }
+  .qac-list { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-soft); max-height: 252px; overflow-y: auto; list-style: none; padding: 5px; }
+  .qac-list li { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--ink); line-height: 1.35; display: flex; align-items: center; gap: 10px; }
+  .qac-list li svg { flex: none; color: var(--blue-light); }
+  .qac-list li:hover, .qac-list li[aria-selected="true"] { background: var(--paper); }
+  .qac-list li b { font-weight: 500; }
+  .qac-list li .ac-ctx { color: var(--ink-soft); font-size: 12.5px; }
+  .qac-empty { padding: 12px; font-size: 13px; color: var(--ink-soft); }
   .qestim { margin-top: 20px; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 18px 20px; background: var(--paper); }
   .qestim-amount { font-family: var(--sora); font-size: 16px; color: var(--ink-soft); }
   .qestim-amount strong { font-size: 30px; font-weight: 600; color: var(--blue); }
@@ -247,6 +270,77 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
     }
     fillAttribution();
     preselectType();
+
+    // ── Autocomplétion d'adresse (Base Adresse Nationale, gratuite, sans clé) ──
+    (function setupAddressAutocomplete() {
+      var input = form.querySelector('#secteur-input');
+      var list = form.querySelector('#secteur-list');
+      if (!input || !list) return;
+      var IDF = ['75', '77', '78', '91', '92', '93', '94', '95']; // Paris + IDF
+      var PIN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+      var timer, items = [], active = -1, lastQuery = '';
+
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+      function close() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); active = -1; }
+      function open() { if (items.length) { list.hidden = false; input.setAttribute('aria-expanded', 'true'); } }
+
+      function render() {
+        list.innerHTML = items.map(function (f, i) {
+          var p = f.properties;
+          var ctx = [p.postcode, p.city].filter(Boolean).join(' ');
+          return '<li role="option" id="ac-opt-' + i + '" data-label="' + esc(p.label) + '">' + PIN +
+            '<span><b>' + esc(p.name || p.label) + '</b>' + (ctx ? ' <span class="ac-ctx">· ' + esc(ctx) + '</span>' : '') + '</span></li>';
+        }).join('');
+        open();
+      }
+
+      function choose(label) { input.value = label; input.style.borderColor = ''; items = []; close(); }
+
+      function highlight() {
+        Array.prototype.forEach.call(list.children, function (li, i) {
+          var on = i === active;
+          li.setAttribute('aria-selected', on ? 'true' : 'false');
+          if (on) { input.setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block: 'nearest' }); }
+        });
+      }
+
+      input.addEventListener('input', function () {
+        var q = input.value.trim();
+        if (q.length < 3) { items = []; close(); return; }
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          lastQuery = q;
+          fetch('https://api-adresse.data.gouv.fr/search/?limit=8&q=' + encodeURIComponent(q))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (lastQuery !== q) return; // ignore les réponses périmées
+              items = (data.features || []).filter(function (f) {
+                var pc = f.properties.postcode || '';
+                return IDF.indexOf(pc.slice(0, 2)) > -1;
+              }).slice(0, 6);
+              active = -1;
+              if (items.length) render(); else close();
+            })
+            .catch(function () { close(); }); // hors-ligne : saisie manuelle possible
+        }, 250);
+      });
+
+      // mousedown (avant le blur) pour valider le clic sur une suggestion
+      list.addEventListener('mousedown', function (e) {
+        var li = e.target.closest('li');
+        if (li && li.getAttribute('data-label')) choose(li.getAttribute('data-label'));
+      });
+
+      input.addEventListener('keydown', function (e) {
+        if (list.hidden || !items.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, items.length - 1); highlight(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); highlight(); }
+        else if (e.key === 'Enter' && active > -1) { e.preventDefault(); choose(list.children[active].getAttribute('data-label')); }
+        else if (e.key === 'Escape') { close(); }
+      });
+
+      input.addEventListener('blur', function () { setTimeout(close, 150); });
+    })();
 
     // Soumission
     form.addEventListener('submit', function (e) {
