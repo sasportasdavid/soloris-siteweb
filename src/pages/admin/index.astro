@@ -152,9 +152,12 @@ const STATUT_LABELS: Record<string, string> = {
         if (l.gads_creative_id) acqBits.push('Annonce : ' + esc(l.gads_creative_id));
         if (l.gclid) acqBits.push('gclid ✓');
         const acqInfo = acqBits.length ? `<br><span class="muted" style="font-size:10px;line-height:1.5">${acqBits.join('<br>')}</span>` : '';
+        const annexeTag = l.annexe
+          ? `<br><span style="background:rgba(46,111,174,.12);color:#1f4e7a;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span>`
+          : '';
         return `<tr>
           <td>${date}</td>
-          <td>${leadBadge}${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span></td>
+          <td>${leadBadge}${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span>${annexeTag}</td>
           <td>${esc(l.secteur || '—')}</td>
           <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
           <td><b>${esc(l.nom || '—')}</b><br><a href="tel:${esc(l.telephone)}">${esc(l.telephone || '')}</a><br><a href="mailto:${esc(l.email)}" style="font-size:11px">${esc(l.email || '')}</a></td>

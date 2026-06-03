@@ -68,6 +68,9 @@ async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<
   const ageLbl: Record<string, string> = { avant1949: 'avant 1949', intermediaire: '1949 à <15 ans', recent: '<15 ans' };
   const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
     .filter(Boolean).join(' · ');
+  const annexeLine = lead.annexe
+    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (+99 €)`
+    : '';
   const acqLine = (lead.gads_keyword || lead.campaign)
     ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
     : '';
@@ -81,6 +84,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<
       `📞 ${lead.telephone || '—'}`,
       lead.email ? `✉️ ${lead.email}` : '',
       `📋 ${bienLine}`,
+      annexeLine,
       lead.estimation ? `💶 estimation ${lead.estimation} €` : '',
       lead.secteur ? `📍 CP ${lead.secteur}` : '',
       acqLine,
@@ -102,6 +106,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<
     lines = [
       '🟢 Nouveau lead COMPLET — Soloris',
       `📋 ${bienLine}`,
+      annexeLine,
       `👤 ${lead.nom || '—'} (${prenom})`,
       `📞 ${lead.telephone || '—'}`,
       lead.email ? `✉️ ${lead.email}` : '',
@@ -137,16 +142,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   if (clean(body.website)) return json({ ok: true }, 200); // honeypot
 
-  let ip = 'unknown';
-  try { ip = clientAddress || 'unknown'; } catch { /* */ }
-  if (rateLimited(ip)) return json({ error: 'Trop de demandes, réessayez dans un instant.' }, 429);
-
   const source = clean(body.source, 60) || 'devis'; // canal : devis | contact | chat
   const leadStatus = clean(body.lead_status, 12) === 'partiel' ? 'partiel' : 'complet';
   const leadUid = clean(body.lead_uid, 60);
   const isContact = source === 'contact';
   const isChat = source === 'chat';
   const isPartial = leadStatus === 'partiel';
+
+  // Rate-limit UNIQUEMENT les upserts partiels (nombreux : 1 par étape + blur).
+  // ⚠️ Un lead COMPLET (la conversion) ne doit JAMAIS être rejeté par le rate-limit.
+  let ip = 'unknown';
+  try { ip = clientAddress || 'unknown'; } catch { /* */ }
+  if (isPartial && rateLimited(ip)) return json({ error: 'Trop de demandes, réessayez dans un instant.' }, 429);
 
   // Validation des listes blanches
   const type_demande = clean(body.type_demande, 20);
@@ -176,6 +183,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const surfaceNum = Number(body.surface);
   const estimationNum = Number(body.estimation);
 
+  // Option annexe (+99 €) : cave/parking (appartement) ou garage/dépendance (maison)
+  const ANNEXE_TYPES = ['cave_parking', 'garage_dependance'];
+  const annexeOn = body.annexe === '1' || body.annexe === 1 || body.annexe === true;
+  const annexeTypeRaw = clean(body.annexe_type, 30);
+  const annexeType = annexeOn && annexeTypeRaw && ANNEXE_TYPES.includes(annexeTypeRaw) ? annexeTypeRaw : '';
+
   // Payload pour la fonction RPC (la fonction applique nullif/cast)
   const payload: Record<string, string> = {
     lead_uid: leadUid || '',
@@ -187,6 +200,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     surface: Number.isFinite(surfaceNum) && surfaceNum > 0 ? String(Math.round(surfaceNum)) : '',
     secteur: clean(body.secteur, 120) || '',
     estimation: Number.isFinite(estimationNum) && estimationNum > 0 ? String(Math.round(estimationNum)) : '',
+    annexe: annexeOn ? '1' : '0',
+    annexe_type: annexeType,
     nom: nom || '',
     telephone: telephone || '',
     email: email || '',

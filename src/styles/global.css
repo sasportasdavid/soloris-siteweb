@@ -397,7 +397,8 @@ section { padding: 92px 0; }
 .qconsent { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
 .qconsent a { color: var(--blue-light); text-decoration: underline; }
 .qerror { color: #b3261e; font-size: 13px; }
-.qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+/* Honeypot anti-spam : présent dans le DOM, totalement masqué pour l'humain. */
+.qhp, .qhp * { position: absolute !important; left: -9999px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
 .qthanks { text-align: center; padding: 20px 10px; }
 .qthanks-ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
 .qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }

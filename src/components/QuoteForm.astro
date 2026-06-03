@@ -99,6 +99,15 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         <span>Maison en copropriété <span class="qopt-tag">+ 20 €</span></span>
       </label>
 
+      <label class="qcheck" id="annexe-appart-block" hidden>
+        <input type="checkbox" name="annexe_appart" value="1" />
+        <span>Cave, parking ou box à diagnostiquer <span class="qopt-tag">+ 99 €</span><span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
+      </label>
+      <label class="qcheck" id="annexe-maison-block" hidden>
+        <input type="checkbox" name="annexe_maison" value="1" />
+        <span>Garage ou dépendance à diagnostiquer <span class="qopt-tag">+ 99 €</span><span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
+      </label>
+
       <div class="qestim" id="estim" hidden>
         <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
         <p class="qestim-note">Estimation indicative tout compris, déplacement inclus. Devis exact confirmé immédiatement, sans engagement.</p>
@@ -184,7 +193,9 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qfield-group { margin-top: 18px; }
   .qgroup-label { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 9px; }
   .qcheck { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-family: var(--inter); font-size: 14px; color: var(--ink); cursor: pointer; }
-  .qcheck input { width: 18px; height: 18px; accent-color: var(--blue-light); flex: none; }
+  .qcheck input { width: 18px; height: 18px; accent-color: var(--blue-light); flex: none; align-self: start; margin-top: 2px; }
+  .qcheck-help { display: block; font-size: 12px; color: var(--ink-soft); margin-top: 3px; line-height: 1.45; }
+  .qcheck { align-items: flex-start; }
   .qrecap { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; font-size: 13.5px; color: var(--ink-soft); }
   .qrecap b { color: var(--blue); }
   .qrecap .qrecap-price { font-family: var(--sora); font-weight: 600; color: var(--blue); }
@@ -214,7 +225,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: 20, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: 20, ANNEXE_SUPP: 99, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -224,7 +235,19 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     var submitted = false;
     var reachedEstimation = false;
     var maxReached = 0;
+    var abStepsB = false; // variante B du test A/B (type de bien fusionné à l'étape surface)
     var AGE_IDX = { avant1949: 0, intermediaire: 1, recent: 2 };
+
+    // Option annexe (+99 €) : visible pour un pack (vente/location). Cave/parking pour
+    // un appartement, garage/dépendance pour une maison. Mutuellement exclusif selon le bien.
+    function annexeState() {
+      var d = demande(), b = bien();
+      var isPack = (d === 'vente' || d === 'location');
+      if (!isPack) return { on: false, type: '' };
+      if (b === 'appartement') { var c = form.querySelector('[name="annexe_appart"]'); return { on: !!(c && c.checked), type: 'cave_parking' }; }
+      if (b === 'maison') { var c2 = form.querySelector('[name="annexe_maison"]'); return { on: !!(c2 && c2.checked), type: 'garage_dependance' }; }
+      return { on: false, type: '' };
+    }
 
     function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
     function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
@@ -253,16 +276,20 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       });
     }
 
-    function showStep(i) {
+    function showStep(i, userAction) {
       steps.forEach(function (s, idx) { s.hidden = idx !== i; });
       dots.forEach(function (d, idx) { d.classList.toggle('active', idx <= i); });
       current = i;
-      updateEstimation(); // rafraîchit estimation + visibilité âge/copropriété
+      updateEstimation(); // rafraîchit estimation + visibilité âge/copropriété/annexe
       if (i === steps.length - 1) buildRecap(); // récap avant l'envoi (CRO #5)
       if (i > maxReached) { maxReached = i; if (i >= 1) upsertLead('partiel'); } // capture progressive
-      var f = steps[i].querySelector('input, select, textarea, button');
-      if (f) f.focus();
-      document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // ⚠️ Aucun scroll ni focus à l'initialisation (étape 0 au chargement) : sinon la page
+      // saute vers le formulaire et masque le hero/les prix. Uniquement sur action utilisateur.
+      if (userAction) {
+        var f = steps[i].querySelector('input, select, textarea, button');
+        if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
+        document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
 
     function validStep(i) {
@@ -302,9 +329,11 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       if (b) parts.push(b === 'maison' ? 'Maison' : 'Appartement');
       if (bi != null && SURF_LABELS[bi]) parts.push(SURF_LABELS[bi]);
       if (age && AGE_LABELS[age]) parts.push(AGE_LABELS[age]);
+      var ax = annexeState();
+      var annexeTxt = ax.on ? (ax.type === 'garage_dependance' ? ' + garage/dépendance (99 €)' : ' + cave/parking (99 €)') : '';
       var price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
         : ((d === 'vente' || d === 'location') ? ' — <span class="qrecap-price">sur devis</span>' : '');
-      el.innerHTML = '<b>Votre demande :</b> ' + parts.join(' · ') + price;
+      el.innerHTML = '<b>Votre demande :</b> ' + parts.join(' · ') + annexeTxt + price;
       el.hidden = parts.length === 0;
     }
 
@@ -315,12 +344,27 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       var hSurf = form.querySelector('[name="surface"]');
       var ageBlock = document.getElementById('age-block');
       var coproBlock = document.getElementById('copro-block');
+      var annexeAppartBlock = document.getElementById('annexe-appart-block');
+      var annexeMaisonBlock = document.getElementById('annexe-maison-block');
       var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien');
       var isPack = (d === 'vente' || d === 'location');
 
       if (ageBlock) ageBlock.hidden = !ageNeeded();
       if (coproBlock) coproBlock.hidden = !(b === 'maison' && isPack); // copropriété : maison + pack
+      if (annexeAppartBlock) annexeAppartBlock.hidden = !(b === 'appartement' && isPack);
+      if (annexeMaisonBlock) annexeMaisonBlock.hidden = !(b === 'maison' && isPack);
       if (hSurf && bi != null) hSurf.value = String(BANDS_MAX[bi]);
+
+      // Sous-titre conditionnel (P3) : pas de mention d'âge pour DPE seul / audit
+      var sub = document.getElementById('step3-sub');
+      if (sub) {
+        if (ageNeeded()) sub.textContent = abStepsB
+          ? 'Type de bien, surface et âge — on calcule votre estimation.'
+          : "Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.";
+        else sub.textContent = abStepsB
+          ? 'Type de bien et surface — on calcule votre estimation.'
+          : 'Indiquez la surface du bien pour votre estimation.';
+      }
 
       var value = null, surDevis = false;
       if (d === 'audit') { value = AUDIT_FROM; }
@@ -335,6 +379,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
             value += MAISON_SUPP;
             if (form.querySelector('[name="copropriete"]:checked')) value += COPRO_SUPP;
           }
+          if (annexeState().on) value += ANNEXE_SUPP; // cave/parking ou garage/dépendance (+99 €)
         }
       }
       if (surDevis) { amount.textContent = 'sur devis'; if (hEst) hEst.value = ''; }
@@ -344,7 +389,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     }
 
     form.addEventListener('change', function (e) {
-      if (['type_demande', 'type_bien', 'surface_band', 'age_bien', 'copropriete'].indexOf(e.target.name) > -1) {
+      if (['type_demande', 'type_bien', 'surface_band', 'age_bien', 'copropriete', 'annexe_appart', 'annexe_maison'].indexOf(e.target.name) > -1) {
         updateEstimation();
       }
       // Auto-avance sur les étapes à choix unique (sans cliquer « Continuer »)
@@ -352,7 +397,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         var stepEl = steps[current];
         if (isAutoStep(stepEl) && stepEl.contains(e.target)) {
           var idx = current;
-          setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1); }, 280);
+          setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1, true); }, 280);
         }
       }
     });
@@ -360,9 +405,9 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     form.addEventListener('click', function (e) {
       if (e.target.matches('[data-next]')) {
         if (!validStep(current)) return;
-        if (current < steps.length - 1) showStep(current + 1);
+        if (current < steps.length - 1) showStep(current + 1, true);
       } else if (e.target.matches('[data-prev]')) {
-        if (current > 0) showStep(current - 1);
+        if (current > 0) showStep(current - 1, true);
       }
     });
 
@@ -382,10 +427,12 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     }
     function buildPayload(status) {
       var a = getAcq();
+      var ax = annexeState();
       return {
         lead_uid: getLeadUid(), lead_status: status, source: 'devis',
         type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
         surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
+        annexe: ax.on ? '1' : '0', annexe_type: ax.on ? ax.type : '',
         nom: val('nom'), telephone: val('telephone'), email: val('email'), message: val('message'),
         utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
         term: a.utm_term || '', content: a.utm_content || '', gclid: a.gclid || '', fbclid: a.fbclid || '',
@@ -426,7 +473,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         clearTimeout(timer);
         if (validCp(input.value)) {
           var idx = current;
-          timer = setTimeout(function () { if (current === idx && idx < steps.length - 1) showStep(idx + 1); }, 700);
+          timer = setTimeout(function () { if (current === idx && idx < steps.length - 1) showStep(idx + 1, true); }, 700);
         }
       });
     })();
@@ -517,8 +564,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         s2.parentNode.removeChild(s2);
         steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
         if (dots[4]) dots[4].style.display = 'none'; // 4 étapes
-        var sub = document.getElementById('step3-sub');
-        if (sub) sub.textContent = 'Type de bien, surface et âge — on calcule votre estimation.';
+        abStepsB = true; // le sous-titre (avec/sans âge) est géré par updateEstimation
       } catch (e) { /* repli silencieux sur le parcours A */ }
     })();
 
