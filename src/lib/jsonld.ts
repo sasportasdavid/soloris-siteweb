@@ -65,9 +65,9 @@ export function localBusinessArea(areaName: string) {
   };
 }
 
-/** Service pour une offre donnée. */
-export function service(opts: { name: string; description: string; url: string; priceFrom: number }) {
-  return {
+/** Service pour une offre donnée. `priceFrom` optionnel (omis si « sur devis »). */
+export function service(opts: { name: string; description: string; url: string; priceFrom?: number }) {
+  const ld: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'Service',
     serviceType: opts.name,
@@ -76,7 +76,9 @@ export function service(opts: { name: string; description: string; url: string; 
     url: new URL(opts.url, SITE.url).href,
     provider: { '@id': ORG_ID },
     areaServed: SITE.areaServed.map((name) => ({ '@type': 'AdministrativeArea', name })),
-    offers: {
+  };
+  if (typeof opts.priceFrom === 'number') {
+    ld.offers = {
       '@type': 'Offer',
       priceCurrency: 'EUR',
       price: String(opts.priceFrom),
@@ -87,8 +89,9 @@ export function service(opts: { name: string; description: string; url: string; 
         valueAddedTaxIncluded: true,
       },
       availability: 'https://schema.org/InStock',
-    },
-  };
+    };
+  }
+  return ld;
 }
 
 /** FAQPage à partir d'une liste question/réponse. */

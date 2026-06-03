@@ -24,8 +24,20 @@ const url = `/diagnostics/${diag.slug}`;
 
 const packLinks = diag.inPack.map((p) => getOffer(p === 'vente' ? 'diagnostics-vente' : 'diagnostics-location')!);
 
+// Prix numérique pour le JSON-LD (omis si « sur devis »)
+const priceMatch = diag.priceLabel.match(/(\d+)/);
+const priceFrom = priceMatch ? Number(priceMatch[1]) : undefined;
+
+// Phrase tarif propre selon le cas
+const priceSuffix =
+  diag.priceLabel === 'sur devis'
+    ? ', selon votre bien et votre secteur, déplacement inclus.'
+    : diag.priceLabel.includes('offert')
+      ? ', déplacement inclus.'
+      : ', tout compris, déplacement inclus.';
+
 const jsonLd = [
-  service({ name: diag.name, description: diag.metaDesc, url, priceFrom: prixDes('dpe') }),
+  service({ name: diag.name, description: diag.metaDesc, url, priceFrom }),
   faqPage(diag.faq),
   breadcrumb([
     { name: 'Accueil', url: '/' },
@@ -85,7 +97,7 @@ const jsonLd = [
     <div class="wrap" style="max-width:820px">
       <div class="eyebrow">Tarif</div>
       <h2 class="sec-title">Combien ça coûte&nbsp;?</h2>
-      <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">{diag.priceLabel}</strong>, tout compris, déplacement inclus.</p>
+      <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">{diag.priceLabel}</strong>{priceSuffix}</p>
       {diag.inPack.length > 0 && (
         <p class="sec-intro mt-2">Ce diagnostic est inclus dans {diag.inPack.map((p, i) => (
           <span>{i > 0 ? ' et ' : ''}<a href={p === 'vente' ? '/diagnostics-vente' : '/diagnostics-location'}>{p === 'vente' ? 'le pack vente' : 'le pack location'}</a></span>

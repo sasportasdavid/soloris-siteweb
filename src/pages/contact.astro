@@ -1,0 +1,76 @@
+---
+/**
+ * /contact — formulaire court → /api/lead (source="contact") + coordonnées NAP.
+ */
+import Base from '../layouts/Base.astro';
+import ContactForm from '../components/ContactForm.astro';
+import { SITE, fullAddress } from '../lib/site';
+import { breadcrumb } from '../lib/jsonld';
+
+const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
+const addr = fullAddress();
+const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Contact', url: '/contact' }])];
+---
+<Base
+  title="Contact | Soloris — diagnostics immobiliers Paris & IDF"
+  description="Contactez Soloris pour vos diagnostics immobiliers à Paris et en Île-de-France : téléphone, email et formulaire. Réponse rapide, devis tout compris."
+  path="/contact"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Contact</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Contact</div>
+      <h1 class="sec-title" style="font-size:42px">Parlons de votre projet</h1>
+      <p class="sec-intro">Une question, un devis, un rendez-vous ? Écrivez-nous ou appelez-nous : on vous répond vite, en toute clarté.</p>
+
+      <div class="grid grid-2 mt-5" style="gap:44px;align-items:start">
+        <!-- Coordonnées -->
+        <div>
+          <div class="card" style="padding:28px">
+            <h2 style="font-family:var(--sora);font-weight:600;font-size:20px;color:var(--blue);margin-bottom:18px">Nous joindre</h2>
+            <ul class="incl" style="gap:16px">
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.56 2.81.69A2 2 0 0 1 22 16.92z"/></svg>
+                <span><b>Téléphone</b><br /><a href={telHref}>{SITE.phoneDisplay}</a></span>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+                <span><b>Email</b><br /><a href={`mailto:${SITE.email}`}>{SITE.email}</a></span>
+              </li>
+              {addr && (
+                <li>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span><b>Adresse</b><br /><span class="muted" style="font-size:14.5px">{addr}</span></span>
+                </li>
+              )}
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span><b>Zone d'intervention</b><br /><span class="muted" style="font-size:14.5px">Paris et Île-de-France (dont Seine-Saint-Denis 93)</span></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Formulaire -->
+        <div>
+          <ContactForm />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Besoin d'un devis tout de suite&nbsp;?</h2>
+      <p>Obtenez votre estimation tout compris en 2 minutes.</p>
+      <div class="cta">
+        <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+        <a href={telHref} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+      </div>
+    </div>
+  </section>
+</Base>

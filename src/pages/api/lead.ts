@@ -60,17 +60,30 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
   } catch { dateHeure = new Date().toISOString(); }
 
   // Texte brut : Telegram rend cliquables les numéros et emails sur mobile.
-  const lines = [
-    '🔔 Nouveau lead Soloris',
-    `📋 ${rec.type_demande || '—'} · ${rec.type_bien || '—'} · CP ${cp}`,
-    `👤 ${rec.nom || '—'} (${prenom})`,
-    `📞 ${rec.telephone || '—'}`,
-    `✉️ ${rec.email || '—'}`,
-    rec.secteur ? `📍 ${rec.secteur}` : '',
-    rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
-    `🔗 ${rec.landing_path || '/'}`,
-    `🕒 ${dateHeure}`,
-  ].filter(Boolean);
+  const isContact = rec.source === 'contact';
+  const lines = (isContact
+    ? [
+        '📨 Nouveau CONTACT Soloris',
+        `👤 ${rec.nom || '—'}`,
+        `📞 ${rec.telephone || '—'}`,
+        `✉️ ${rec.email || '—'}`,
+        rec.message ? `💬 ${rec.message}` : '',
+        `🔗 ${rec.landing_path || '/'}`,
+        `🕒 ${dateHeure}`,
+      ]
+    : [
+        '🔔 Nouveau lead Soloris',
+        `📋 ${rec.type_demande || '—'} · ${rec.type_bien || '—'} · CP ${cp}`,
+        `👤 ${rec.nom || '—'} (${prenom})`,
+        `📞 ${rec.telephone || '—'}`,
+        `✉️ ${rec.email || '—'}`,
+        rec.secteur ? `📍 ${rec.secteur}` : '',
+        rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
+        rec.message ? `💬 ${rec.message}` : '',
+        `🔗 ${rec.landing_path || '/'}`,
+        `🕒 ${dateHeure}`,
+      ]
+  ).filter(Boolean);
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000); // ne pas retarder la réponse

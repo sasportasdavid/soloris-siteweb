@@ -96,7 +96,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Quand le diagnostic électricité est-il requis ?', a: 'À la vente et à la location, pour les installations de plus de 15 ans.' },
       { q: 'Combien coûte-t-il ?', a: "Électricité et gaz sont réalisés ensemble : 190 € tout compris pour le combo, déplacement inclus." },
     ],
-    ready: false,
+    ready: true,
   },
   {
     slug: 'gaz',
@@ -118,7 +118,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Quand le diagnostic gaz est-il requis ?', a: 'À la vente et à la location, pour les installations de plus de 15 ans.' },
       { q: 'Combien coûte-t-il ?', a: 'Gaz et électricité sont réalisés ensemble : 190 € tout compris pour le combo, déplacement inclus.' },
     ],
-    ready: false,
+    ready: true,
   },
   {
     slug: 'termites',
@@ -140,7 +140,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Le diagnostic termites est-il obligatoire partout ?', a: "Non : uniquement dans les communes classées par arrêté préfectoral. Nous vérifions si votre bien est concerné au moment du devis." },
       { q: 'Combien coûte-t-il ?', a: 'Sur devis, selon votre bien et votre secteur. Demandez votre estimation, c’est sans engagement.' },
     ],
-    ready: false,
+    ready: true,
   },
   {
     slug: 'loi-carrez',
@@ -162,7 +162,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'La Loi Carrez est-elle obligatoire pour vendre ?', a: 'Oui, pour la vente d’un lot de copropriété : la surface privative doit être mentionnée dans l’acte.' },
       { q: 'Combien coûte le mesurage ?', a: 'Dès 70 € tout compris, déplacement inclus.' },
     ],
-    ready: false,
+    ready: true,
   },
   {
     slug: 'loi-boutin',
@@ -184,7 +184,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Quand la Loi Boutin s’applique-t-elle ?', a: 'Pour la location d’un logement vide : la surface habitable doit figurer dans le bail.' },
       { q: 'Combien coûte le mesurage ?', a: 'Dès 70 € tout compris, déplacement inclus.' },
     ],
-    ready: false,
+    ready: true,
   },
   {
     slug: 'erp',
@@ -206,7 +206,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'L’ERP est-il payant chez Soloris ?', a: 'Il est offert dans nos packs vente et location. À l’unité, il est proposé à 30 €.' },
       { q: 'Quelle est sa validité ?', a: "L'ERP doit être daté de moins de 6 mois au moment de la signature." },
     ],
-    ready: false,
+    ready: true,
   },
 ];
 

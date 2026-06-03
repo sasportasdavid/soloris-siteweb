@@ -1,0 +1,101 @@
+---
+/**
+ * Formulaire de contact court (nom, téléphone, email, message).
+ * Réutilise le pipeline lead : POST /api/lead avec source="contact"
+ * → enregistrement Supabase + notification Telegram (serveur, hors cookies).
+ * Pas de conversion Ads ici (réservée au devis et au clic téléphone).
+ */
+---
+<div class="cform card" id="cform">
+  <form id="contact-form" novalidate>
+    <div class="cgrid">
+      <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
+    </div>
+    <label class="qfield"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /></label>
+    <label class="qfield"><span>Votre message</span><textarea name="message" rows="4" required placeholder="Bonjour, je souhaite…"></textarea></label>
+
+    <!-- Honeypot anti-spam -->
+    <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+
+    <!-- Marqueur source + attribution utile -->
+    <input type="hidden" name="source" value="contact" />
+    <input type="hidden" name="gclid" /><input type="hidden" name="fbclid" /><input type="hidden" name="landing_path" />
+
+    <p class="qconsent">En envoyant ce message, vous acceptez d'être recontacté par Soloris. Vos données sont traitées conformément à notre <a href="/confidentialite">politique de confidentialité</a>.</p>
+
+    <div class="mt-3">
+      <button type="submit" class="btn-gold btn-block" id="csubmit">Envoyer mon message</button>
+      <p id="cerror" class="qerror" hidden></p>
+    </div>
+  </form>
+
+  <div class="qthanks" id="cthanks" hidden>
+    <div class="qthanks-ic" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h3>Message envoyé&nbsp;!</h3>
+    <p>Merci, nous avons bien reçu votre message. L'équipe Soloris vous répond très vite.</p>
+    <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
+  </div>
+</div>
+
+<style>
+  .cform { padding: 28px 28px 26px; max-width: 600px; margin: 0 auto; }
+  .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px) { .cgrid { grid-template-columns: 1fr; } }
+  .cform .qfield { margin-top: 14px; }
+  .cform .qfield:first-child, .cgrid .qfield { margin-top: 0; }
+  .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+</style>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById('contact-form');
+    if (!form) return;
+    var submit = document.getElementById('csubmit');
+    var errEl = document.getElementById('cerror');
+
+    // Attribution utile (gclid/fbclid/landing_path) — source reste "contact"
+    try {
+      var store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}');
+      ['gclid', 'fbclid', 'landing_path'].forEach(function (k) {
+        var input = form.querySelector('input[name="' + k + '"]');
+        if (input) input.value = store[k] || (k === 'landing_path' ? window.location.pathname : '');
+      });
+    } catch (e) {}
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errEl.hidden = true;
+      // validation simple
+      var ok = true;
+      ['nom', 'telephone', 'email', 'message'].forEach(function (n) {
+        var el = form.querySelector('[name="' + n + '"]');
+        var bad = !el.value.trim() || (n === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value));
+        el.style.borderColor = bad ? '#b3261e' : '';
+        if (bad) ok = false;
+      });
+      if (!ok) return;
+
+      submit.disabled = true; submit.textContent = 'Envoi…';
+      var fd = new FormData(form); var payload = {};
+      fd.forEach(function (v, k) { payload[k] = v; });
+
+      fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error('err');
+          try { if (window.dataLayer) window.dataLayer.push({ event: 'soloris_contact' }); } catch (e) {}
+          form.hidden = true;
+          document.getElementById('cthanks').hidden = false;
+          document.getElementById('cform').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        })
+        .catch(function () {
+          submit.disabled = false; submit.textContent = 'Envoyer mon message';
+          errEl.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+          errEl.hidden = false;
+        });
+    });
+  })();
+</script>
