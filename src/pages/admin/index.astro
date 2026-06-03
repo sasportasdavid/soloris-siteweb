@@ -1,8 +1,11 @@
 ---
 /**
- * /admin — mini-CRM. Protégé (Supabase Auth). Liste des leads, filtres, recherche,
- * changement de statut inline, RDV/montant/notes éditables, mini-stats.
- * Suivi du pipeline lead → RDV → facturé.
+ * /admin — mini-CRM Soloris. Protégé (Supabase Auth).
+ * - Liste des leads (tableau lisible) + recherche + filtres (statut, source, état du lead).
+ * - Panneau de détail (drawer) par lead : TOUS les champs visibles, suivi commercial
+ *   éditable (statut, RDV, montant, notes) et traçabilité d'acquisition complète
+ *   (UTM, ValueTrack Google Ads, gclid/fbclid, page d'entrée, référent, appareil, réseau…).
+ * - Mini-stats du mois (volume, part publicité, à rappeler, conversion, CA facturé).
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 
@@ -15,43 +18,45 @@ const STATUT_LABELS: Record<string, string> = {
   <div id="admin-loading" style="text-align:center;padding:60px 0;color:var(--ink-soft)">Chargement…</div>
 
   <div id="admin-app" hidden>
-    <h1 style="font-family:var(--sora);font-weight:600;font-size:28px;color:var(--blue);margin-bottom:4px">Leads</h1>
-    <p class="muted" style="font-size:14px;margin-bottom:24px">Suivi commercial — de la demande à la facturation.</p>
+    <h1 class="adm-h1">Leads</h1>
+    <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
     <!-- Mini stats -->
-    <div class="grid grid-4" style="gap:16px;margin-bottom:28px">
-      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Leads ce mois</div><div id="stat-month" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
-      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Dont publicité</div><div id="stat-ads" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div><div class="muted" id="stat-ads-sub" style="font-size:12px"></div></div>
-      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">Taux lead → facturé</div><div id="stat-conv" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
-      <div class="card" style="padding:18px 20px"><div class="muted" style="font-size:12px;font-family:var(--sora);letter-spacing:.08em;text-transform:uppercase">CA facturé</div><div id="stat-ca" style="font-family:var(--sora);font-weight:600;font-size:30px;color:var(--blue)">—</div></div>
+    <div class="adm-stats">
+      <div class="adm-stat"><div class="lbl">Leads ce mois</div><div class="val" id="stat-month">—</div></div>
+      <div class="adm-stat"><div class="lbl">Dont publicité</div><div class="val" id="stat-ads">—</div><div class="sub" id="stat-ads-sub"></div></div>
+      <div class="adm-stat"><div class="lbl">À rappeler</div><div class="val" id="stat-rappel">—</div><div class="sub">partiels avec tél.</div></div>
+      <div class="adm-stat"><div class="lbl">Lead → facturé</div><div class="val" id="stat-conv">—</div></div>
+      <div class="adm-stat"><div class="lbl">CA facturé</div><div class="val" id="stat-ca">—</div></div>
     </div>
 
     <!-- Filtres -->
-    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
-      <input id="search" type="search" placeholder="Rechercher (nom, email, code postal…)" style="flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px" />
-      <select id="filter-statut" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+    <div class="adm-filters">
+      <input id="search" type="search" placeholder="Rechercher (nom, email, tél, code postal, campagne, mot-clé…)" />
+      <select id="filter-statut">
         <option value="">Tous les statuts</option>
         {STATUTS.map((s) => <option value={s}>{STATUT_LABELS[s]}</option>)}
       </select>
-      <select id="filter-source" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+      <select id="filter-source">
         <option value="">Toutes sources</option>
         <option value="ads">Publicité</option>
         <option value="organique">Organique</option>
       </select>
-      <select id="filter-lead" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+      <select id="filter-lead">
         <option value="">Tous les leads</option>
         <option value="rappel">🟠 Partiels à rappeler</option>
         <option value="partiel">Partiels</option>
         <option value="complet">Complets</option>
       </select>
+      <span class="adm-count" id="adm-count"></span>
     </div>
 
     <!-- Tableau -->
-    <div style="overflow-x:auto">
-      <table class="ptable" style="font-size:13.5px">
+    <div class="adm-tablewrap">
+      <table class="adm-table">
         <thead>
           <tr>
-            <th>Date</th><th>Type</th><th>Code postal</th><th>Estim.</th><th>Contact</th><th>Source</th><th>Statut</th><th>RDV</th><th>Montant</th><th>Notes</th>
+            <th>Date</th><th>Lead</th><th>Contact</th><th>CP</th><th>Estim.</th><th>Acquisition</th><th>Statut</th><th aria-label="Détails"></th>
           </tr>
         </thead>
         <tbody id="leads-body"></tbody>
@@ -60,8 +65,91 @@ const STATUT_LABELS: Record<string, string> = {
     <p id="empty-state" class="muted" style="text-align:center;padding:40px 0" hidden>Aucun lead pour ces critères.</p>
   </div>
 
+  <!-- Panneau de détail (drawer) -->
+  <div id="adm-drawer" class="adm-drawer" hidden>
+    <div class="adm-drawer-backdrop" data-close></div>
+    <aside class="adm-drawer-panel" id="adm-drawer-panel" role="dialog" aria-label="Détail du lead"></aside>
+  </div>
+
+  <style is:global>
+    .adm-h1 { font-family:var(--sora); font-weight:600; font-size:28px; color:var(--blue); margin-bottom:4px; }
+    .adm-sub { font-size:14px; margin-bottom:24px; }
+
+    .adm-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:28px; }
+    @media (max-width:1000px){ .adm-stats{ grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:520px){ .adm-stats{ grid-template-columns:1fr 1fr; } }
+    .adm-stat { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+    .adm-stat .lbl { font-family:var(--sora); font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); }
+    .adm-stat .val { font-family:var(--sora); font-weight:600; font-size:28px; color:var(--blue); line-height:1.15; margin-top:4px; }
+    .adm-stat .sub { font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+
+    .adm-filters { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+    .adm-filters input[type="search"] { flex:1; min-width:240px; }
+    .adm-filters input, .adm-filters select { border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    .adm-filters select { font-family:var(--sora); cursor:pointer; }
+    .adm-filters input:focus, .adm-filters select:focus { outline:none; border-color:var(--blue-light); }
+    .adm-count { margin-left:auto; font-size:13px; color:var(--ink-soft); white-space:nowrap; }
+
+    .adm-tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .adm-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .adm-table th { text-align:left; font-family:var(--sora); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); padding:12px 14px; border-bottom:1px solid var(--line); background:var(--paper); white-space:nowrap; }
+    .adm-table td { padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+    .adm-table tbody tr:last-child td { border-bottom:none; }
+    .adm-row { cursor:pointer; transition:background .12s; }
+    .adm-row:hover { background:var(--paper); }
+    .adm-table .price { font-family:var(--sora); font-weight:600; color:var(--blue); white-space:nowrap; }
+    .adm-table a { color:var(--blue-light); }
+    .adm-cell-sub { color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
+    .adm-name { color:var(--blue); }
+    .adm-chev { color:var(--ink-soft); font-size:20px; text-align:center; }
+
+    .adm-pill { display:inline-block; font-family:var(--sora); font-weight:600; font-size:10px; padding:2px 8px; border-radius:100px; white-space:nowrap; }
+    .pill-partiel { background:rgba(245,166,35,.18); color:#8a5a00; }
+    .pill-complet { background:rgba(34,160,90,.14); color:#1d7a48; }
+    .pill-pub { background:rgba(245,166,35,.18); color:#8a5a00; }
+    .pill-orga { background:rgba(46,111,174,.10); color:var(--blue-light); }
+    .pill-annexe { background:rgba(46,111,174,.12); color:#1f4e7a; }
+    .pill-chan { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); }
+
+    .adm-statut { border:1px solid var(--line); border-radius:8px; padding:5px 8px; font-size:13px; font-family:var(--sora); background:#fff; cursor:pointer; }
+
+    /* Drawer */
+    .adm-drawer { position:fixed; inset:0; z-index:200; }
+    .adm-drawer[hidden] { display:none; }
+    .adm-drawer-backdrop { position:absolute; inset:0; background:rgba(11,42,74,.45); animation:admfade .15s ease; }
+    @keyframes admfade { from{opacity:0} to{opacity:1} }
+    .adm-drawer-panel { position:absolute; top:0; right:0; height:100%; width:500px; max-width:100vw; background:#fff; box-shadow:-12px 0 44px -14px rgba(0,0,0,.35); overflow-y:auto; padding:22px 26px 40px; animation:admslide .2s ease; }
+    @keyframes admslide { from{transform:translateX(24px);opacity:.6} to{transform:translateX(0);opacity:1} }
+    @media (max-width:560px){ .adm-drawer-panel{ width:100vw; padding:20px 18px 40px; } }
+
+    .adm-dhead { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .adm-dhead h2 { font-family:var(--sora); font-weight:600; font-size:20px; color:var(--blue); }
+    .adm-dhead .badges { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+    .adm-x { background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:26px; line-height:1; padding:0 4px; }
+    .adm-x:hover { color:var(--blue); }
+
+    .adm-sec { margin-top:24px; }
+    .adm-sec > h3 { font-family:var(--sora); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--blue-light); margin-bottom:12px; padding-bottom:7px; border-bottom:1px solid var(--line); }
+    .adm-dl { display:grid; grid-template-columns:140px 1fr; gap:8px 14px; font-size:13.5px; }
+    .adm-dl dt { color:var(--ink-soft); }
+    .adm-dl dd { margin:0; color:var(--ink); word-break:break-word; }
+    .adm-dl dd.hl { font-weight:600; color:var(--blue); }
+    .adm-dl dd a { color:var(--blue-light); }
+    .adm-msg { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13.5px; color:var(--ink); line-height:1.5; white-space:pre-wrap; }
+    .adm-empty-acq { font-size:13px; color:var(--ink-soft); font-style:italic; }
+
+    .adm-edit { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
+    .adm-edit .full { grid-column:1 / -1; }
+    .adm-edit label { display:block; font-size:11.5px; font-family:var(--sora); color:var(--ink-soft); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
+    .adm-edit input, .adm-edit select, .adm-edit textarea { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    .adm-edit select { font-family:var(--sora); }
+    .adm-edit input:focus, .adm-edit select:focus, .adm-edit textarea:focus { outline:none; border-color:var(--blue-light); }
+    .adm-edit textarea { resize:vertical; min-height:64px; }
+    .adm-saved { font-size:11.5px; color:#1d7a48; margin-left:8px; opacity:0; transition:opacity .2s; }
+    .adm-saved.on { opacity:1; }
+  </style>
+
   <script define:vars={{ STATUTS, STATUT_LABELS }}>
-    // Injecté pour le module ci-dessous
     window.__ADMIN_CONST = { STATUTS, STATUT_LABELS };
   </script>
 
@@ -71,15 +159,44 @@ const STATUT_LABELS: Record<string, string> = {
     const { STATUTS, STATUT_LABELS } = (window as any).__ADMIN_CONST;
     const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
+    const DEMANDE_LBL: Record<string, string> = { vente: 'Vente', location: 'Location', dpe: 'DPE seul', audit: 'Audit énergétique' };
+    const BIEN_LBL: Record<string, string> = { appartement: 'Appartement', maison: 'Maison' };
+    const AGE_LBL: Record<string, string> = { avant1949: 'Avant 1949', intermediaire: '1949 à <15 ans', recent: 'Moins de 15 ans' };
+    const ANNEXE_LBL: Record<string, string> = { cave_parking: 'Cave / parking / box', garage_dependance: 'Garage / dépendance' };
+    const MATCH_LBL: Record<string, string> = { e: 'Exact', p: 'Expression', b: 'Large' };
+    const DEVICE_LBL: Record<string, string> = { m: 'Mobile', c: 'Ordinateur', t: 'Tablette' };
+    const NETWORK_LBL: Record<string, string> = { g: 'Recherche Google', s: 'Partenaires recherche', d: 'Display', ytv: 'YouTube', vp: 'Partenaires vidéo' };
+
     let allLeads: any[] = [];
+
+    function esc(s: any): string {
+      return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+    }
+    function val(v: any): boolean { return v !== null && v !== undefined && String(v).trim() !== ''; }
+    function fmtDate(s: any): string {
+      if (!s) return '—';
+      return new Date(s).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+    function fmtDateTime(s: any): string {
+      if (!s) return '—';
+      return new Date(s).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
 
     function isAds(l: any): boolean {
       if (l.gclid || l.fbclid) return true;
       const m = (l.medium || '').toLowerCase();
-      const s = (l.source || '').toLowerCase();
+      const s = (l.utm_source || '').toLowerCase();
       if (['cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display'].includes(m)) return true;
       if (['google', 'meta', 'facebook', 'instagram', 'bing'].includes(s) && m && m !== 'organic') return true;
       return false;
+    }
+
+    function bienLine(l: any): string {
+      const bits = [];
+      if (l.type_bien) bits.push(BIEN_LBL[l.type_bien] || l.type_bien);
+      if (l.surface) bits.push(l.surface + ' m²');
+      if (l.age_bien) bits.push(AGE_LBL[l.age_bien] || l.age_bien);
+      return bits.join(' · ');
     }
 
     function renderStats(leads: any[]) {
@@ -89,6 +206,7 @@ const STATUT_LABELS: Record<string, string> = {
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
       const adsCount = thisMonth.filter(isAds).length;
+      const rappel = leads.filter((l) => l.lead_status === 'partiel' && l.telephone).length;
       const factures = leads.filter((l) => l.statut === 'facture');
       const ca = factures.reduce((sum, l) => sum + (Number(l.montant) || 0), 0);
       const convRate = leads.length ? Math.round((factures.length / leads.length) * 100) : 0;
@@ -96,20 +214,17 @@ const STATUT_LABELS: Record<string, string> = {
       (document.getElementById('stat-month') as HTMLElement).textContent = String(thisMonth.length);
       (document.getElementById('stat-ads') as HTMLElement).textContent = String(adsCount);
       (document.getElementById('stat-ads-sub') as HTMLElement).textContent = thisMonth.length ? `${Math.round((adsCount / thisMonth.length) * 100)}% du mois` : '';
+      (document.getElementById('stat-rappel') as HTMLElement).textContent = String(rappel);
       (document.getElementById('stat-conv') as HTMLElement).textContent = convRate + '%';
       (document.getElementById('stat-ca') as HTMLElement).textContent = fmtEUR(ca);
     }
 
     function statutSelect(lead: any): string {
       const opts = STATUTS.map((s: string) => `<option value="${s}" ${lead.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
-      return `<select data-id="${lead.id}" data-field="statut" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;font-family:var(--sora)">${opts}</select>`;
+      return `<select class="adm-statut" data-id="${lead.id}" data-field="statut">${opts}</select>`;
     }
 
-    function esc(s: any): string {
-      return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
-    }
-
-    function render() {
+    function getFiltered(): any[] {
       const q = (document.getElementById('search') as HTMLInputElement).value.toLowerCase().trim();
       const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
@@ -122,52 +237,153 @@ const STATUT_LABELS: Record<string, string> = {
       if (fLead === 'rappel') rows = rows.filter((l) => l.lead_status === 'partiel' && l.telephone);
       else if (fLead === 'partiel') rows = rows.filter((l) => l.lead_status === 'partiel');
       else if (fLead === 'complet') rows = rows.filter((l) => l.lead_status === 'complet');
-      if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword].some((v) => String(v ?? '').toLowerCase().includes(q)));
+      if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword, l.message].some((v) => String(v ?? '').toLowerCase().includes(q)));
 
-      // Partiels à rappeler (avec téléphone) en tête, puis par date décroissante
       rows.sort((a, b) => {
         const ra = a.lead_status === 'partiel' && a.telephone ? 1 : 0;
         const rb = b.lead_status === 'partiel' && b.telephone ? 1 : 0;
         if (ra !== rb) return rb - ra;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
+      return rows;
+    }
 
+    function render() {
+      const rows = getFiltered();
       const body = document.getElementById('leads-body') as HTMLElement;
       (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
+      (document.getElementById('adm-count') as HTMLElement).textContent = `${rows.length} lead${rows.length > 1 ? 's' : ''} affiché${rows.length > 1 ? 's' : ''}`;
 
       body.innerHTML = rows.map((l) => {
-        const date = new Date(l.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-        const sourceTag = isAds(l)
-          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Pub</span>`
-          : `<span style="background:rgba(46,111,174,.1);color:var(--blue-light);font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Organique</span>`;
         const leadBadge = l.lead_status === 'partiel'
-          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🟠 partiel</span> `
-          : l.lead_status === 'complet'
-            ? `<span style="background:rgba(34,160,90,.14);color:#1d7a48;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🟢 complet</span> `
-            : '';
-        const channel = l.source && l.source !== 'devis' ? ` <span class="muted" style="font-size:10px">${esc(l.source)}</span>` : '';
-        const acqBits: string[] = [];
-        if (l.gads_keyword) acqBits.push('🎯 Mot-clé ciblé : <b>' + esc(l.gads_keyword) + '</b>');
-        if (l.campaign) acqBits.push('Campagne : ' + esc(l.campaign));
-        if (l.gads_creative_id) acqBits.push('Annonce : ' + esc(l.gads_creative_id));
-        if (l.gclid) acqBits.push('gclid ✓');
-        const acqInfo = acqBits.length ? `<br><span class="muted" style="font-size:10px;line-height:1.5">${acqBits.join('<br>')}</span>` : '';
+          ? `<span class="adm-pill pill-partiel">🟠 partiel</span> `
+          : l.lead_status === 'complet' ? `<span class="adm-pill pill-complet">🟢 complet</span> ` : '';
+        const sourceTag = isAds(l) ? `<span class="adm-pill pill-pub">Pub</span>` : `<span class="adm-pill pill-orga">Organique</span>`;
         const annexeTag = l.annexe
-          ? `<br><span style="background:rgba(46,111,174,.12);color:#1f4e7a;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span>`
+          ? `<div style="margin-top:4px"><span class="adm-pill pill-annexe">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span></div>`
           : '';
-        return `<tr>
-          <td>${date}</td>
-          <td>${leadBadge}${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span>${annexeTag}</td>
+        const acqBits: string[] = [];
+        if (l.gads_keyword) acqBits.push('🎯 <b>' + esc(l.gads_keyword) + '</b>');
+        if (l.campaign) acqBits.push(esc(l.campaign));
+        const acq = acqBits.length ? `<div class="adm-cell-sub">${acqBits.join('<br>')}</div>` : (l.gclid ? '<div class="adm-cell-sub">gclid ✓</div>' : '');
+
+        return `<tr class="adm-row" data-open="${l.id}">
+          <td>${fmtDate(l.created_at)}</td>
+          <td>${leadBadge}<b class="adm-name">${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b><div class="adm-cell-sub">${esc(bienLine(l))}</div>${annexeTag}</td>
+          <td><b>${esc(l.nom || '—')}</b>${l.telephone ? `<div><a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a></div>` : ''}${l.email ? `<div class="adm-cell-sub"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></div>` : ''}</td>
           <td>${esc(l.secteur || '—')}</td>
           <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
-          <td><b>${esc(l.nom || '—')}</b><br><a href="tel:${esc(l.telephone)}">${esc(l.telephone || '')}</a><br><a href="mailto:${esc(l.email)}" style="font-size:11px">${esc(l.email || '')}</a></td>
-          <td>${sourceTag}${channel}${acqInfo}</td>
+          <td>${sourceTag}${acq}</td>
           <td>${statutSelect(l)}</td>
-          <td><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}" style="border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px"></td>
-          <td><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€" style="width:74px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-size:12px"></td>
-          <td><input type="text" data-id="${l.id}" data-field="notes" value="${esc(l.notes || '')}" placeholder="…" style="width:140px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-size:12px"></td>
+          <td class="adm-chev">›</td>
         </tr>`;
       }).join('');
+    }
+
+    // ── Panneau de détail ──────────────────────────────────────────────
+    function dlRow(dt: string, value: string, hl = false): string {
+      if (!val(value)) return '';
+      return `<dt>${dt}</dt><dd class="${hl ? 'hl' : ''}">${value}</dd>`;
+    }
+
+    function buildAcq(l: any): string {
+      const rows: string[] = [];
+      rows.push(dlRow('Canal', esc(l.source || 'devis')));
+      rows.push(dlRow('État du lead', l.lead_status ? esc(l.lead_status) : ''));
+      rows.push(dlRow('Source (utm_source)', esc(l.utm_source)));
+      rows.push(dlRow('Support / medium', esc(l.medium)));
+      rows.push(dlRow('Campagne', esc(l.campaign)));
+      rows.push(dlRow('Terme (utm_term)', esc(l.term)));
+      rows.push(dlRow('Contenu (utm_content)', esc(l.content)));
+      // ⚠️ Mot-clé CIBLÉ (jamais la recherche réelle de l'internaute, non transmise par Google).
+      rows.push(dlRow('Mot-clé ciblé (Google Ads)', l.gads_keyword ? '🎯 ' + esc(l.gads_keyword) : '', true));
+      rows.push(dlRow('ID campagne', esc(l.gads_campaign_id)));
+      rows.push(dlRow("ID groupe d'annonces", esc(l.gads_adgroup_id)));
+      rows.push(dlRow('ID annonce', esc(l.gads_creative_id)));
+      rows.push(dlRow('Correspondance', l.match_type ? esc(MATCH_LBL[l.match_type] || l.match_type) : ''));
+      rows.push(dlRow('Appareil', l.device ? esc(DEVICE_LBL[l.device] || l.device) : ''));
+      rows.push(dlRow('Réseau', l.network ? esc(NETWORK_LBL[l.network] || l.network) : ''));
+      rows.push(dlRow('gclid (Google)', l.gclid ? '✓ ' + esc(l.gclid) : ''));
+      rows.push(dlRow('fbclid (Meta)', l.fbclid ? '✓ ' + esc(l.fbclid) : ''));
+      rows.push(dlRow("Page d'entrée", esc(l.landing_path)));
+      rows.push(dlRow('Référent', esc(l.referrer)));
+      const filled = rows.filter(Boolean);
+      if (!filled.length) return '<p class="adm-empty-acq">Aucune donnée d\'acquisition (visite directe / organique).</p>';
+      return `<dl class="adm-dl">${filled.join('')}</dl>`;
+    }
+
+    function openDrawer(id: string) {
+      const l = allLeads.find((x) => x.id === id);
+      if (!l) return;
+      const panel = document.getElementById('adm-drawer-panel') as HTMLElement;
+
+      const badges: string[] = [];
+      if (l.lead_status === 'partiel') badges.push('<span class="adm-pill pill-partiel">🟠 partiel</span>');
+      if (l.lead_status === 'complet') badges.push('<span class="adm-pill pill-complet">🟢 complet</span>');
+      badges.push(isAds(l) ? '<span class="adm-pill pill-pub">Publicité</span>' : '<span class="adm-pill pill-orga">Organique</span>');
+      if (l.source && l.source !== 'devis') badges.push(`<span class="adm-pill pill-chan">${esc(l.source)}</span>`);
+
+      const demandeRows = [
+        dlRow('Projet', esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—'), true),
+        dlRow('Type de bien', l.type_bien ? esc(BIEN_LBL[l.type_bien] || l.type_bien) : ''),
+        dlRow('Surface', l.surface ? esc(l.surface) + ' m²' : ''),
+        dlRow('Âge du bien', l.age_bien ? esc(AGE_LBL[l.age_bien] || l.age_bien) : ''),
+        dlRow('Code postal', esc(l.secteur)),
+        dlRow('Estimation', l.estimation ? fmtEUR(l.estimation) : ''),
+        dlRow('Option annexe', l.annexe ? '🔧 ' + esc(ANNEXE_LBL[l.annexe_type] || l.annexe_type || 'annexe') + ' (+99 €)' : ''),
+      ].filter(Boolean).join('');
+
+      const contactRows = [
+        dlRow('Nom', esc(l.nom), true),
+        dlRow('Téléphone', l.telephone ? `<a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a>` : ''),
+        dlRow('Email', l.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : ''),
+      ].filter(Boolean).join('');
+
+      const statutOpts = STATUTS.map((s: string) => `<option value="${s}" ${l.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
+
+      const metaRows = [
+        dlRow('Reçu le', fmtDateTime(l.created_at)),
+        dlRow('Mis à jour', l.updated_at ? fmtDateTime(l.updated_at) : ''),
+        dlRow('Notif. partiel', l.notified_partial ? '✓ envoyée' : '—'),
+        dlRow('Notif. complet', l.notified_complete ? '✓ envoyée' : '—'),
+        dlRow('ID session', l.lead_uid ? esc(l.lead_uid) : ''),
+      ].filter(Boolean).join('');
+
+      panel.innerHTML = `
+        <div class="adm-dhead">
+          <div>
+            <h2>${esc(l.nom || 'Lead sans nom')}</h2>
+            <div class="badges">${badges.join('')}</div>
+          </div>
+          <button type="button" class="adm-x" data-close aria-label="Fermer">×</button>
+        </div>
+
+        <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
+
+        <div class="adm-sec"><h3>Contact</h3>
+          <dl class="adm-dl">${contactRows}</dl>
+          ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
+        </div>
+
+        <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
+          <div class="adm-edit">
+            <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
+            <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
+            <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
+            <div></div>
+            <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
+          </div>
+        </div>
+
+        <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
+
+        <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
+      `;
+      (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
+    }
+
+    function closeDrawer() {
+      (document.getElementById('adm-drawer') as HTMLElement).hidden = true;
     }
 
     async function update(id: string, field: string, value: any) {
@@ -178,18 +394,42 @@ const STATUT_LABELS: Record<string, string> = {
       const lead = allLeads.find((l) => l.id === id);
       if (lead) lead[field] = patch[field];
       renderStats(allLeads);
+      render();
+      const saved = document.getElementById('adm-saved');
+      if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
     }
 
     function wireEvents() {
       ['search', 'filter-statut', 'filter-source', 'filter-lead'].forEach((id) => {
         document.getElementById(id)!.addEventListener('input', render);
       });
-      const body = document.getElementById('leads-body')!;
-      body.addEventListener('change', (e) => {
+
+      // Clic sur une ligne → ouvre le détail (sauf sur les contrôles interactifs)
+      document.getElementById('leads-body')!.addEventListener('click', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('select, input, a, button, textarea')) return;
+        const tr = t.closest('.adm-row') as HTMLElement | null;
+        if (tr && tr.dataset.open) openDrawer(tr.dataset.open);
+      });
+      // Changement de statut inline dans le tableau
+      document.getElementById('leads-body')!.addEventListener('change', (e) => {
         const t = e.target as HTMLElement;
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
+
+      // Édition dans le drawer
+      document.getElementById('adm-drawer-panel')!.addEventListener('change', (e) => {
+        const t = e.target as HTMLElement;
+        const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
+        if (id && field) update(id, field, (t as HTMLInputElement).value);
+      });
+      // Fermeture du drawer (backdrop, bouton, Échap)
+      document.getElementById('adm-drawer')!.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('[data-close]')) closeDrawer();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
       document.getElementById('logout-btn')?.addEventListener('click', async () => {
         await supabase.auth.signOut();
         window.location.href = '/admin/login';
