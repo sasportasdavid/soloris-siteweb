@@ -14,6 +14,18 @@ import type { APIRoute } from 'astro';
 
 export const prerender = false;
 
+/**
+ * Lecture d'une variable d'environnement.
+ * ⚠️ Sur Vercel (adaptateur Node), les secrets NON `PUBLIC_` ne sont pas
+ * garantis dans `import.meta.env` au runtime (inlining build-time only).
+ * On lit donc `process.env` EN PRIORITÉ (valeur runtime fiable), avec repli sur
+ * `import.meta.env` (références statiques, pour le dev local).
+ */
+function envVar(runtime: string | undefined, buildtime: string | undefined): string | undefined {
+  return (runtime && runtime.length ? runtime : undefined) || (buildtime && buildtime.length ? buildtime : undefined);
+}
+const P = typeof process !== 'undefined' && process.env ? process.env : ({} as Record<string, string | undefined>);
+
 const DEMANDES = ['vente', 'location', 'dpe', 'audit'];
 const BIENS = ['appartement', 'maison'];
 const AGES = ['avant1949', 'intermediaire', 'recent'];
@@ -42,9 +54,12 @@ function json(data: unknown, status = 200): Response {
 
 /** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'. */
 async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<void> {
-  const token = import.meta.env.TELEGRAM_BOT_TOKEN;
-  const chatId = import.meta.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return;
+  const token = envVar(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
+  const chatId = envVar(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
+  if (!token || !chatId) {
+    console.error('[lead] Telegram non configuré (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID absents) — lead enregistré, notification ignorée.');
+    return;
+  }
 
   let dateHeure = '';
   try { dateHeure = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }); }
@@ -195,8 +210,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     referrer: clean(body.referrer, 255) || '',
   };
 
-  const url = import.meta.env.PUBLIC_SUPABASE_URL;
-  const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const url = envVar(P.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_URL);
+  const key = envVar(P.PUBLIC_SUPABASE_ANON_KEY, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
   if (!url || !key) return json({ error: 'Configuration serveur manquante.' }, 500);
 
   // Upsert via la fonction RPC SECURITY DEFINER
