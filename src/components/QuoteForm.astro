@@ -234,6 +234,25 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     function ageNeeded() { var d = demande(); return d === 'vente' || d === 'location'; }
     function bandIndex() { var s = form.querySelector('[name="surface_band"]'); return s && s.value !== '' ? Number(s.value) : null; }
 
+    // Étape « à choix unique » : un seul groupe de radios requis, aucun autre champ requis
+    function isAutoStep(step) {
+      if (!step) return false;
+      if (step.querySelector('select[required], input[required]:not([type="radio"]), textarea[required]')) return false;
+      var radios = step.querySelectorAll('input[type="radio"][required]');
+      if (!radios.length) return false;
+      var names = {}; radios.forEach(function (r) { names[r.name] = 1; });
+      return Object.keys(names).length === 1;
+    }
+    // Sur ces étapes, on masque « Continuer » (l'avance est automatique au choix)
+    function applyAutoSteps() {
+      steps.forEach(function (step) {
+        if (!isAutoStep(step)) return;
+        var next = step.querySelector('[data-next]'); if (next) next.style.display = 'none';
+        var prev = step.querySelector('[data-prev]'); var nav = step.querySelector('.qnav');
+        if (nav && !prev) nav.style.display = 'none';
+      });
+    }
+
     function showStep(i) {
       steps.forEach(function (s, idx) { s.hidden = idx !== i; });
       dots.forEach(function (d, idx) { d.classList.toggle('active', idx <= i); });
@@ -317,6 +336,14 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     form.addEventListener('change', function (e) {
       if (['type_demande', 'type_bien', 'surface_band', 'age_bien', 'copropriete'].indexOf(e.target.name) > -1) {
         updateEstimation();
+      }
+      // Auto-avance sur les étapes à choix unique (sans cliquer « Continuer »)
+      if (e.target.type === 'radio') {
+        var stepEl = steps[current];
+        if (isAutoStep(stepEl) && stepEl.contains(e.target)) {
+          var idx = current;
+          setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1); }, 280);
+        }
       }
     });
 
@@ -488,6 +515,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       } catch (e) { /* repli silencieux sur le parcours A */ }
     })();
 
+    applyAutoSteps();
     showStep(0);
   })();
 </script>
