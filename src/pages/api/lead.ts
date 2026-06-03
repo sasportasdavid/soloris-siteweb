@@ -60,13 +60,13 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
   } catch { dateHeure = new Date().toISOString(); }
 
   // Texte brut : Telegram rend cliquables les numéros et emails sur mobile.
-  const isContact = rec.source === 'contact';
-  const lines = (isContact
+  const channel = rec.source === 'chat' ? 'CHAT' : rec.source === 'contact' ? 'CONTACT' : null;
+  const lines = (channel
     ? [
-        '📨 Nouveau CONTACT Soloris',
+        `${channel === 'CHAT' ? '💬' : '📨'} Nouveau ${channel} Soloris`,
         `👤 ${rec.nom || '—'}`,
         `📞 ${rec.telephone || '—'}`,
-        `✉️ ${rec.email || '—'}`,
+        rec.email ? `✉️ ${rec.email}` : '',
         rec.message ? `💬 ${rec.message}` : '',
         `🔗 ${rec.landing_path || '/'}`,
         `🕒 ${dateHeure}`,
@@ -125,12 +125,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (type_bien && !BIENS.includes(type_bien)) return json({ error: 'Type de bien invalide.' }, 400);
   if (typologie && !TYPOS.includes(typologie)) return json({ error: 'Typologie invalide.' }, 400);
 
-  // Coordonnées obligatoires
+  // Coordonnées obligatoires (email facultatif pour le canal chat)
+  const source = clean(body.source, 120);
+  const isChat = source === 'chat';
   const nom = clean(body.nom, 120);
   const telephone = clean(body.telephone, 40);
   const email = clean(body.email, 160);
-  if (!nom || !telephone || !email) return json({ error: 'Nom, téléphone et email sont requis.' }, 400);
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
+  if (!nom || !telephone) return json({ error: 'Nom et téléphone sont requis.' }, 400);
+  if (!isChat && !email) return json({ error: 'Nom, téléphone et email sont requis.' }, 400);
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
 
   const surfaceNum = Number(body.surface);
   const estimationNum = Number(body.estimation);

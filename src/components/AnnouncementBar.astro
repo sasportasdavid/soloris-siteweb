@@ -1,0 +1,59 @@
+---
+/**
+ * Bandeau d'annonce fin, tout en haut (non sticky → ne mange pas le viewport,
+ * ne repousse pas le hero sous la flottaison). Refermable, mémorisé via un
+ * cookie strictement nécessaire (préférence d'affichage — pas de consentement
+ * requis, pas de localStorage). Coexiste avec la barre cookies (en bas) sans
+ * empilement. Contenu éditable dans src/lib/announcement.ts.
+ */
+import { ANNOUNCEMENT } from '../lib/announcement';
+const a = ANNOUNCEMENT;
+// Version du message : change le nom du cookie quand vous modifiez le texte,
+// pour ré-afficher le bandeau aux visiteurs qui l'avaient fermé.
+const COOKIE = 'soloris_announce_v1';
+---
+{a.enabled && a.text && (
+  <div id="announce-bar" class="announce" data-cookie={COOKIE} hidden>
+    <div class="wrap announce-inner">
+      <p class="announce-text">
+        <span class="announce-dot" aria-hidden="true"></span>
+        {a.text}
+        {a.href && a.linkText && (<a href={a.href}>{a.linkText} →</a>)}
+      </p>
+      <button type="button" id="announce-close" class="announce-close" aria-label="Fermer l'annonce">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+)}
+
+<style>
+  .announce { background: var(--blue); color: #fff; font-family: var(--sora); }
+  .announce-inner { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 9px 40px; position: relative; min-height: 38px; }
+  .announce-text { font-size: 13px; font-weight: 500; color: #EAF1F8; text-align: center; line-height: 1.35; margin: 0; }
+  .announce-text a { color: #fff; text-decoration: underline; white-space: nowrap; margin-left: 6px; }
+  .announce-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ray); margin-right: 8px; vertical-align: middle; }
+  .announce-close { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #9FB8D2; cursor: pointer; padding: 4px; display: flex; }
+  .announce-close:hover { color: #fff; }
+  @media (max-width: 620px) {
+    .announce-inner { padding: 8px 34px 8px 14px; justify-content: flex-start; }
+    .announce-text { font-size: 12px; text-align: left; }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var bar = document.getElementById('announce-bar');
+    if (!bar) return;
+    var cookie = bar.getAttribute('data-cookie');
+    // Cookie strictement nécessaire (préférence d'affichage) — pas de consentement requis
+    function hasCookie() { return document.cookie.split('; ').indexOf(cookie + '=1') !== -1; }
+    function setCookie() {
+      var d = new Date(); d.setTime(d.getTime() + 180 * 864e5); // 180 jours
+      document.cookie = cookie + '=1; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+    }
+    if (!hasCookie()) bar.hidden = false; // affiché seulement si non fermé
+    var close = document.getElementById('announce-close');
+    if (close) close.addEventListener('click', function () { bar.hidden = true; setCookie(); });
+  })();
+</script>
