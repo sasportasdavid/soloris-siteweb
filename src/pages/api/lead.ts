@@ -41,6 +41,53 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
+/**
+ * Notification Telegram interne à chaque nouveau lead.
+ * - Côté serveur, au moment de l'enregistrement (part même si les cookies sont refusés).
+ * - Variables d'env SERVEUR (jamais PUBLIC_) : TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+ * - Non bloquante : toute erreur est avalée (le lead reste enregistré).
+ */
+async function notifyTelegram(rec: Record<string, any>): Promise<void> {
+  const token = import.meta.env.TELEGRAM_BOT_TOKEN;
+  const chatId = import.meta.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return; // non configuré → on ignore silencieusement
+
+  const cp = (rec.secteur || '').match(/\b(\d{5})\b/)?.[1] || '—';
+  const prenom = (rec.nom || '').trim().split(/\s+/)[0] || '—';
+  let dateHeure = '';
+  try {
+    dateHeure = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' });
+  } catch { dateHeure = new Date().toISOString(); }
+
+  // Texte brut : Telegram rend cliquables les numéros et emails sur mobile.
+  const lines = [
+    '🔔 Nouveau lead Soloris',
+    `📋 ${rec.type_demande || '—'} · ${rec.type_bien || '—'} · CP ${cp}`,
+    `👤 ${rec.nom || '—'} (${prenom})`,
+    `📞 ${rec.telephone || '—'}`,
+    `✉️ ${rec.email || '—'}`,
+    rec.secteur ? `📍 ${rec.secteur}` : '',
+    rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
+    `🔗 ${rec.landing_path || '/'}`,
+    `🕒 ${dateHeure}`,
+  ].filter(Boolean);
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000); // ne pas retarder la réponse
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true }),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    console.error('[lead] notif Telegram échouée (lead bien enregistré):', e);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   let body: Record<string, unknown>;
   try {
@@ -126,6 +173,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     console.error('[lead] fetch error', e);
     return json({ error: "L'enregistrement a échoué." }, 500);
   }
+
+  // Notification interne (Telegram) — non bloquante, jamais une cause d'échec.
+  await notifyTelegram(record);
 
   return json({ ok: true }, 201);
 };

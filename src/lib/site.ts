@@ -17,7 +17,7 @@ export const SITE = {
   director: 'Yisrael Teboul', // président / directeur de la publication
   ape: '71.20B', // analyses, essais et inspections techniques
   baseline: 'Le diagnostic, en toute clarté.',
-  url: 'https://soloris.fr', // [À REMPLACER si domaine différent]
+  url: 'https://www.soloris.fr', // domaine servi (www) — canonicals, OG, JSON-LD
   // Coordonnées NAP — doivent être STRICTEMENT identiques partout (site, Google Business…)
   phone: '+33 1 88 33 95 85', // format international (E.164) pour les liens tel:
   phoneDisplay: '01 88 33 95 85',

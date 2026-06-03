@@ -10,11 +10,8 @@
 <div id="consent-banner" class="consent" role="dialog" aria-modal="false" aria-label="Gestion du consentement aux cookies" hidden>
   <div class="consent-inner">
     <div class="consent-text">
-      <strong>Votre vie privée, en toute clarté.</strong>
       <p>
-        Nous utilisons des cookies pour mesurer l'audience du site et améliorer nos campagnes.
-        Vous pouvez tout accepter, tout refuser, ou choisir précisément. Aucun cookie de mesure
-        ou de publicité n'est déposé sans votre accord.
+        🍪 Cookies : nous mesurons l'audience et nos campagnes, uniquement avec votre accord.
         <a href="/confidentialite">En savoir plus</a>.
       </p>
 
@@ -45,27 +42,38 @@
 </button>
 
 <style>
+  /* Barre fine en bas — ne recouvre pas le CTA/formulaire */
   .consent {
-    position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 1000;
-    background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-strong); max-width: 760px; margin: 0 auto;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+    background: rgba(255, 255, 255, .98); backdrop-filter: saturate(180%) blur(8px);
+    border-top: 1px solid var(--line); box-shadow: 0 -8px 30px -22px rgba(11, 42, 74, .5);
   }
-  .consent-inner { padding: 22px 24px; }
-  .consent-text strong { font-family: var(--sora); font-weight: 600; color: var(--blue); font-size: 16px; }
-  .consent-text p { font-size: 13.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.6; }
+  .consent-inner {
+    max-width: var(--wrap); margin: 0 auto; padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .consent-text { flex: 1; min-width: 240px; }
+  .consent-text p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
   .consent-text a { color: var(--blue-light); text-decoration: underline; }
-  .consent-options { margin-top: 14px; display: grid; gap: 10px; }
-  .consent-opt { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--ink); cursor: pointer; }
-  .consent-opt input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--blue-light); flex: none; }
+  .consent-options { margin-top: 10px; display: grid; gap: 8px; }
+  .consent-opt { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--ink); cursor: pointer; }
+  .consent-opt input { margin-top: 2px; width: 16px; height: 16px; accent-color: var(--blue-light); flex: none; }
   .consent-opt b { font-family: var(--sora); color: var(--blue); }
-  .consent-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  .consent-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
   .consent-reopen {
     position: fixed; left: 16px; bottom: 16px; z-index: 999;
     width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line);
     background: #fff; color: var(--blue-light); cursor: pointer; box-shadow: var(--shadow-soft);
     display: flex; align-items: center; justify-content: center;
   }
-  @media (max-width: 560px) { .consent-actions { justify-content: stretch; } .consent-actions button { flex: 1; } }
+  /* Le bouton flottant ne doit pas chevaucher la barre CTA mobile */
+  @media (max-width: 920px) { .consent-reopen { bottom: 84px; } }
+  @media (max-width: 620px) {
+    .consent-inner { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+    .consent-text p { font-size: 12.5px; }
+    .consent-actions { width: 100%; }
+    .consent-actions button { flex: 1; }
+  }
 </style>
 
 <script is:inline>
@@ -80,8 +88,9 @@
     var btnCustom = document.getElementById('consent-custom');
     var btnSave = document.getElementById('consent-save');
 
-    function show() { banner.hidden = false; reopen.hidden = true; }
-    function hide() { banner.hidden = true; reopen.hidden = false; }
+    // `consent-pending` masque la barre CTA mobile tant que le choix n'est pas fait
+    function show() { banner.hidden = false; reopen.hidden = true; document.body.classList.add('consent-pending'); }
+    function hide() { banner.hidden = true; reopen.hidden = false; document.body.classList.remove('consent-pending'); }
 
     function stored() {
       try { return JSON.parse(localStorage.getItem('soloris_consent') || 'null'); } catch (e) { return null; }

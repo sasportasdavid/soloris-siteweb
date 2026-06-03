@@ -1,0 +1,40 @@
+---
+/**
+ * Barre d'action fixe en bas d'écran, MOBILE uniquement.
+ * Deux actions à un tap : « Devis » (→ /devis) et « Appeler » (lien tel:).
+ * Le lien tel: déclenche automatiquement la conversion « appel » Google Ads
+ * + l'event dataLayer `soloris_phone_call` (écouteur global dans Analytics.astro).
+ * Masquée tant que le bandeau de consentement est ouvert (classe body.consent-pending)
+ * pour ne jamais recouvrir le choix cookies.
+ */
+import { SITE } from '../lib/site';
+const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
+---
+<div class="mobile-cta" role="region" aria-label="Actions rapides">
+  <a href="/devis" class="btn-gold mcta-btn">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+    Demander un devis
+  </a>
+  <a href={telHref} class="btn-blue mcta-btn" aria-label={`Appeler le ${SITE.phoneDisplay}`}>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.56 2.81.69A2 2 0 0 1 22 16.92z"/></svg>
+    Appeler
+  </a>
+</div>
+
+<style>
+  .mobile-cta {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    display: none;
+    gap: 10px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(251, 250, 246, .96); backdrop-filter: saturate(180%) blur(10px);
+    border-top: 1px solid var(--line);
+  }
+  .mcta-btn { flex: 1; padding: 13px 10px; font-size: 14px; }
+  /* Affichée uniquement sur mobile/tablette, et jamais pendant le choix cookies */
+  @media (max-width: 920px) {
+    .mobile-cta { display: flex; }
+    body.consent-pending .mobile-cta { display: none; }
+    /* évite que la barre masque le bas du contenu (footer, etc.) */
+    body { padding-bottom: 72px; }
+  }
+</style>

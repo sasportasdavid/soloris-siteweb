@@ -81,7 +81,7 @@ export const OFFERS: Offer[] = [
     nav: 'Diagnostics pour louer',
     navDesc: 'Le pack bailleur, clair et rapide',
     h1: 'Diagnostics pour louer — le pack bailleur',
-    title: 'Diagnostics pour louer (pack bailleur) | Soloris Paris & IDF',
+    title: 'Diagnostics pour louer (pack bailleur) | Soloris',
     metaDesc:
       'Pack diagnostics location tout compris pour bailleurs, sous 48 h à Paris et en Île-de-France. Rapport clair, diagnostiqueur certifié COFRAC. Devis en 2 min.',
     tagline: "Le dossier de diagnostic technique à annexer au bail, sans prise de tête.",

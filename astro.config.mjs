@@ -4,7 +4,7 @@ import vercel from '@astrojs/vercel';
 import sitemap from '@astrojs/sitemap';
 
 // Domaine canonique du site — [À REMPLACER] par le domaine de production réel.
-const SITE_URL = process.env.SITE_URL || 'https://soloris.fr';
+const SITE_URL = process.env.SITE_URL || 'https://www.soloris.fr';
 
 // https://astro.build/config
 export default defineConfig({
