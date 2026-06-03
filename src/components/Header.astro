@@ -6,6 +6,7 @@
 import Logo from './Logo.astro';
 import { SITE } from '../lib/site';
 import { OFFERS } from '../lib/offers';
+import { DIAGNOSTICS } from '../lib/diagnostics';
 
 interface Props { hideCta?: boolean }
 const { hideCta = false } = Astro.props;
@@ -33,6 +34,24 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
               <a class="menu-item" href={o.url}>
                 <b>{o.nav}</b>
                 <span>{o.navDesc}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+        <div class="has-menu">
+          <button class="menu-btn" aria-haspopup="true" aria-expanded="false">
+            Les diagnostics
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="menu-panel">
+            <a class="menu-item" href="/diagnostics">
+              <b>Tous les diagnostics</b>
+              <span>Le récapitulatif complet</span>
+            </a>
+            {DIAGNOSTICS.map((d) => (
+              <a class="menu-item" href={d.ready ? `/diagnostics/${d.slug}` : '/diagnostics'}>
+                <b>{d.nav}</b>
+                <span>{d.priceLabel}</span>
               </a>
             ))}
           </div>

@@ -1,0 +1,100 @@
+---
+/**
+ * /diagnostics — hub « Tous les diagnostics ».
+ * Liste l'ensemble des diagnostics (DPE & Audit → pages offres existantes ;
+ * les autres → pages dédiées /diagnostics/{slug} quand elles sont prêtes,
+ * sinon CTA devis). JSON-LD : FAQPage + Breadcrumb.
+ */
+import Base from '../../layouts/Base.astro';
+import ReassuranceBar from '../../components/ReassuranceBar.astro';
+import Faq from '../../components/Faq.astro';
+import { DIAGNOSTICS } from '../../lib/diagnostics';
+import { prixDes } from '../../lib/pricing';
+import { faqPage, breadcrumb } from '../../lib/jsonld';
+
+// Carte « DPE » et « Audit » pointent vers les pages offres existantes.
+type Card = { name: string; desc: string; price: string; href: string };
+const cards: Card[] = [
+  { name: 'DPE', desc: 'Diagnostic de Performance Énergétique (étiquette A→G).', price: `dès ${prixDes('dpe')} €`, href: '/dpe' },
+  { name: 'Audit énergétique', desc: 'Scénarios de travaux pour les logements énergivores.', price: `dès ${prixDes('audit')} €`, href: '/audit-energetique' },
+  ...DIAGNOSTICS.map((d) => ({
+    name: d.name,
+    desc: d.tagline,
+    price: d.priceLabel,
+    href: d.ready ? `/diagnostics/${d.slug}` : '/devis',
+  })),
+];
+
+const faq = [
+  { q: 'Quels diagnostics sont obligatoires pour vendre ?', a: "Selon le bien : DPE et ERP, complétés par l'amiante, le plomb, l'électricité, le gaz, le mesurage Loi Carrez et, en zone concernée, les termites. Nous établissons la liste applicable au devis." },
+  { q: 'Quels diagnostics pour louer ?', a: 'Généralement le DPE et l’ERP, complétés selon le logement par le plomb, l’électricité, le gaz et le mesurage Loi Boutin.' },
+  { q: 'Puis-je regrouper mes diagnostics ?', a: 'Oui : nos packs vente et location réunissent les diagnostics nécessaires en un seul rendez-vous, à un tarif tout compris (l’ERP est offert en pack).' },
+];
+
+const jsonLd = [
+  faqPage(faq),
+  breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Tous les diagnostics', url: '/diagnostics' }]),
+];
+---
+<Base
+  title="Tous les diagnostics immobiliers | Soloris"
+  description="Tous les diagnostics immobiliers : DPE, amiante, plomb, électricité, gaz, termites, Loi Carrez, Boutin, ERP, audit. Tarifs tout compris à Paris & IDF."
+  path="/diagnostics"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Tous les diagnostics</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Le référentiel</div>
+      <h1 class="sec-title" style="font-size:44px">Tous les diagnostics immobiliers</h1>
+      <p class="sec-intro">DPE, amiante, plomb, électricité, gaz, termites, mesurage, ERP, audit… Chaque diagnostic en clair : ce que c'est, quand il est requis, et son tarif tout compris.</p>
+    </div>
+  </section>
+
+  <ReassuranceBar />
+
+  <section class="section-line">
+    <div class="wrap">
+      <div class="grid grid-3">
+        {cards.map((c) => (
+          <a class="need-card" href={c.href}>
+            <h3>{c.name}</h3>
+            <p>{c.desc}</p>
+            <span class="go">{c.price.startsWith('dès') ? `${c.price} tout compris` : c.price}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+      </div>
+      <p class="muted mt-4" style="font-size:13.5px">« Dès » = à partir de ; le prix exact dépend des diagnostics applicables à votre bien et vous est confirmé au devis. Termites : sur devis selon le secteur.</p>
+    </div>
+  </section>
+
+  <!-- Packs -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Le plus simple</div>
+      <h2 class="sec-title">Regroupez tout dans un pack</h2>
+      <p class="sec-intro">Un seul rendez-vous, un tarif tout compris. L’ERP est offert dans les packs.</p>
+      <div class="grid grid-2 mt-5">
+        <a class="need-card" href="/diagnostics-vente"><h3>Pack vente</h3><p>Le dossier complet, prêt pour le notaire.</p><span class="go">Dès {prixDes('vente')} € tout compris
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+        <a class="need-card" href="/diagnostics-location"><h3>Pack location</h3><p>Les diagnostics à annexer au bail.</p><span class="go">Dès {prixDes('location')} € tout compris
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+      </div>
+    </div>
+  </section>
+
+  <Faq items={faq} title="Questions fréquentes" />
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Quel diagnostic vous faut-il&nbsp;?</h2>
+      <p>Obtenez votre estimation tout compris en 2 minutes.</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+    </div>
+  </section>
+</Base>
