@@ -1,19 +1,21 @@
 ---
 /**
  * Tracking conforme RGPD/CNIL.
- * - Google Consent Mode v2 : tout en `denied` par défaut.
- * - gtag (GA4 + Google Ads) chargé immédiatement MAIS sans consentement → aucun
- *   cookie publicitaire/analytics tant que l'utilisateur n'a pas accepté.
+ * - Google Consent Mode v2 : tout en `denied` par défaut, défini AVANT toute balise.
+ * - Google Tag Manager (GTM) : conteneur qui gère GA4 et les tags configurés
+ *   dans l'interface GTM ; il respecte le Consent Mode défini ci-dessus.
+ * - gtag (Google Ads) : chargé pour la conversion directe sur soumission du formulaire.
  * - Meta Pixel : chargé UNIQUEMENT après consentement publicité.
  * - Capture utm_* / gclid / fbclid → sessionStorage → champs cachés du formulaire.
- * Les IDs sont en variables d'env PUBLIC_* ([À REMPLACER]). Si non configurés,
- * les balises ne se chargent pas (pratique en dev), mais la logique reste en place.
+ * GTM et gtag partagent le même dataLayer et le même état de consentement.
  */
+const GTM = import.meta.env.PUBLIC_GTM_ID;
 const GA4 = import.meta.env.PUBLIC_GA4_ID;
 const GADS = import.meta.env.PUBLIC_GADS_ID;
 const META = import.meta.env.PUBLIC_META_PIXEL_ID;
 
 const PLACEHOLDER = '__A_REMPLACER__';
+const hasGTM = !!GTM && GTM !== PLACEHOLDER;
 const hasGtag = (!!GA4 && GA4 !== PLACEHOLDER) || (!!GADS && GADS !== PLACEHOLDER);
 const hasMeta = !!META && META !== PLACEHOLDER;
 ---
@@ -81,7 +83,20 @@ const hasMeta = !!META && META !== PLACEHOLDER;
   };
 </script>
 
-<!-- Librairie gtag (chargée sous Consent Mode : aucun cookie tant que "denied") -->
+<!-- Google Tag Manager (après le Consent Mode : les tags GTM respectent le consentement) -->
+{hasGTM && (
+  <script is:inline define:vars={{ GTM }}>
+    (function (w, d, s, l, i) {
+      w[l] = w[l] || [];
+      w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+      var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+      j.async = true; j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+      f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', GTM);
+  </script>
+)}
+
+<!-- Librairie gtag pour Google Ads (conversion). Sous Consent Mode : aucun cookie tant que "denied". -->
 {hasGtag && (
   <script
     type="text/partytown-ignore"

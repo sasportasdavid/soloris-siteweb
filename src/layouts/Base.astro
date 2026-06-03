@@ -35,6 +35,10 @@ interface Props {
   hideHeaderCta?: boolean;
 }
 const { title, description, path, ogImage, noindex, jsonLd, hideHeaderCta } = Astro.props;
+
+// Google Tag Manager — pour la balise <noscript> (repli sans JS)
+const GTM = import.meta.env.PUBLIC_GTM_ID;
+const hasGTM = !!GTM && GTM !== '__A_REMPLACER__';
 ---
 
 <!doctype html>
@@ -52,6 +56,9 @@ const { title, description, path, ogImage, noindex, jsonLd, hideHeaderCta } = As
     <Analytics />
   </head>
   <body>
+    {hasGTM && (
+      <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`} />
+    )}
     <a href="#main" class="skip-link">Aller au contenu</a>
     <Header hideCta={hideHeaderCta} />
     <main id="main">

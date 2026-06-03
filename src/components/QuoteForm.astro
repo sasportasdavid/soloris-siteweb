@@ -18,6 +18,14 @@ const DEMANDE_DESC: Record<string, string> = {
   audit: 'Logement classé F, G ou E',
 };
 
+// Repère « nombre de pièces » sous chaque typologie (étape 3)
+const TYPO_DESC: Record<string, string> = {
+  t1: '1 pièce principale',
+  t2: '2 pièces',
+  t3: '3 pièces',
+  t4: '4 pièces et plus',
+};
+
 const GADS = import.meta.env.PUBLIC_GADS_ID;
 const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
 const PLACEHOLDER = '__A_REMPLACER__';
@@ -52,9 +60,10 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
     <!-- Étape 2 — Type de bien -->
     <fieldset class="qstep" data-step="2" hidden>
       <legend>Quel type de bien&nbsp;?</legend>
+      <p class="qsub">Le tarif dépend du type de logement.</p>
       <div class="qgrid qgrid-2">
-        <label class="qopt"><input type="radio" name="type_bien" value="appartement" required /><span class="qopt-body"><b>Appartement</b></span></label>
-        <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b></span></label>
+        <label class="qopt"><input type="radio" name="type_bien" value="appartement" required /><span class="qopt-body"><b>Appartement</b><span class="qopt-desc">En immeuble / copropriété</span></span></label>
+        <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b><span class="qopt-desc">Individuelle — devis sur mesure</span></span></label>
       </div>
       <p class="qhint" id="maison-hint" hidden>Pour une maison, l'estimation se fait sur devis personnalisé&nbsp;: on vous rappelle rapidement.</p>
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
@@ -62,10 +71,11 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
 
     <!-- Étape 3 — Typologie + estimation -->
     <fieldset class="qstep" data-step="3" hidden>
-      <legend>Quelle est la typologie&nbsp;?</legend>
+      <legend>Quelle est la taille du logement&nbsp;?</legend>
+      <p class="qsub">Indiquez le nombre de pièces principales (hors cuisine et salle de bain).</p>
       <div class="qgrid qgrid-2">
         {Object.entries(TYPO_LABELS).map(([val, label]) => (
-          <label class="qopt"><input type="radio" name="typologie" value={val} required /><span class="qopt-body"><b>{label}</b></span></label>
+          <label class="qopt"><input type="radio" name="typologie" value={val} required /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{TYPO_DESC[val]}</span></span></label>
         ))}
       </div>
       <label class="qfield">
@@ -374,8 +384,11 @@ const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLAC
           if (!res.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
           // Conversions ads — respectent automatiquement le Consent Mode v2
           try {
-            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo });
-            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: Number(payload.estimation || 0) });
+            var val = Number(payload.estimation || 0);
+            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo, value: val, currency: 'EUR' });
+            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: val });
+            // Événement dataLayer pour GTM (déclencheur "soloris_lead" côté GTM)
+            if (window.dataLayer) window.dataLayer.push({ event: 'soloris_lead', value: val, currency: 'EUR', type_demande: payload.type_demande || '' });
             if (window.fbq) window.fbq('track', 'Lead');
           } catch (err) {}
           form.hidden = true;
