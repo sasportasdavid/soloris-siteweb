@@ -386,6 +386,23 @@ section { padding: 92px 0; }
 .prose .lead { font-size: 19px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 28px; }
 .prose blockquote { border-left: 3px solid var(--gold); padding: 6px 0 6px 20px; margin: 22px 0; font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--blue-light); }
 
+/* ── Champs de formulaire (partagés : contact, chat, etc.) ──
+   Le QuoteForm garde ses propres styles scopés ; ceux-ci servent aux
+   autres formulaires qui réutilisent les classes .qfield / .qthanks. */
+.qfield { display: block; }
+.qfield > span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
+.qfield input, .qfield textarea, .qfield select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
+.qfield input:focus, .qfield textarea:focus, .qfield select:focus { outline: none; border-color: var(--blue-light); }
+.qfield textarea { resize: vertical; min-height: 96px; }
+.qconsent { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
+.qconsent a { color: var(--blue-light); text-decoration: underline; }
+.qerror { color: #b3261e; font-size: 13px; }
+.qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+.qthanks { text-align: center; padding: 20px 10px; }
+.qthanks-ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+.qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }
+.qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+
 /* ── Utilitaires ────────────────────────────────────────── */
 .mt-0 { margin-top: 0; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; } .mt-4 { margin-top: 32px; } .mt-5 { margin-top: 44px; }
 .text-center { text-align: center; }

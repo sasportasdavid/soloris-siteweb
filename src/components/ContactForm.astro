@@ -7,6 +7,8 @@
  */
 ---
 <div class="cform card" id="cform">
+  <h2 class="cform-title">Écrivez-nous</h2>
+  <p class="cform-sub">On vous répond rapidement, en toute clarté.</p>
   <form id="contact-form" novalidate>
     <div class="cgrid">
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
@@ -41,12 +43,13 @@
 </div>
 
 <style>
-  .cform { padding: 28px 28px 26px; max-width: 600px; margin: 0 auto; }
+  .cform { padding: 28px 28px 26px; }
+  .cform-title { font-family: var(--sora); font-weight: 600; font-size: 20px; color: var(--blue); }
+  .cform-sub { font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 20px; }
   .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 480px) { .cgrid { grid-template-columns: 1fr; } }
   .cform .qfield { margin-top: 14px; }
-  .cform .qfield:first-child, .cgrid .qfield { margin-top: 0; }
-  .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .cgrid .qfield { margin-top: 0; }
 </style>
 
 <script is:inline>
