@@ -1,11 +1,14 @@
 /**
- * Endpoint serveur d'insertion des leads.
- * - Rendu à la demande (serverless Vercel).
- * - Validation stricte + liste blanche des valeurs + honeypot anti-spam.
- * - Insertion via l'API REST PostgREST de Supabase (fetch). On évite ainsi le
- *   client realtime de supabase-js, incompatible avec Node < 22 sans WebSocket.
- * - Utilise la clé service_role si configurée, sinon la clé anon (la RLS
- *   autorise l'INSERT public). La service_role n'est JAMAIS exposée au client.
+ * Endpoint serveur des leads (Soloris).
+ * - Capture PROGRESSIVE : upsert par session via la fonction Postgres SECURITY
+ *   DEFINER `upsert_lead` (la clé anon ne peut pas lire/écrire arbitrairement les
+ *   leads ; toute la logique est encapsulée côté base). Pas besoin de service_role.
+ * - Statut `partiel` (formulaire non finalisé) / `complet` (validé à 100 %).
+ * - ⚠️ La CONVERSION Google Ads est déclenchée CÔTÉ CLIENT, UNIQUEMENT sur
+ *   formulaire complet. Cet endpoint n'émet JAMAIS de conversion.
+ * - Notifications Telegram (serveur, hors cookies) anti double-envoi :
+ *   🟠 lead partiel (dès qu'un tel/email est présent) · 🟢 lead complet ·
+ *   📨 contact · 💬 chat. Les flags sont gérés atomiquement par la fonction.
  */
 import type { APIRoute } from 'astro';
 
@@ -13,12 +16,11 @@ export const prerender = false;
 
 const DEMANDES = ['vente', 'location', 'dpe', 'audit'];
 const BIENS = ['appartement', 'maison'];
-const TYPOS = ['t1', 't2', 't3', 't4'];
+const AGES = ['avant1949', 'intermediaire', 'recent'];
 
-// Limitation de débit simple (best-effort, mémoire de l'instance serverless)
 const HITS = new Map<string, number[]>();
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 5;
+const MAX_PER_WINDOW = 20; // capture progressive : plusieurs upserts par session
 
 function rateLimited(ip: string): boolean {
   const now = Date.now();
@@ -35,74 +37,71 @@ function clean(v: unknown, max = 500): string | null {
 }
 
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-/**
- * Notification Telegram interne à chaque nouveau lead.
- * - Côté serveur, au moment de l'enregistrement (part même si les cookies sont refusés).
- * - Variables d'env SERVEUR (jamais PUBLIC_) : TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
- * - Non bloquante : toute erreur est avalée (le lead reste enregistré).
- */
-async function notifyTelegram(rec: Record<string, any>): Promise<void> {
+/** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'. */
+async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<void> {
   const token = import.meta.env.TELEGRAM_BOT_TOKEN;
   const chatId = import.meta.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return; // non configuré → on ignore silencieusement
+  if (!token || !chatId) return;
 
-  const prenom = (rec.nom || '').trim().split(/\s+/)[0] || '—';
   let dateHeure = '';
-  try {
-    dateHeure = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' });
-  } catch { dateHeure = new Date().toISOString(); }
+  try { dateHeure = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }); }
+  catch { dateHeure = new Date().toISOString(); }
 
-  // Texte brut : Telegram rend cliquables les numéros et emails sur mobile.
   const ageLbl: Record<string, string> = { avant1949: 'avant 1949', intermediaire: '1949 à <15 ans', recent: '<15 ans' };
-  const bienLine = [rec.type_demande || '—', rec.type_bien, rec.age_bien ? ageLbl[rec.age_bien] || rec.age_bien : '', rec.surface ? `${rec.surface} m²` : '']
+  const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
     .filter(Boolean).join(' · ');
+  const acqLine = (lead.gads_keyword || lead.campaign)
+    ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
+    : '';
+  const prenom = (lead.nom || '').trim().split(/\s+/)[0] || '—';
 
   let lines: string[];
-  if (rec.source === 'devis-partiel') {
+  if (kind === 'partiel') {
     lines = [
-      '🟡 Lead PARTIEL (abandon) Soloris',
-      `📞 ${rec.telephone || '—'}`,
+      '🟠 Lead PARTIEL à rappeler — Soloris',
+      lead.nom ? `👤 ${lead.nom}` : '',
+      `📞 ${lead.telephone || '—'}`,
+      lead.email ? `✉️ ${lead.email}` : '',
       `📋 ${bienLine}`,
-      rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
-      rec.secteur ? `📍 CP ${rec.secteur}` : '',
-      `🔗 ${rec.landing_path || '/'}`,
+      lead.estimation ? `💶 estimation ${lead.estimation} €` : '',
+      lead.secteur ? `📍 CP ${lead.secteur}` : '',
+      acqLine,
+      `🔗 ${lead.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
     ];
-  } else if (rec.source === 'chat' || rec.source === 'contact') {
-    const isChatCh = rec.source === 'chat';
+  } else if (kind === 'chat' || kind === 'contact') {
+    const isChat = kind === 'chat';
     lines = [
-      `${isChatCh ? '💬' : '📨'} Nouveau ${isChatCh ? 'CHAT' : 'CONTACT'} Soloris`,
-      `👤 ${rec.nom || '—'}`,
-      `📞 ${rec.telephone || '—'}`,
-      rec.email ? `✉️ ${rec.email}` : '',
-      rec.message ? `💬 ${rec.message}` : '',
-      `🔗 ${rec.landing_path || '/'}`,
+      `${isChat ? '💬' : '📨'} Nouveau ${isChat ? 'CHAT' : 'CONTACT'} Soloris`,
+      `👤 ${lead.nom || '—'}`,
+      `📞 ${lead.telephone || '—'}`,
+      lead.email ? `✉️ ${lead.email}` : '',
+      lead.message ? `💬 ${lead.message}` : '',
+      `🔗 ${lead.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
     ];
   } else {
     lines = [
-      '🔔 Nouveau lead Soloris',
+      '🟢 Nouveau lead COMPLET — Soloris',
       `📋 ${bienLine}`,
-      `👤 ${rec.nom || '—'} (${prenom})`,
-      `📞 ${rec.telephone || '—'}`,
-      rec.email ? `✉️ ${rec.email}` : '',
-      rec.secteur ? `📍 CP ${rec.secteur}` : '',
-      rec.estimation ? `💶 estimation ${rec.estimation} €` : '',
-      rec.message ? `💬 ${rec.message}` : '',
-      `🔗 ${rec.landing_path || '/'}`,
+      `👤 ${lead.nom || '—'} (${prenom})`,
+      `📞 ${lead.telephone || '—'}`,
+      lead.email ? `✉️ ${lead.email}` : '',
+      lead.secteur ? `📍 CP ${lead.secteur}` : '',
+      lead.estimation ? `💶 estimation ${lead.estimation} €` : '',
+      lead.message ? `💬 ${lead.message}` : '',
+      acqLine,
+      `🔗 ${lead.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
     ];
   }
   lines = lines.filter(Boolean);
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 4000); // ne pas retarder la réponse
+  const timer = setTimeout(() => ctrl.abort(), 4000);
   try {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
@@ -119,106 +118,120 @@ async function notifyTelegram(rec: Record<string, any>): Promise<void> {
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Requête invalide.' }, 400);
-  }
+  try { body = await request.json(); } catch { return json({ error: 'Requête invalide.' }, 400); }
 
-  // Anti-spam : honeypot (on ignore silencieusement)
-  if (clean(body.website)) return json({ ok: true }, 200);
+  if (clean(body.website)) return json({ ok: true }, 200); // honeypot
 
-  // Limitation de débit
   let ip = 'unknown';
-  try { ip = clientAddress || 'unknown'; } catch { /* clientAddress indispo en static */ }
+  try { ip = clientAddress || 'unknown'; } catch { /* */ }
   if (rateLimited(ip)) return json({ error: 'Trop de demandes, réessayez dans un instant.' }, 429);
 
-  // Validation (liste blanche)
+  const source = clean(body.source, 60) || 'devis'; // canal : devis | contact | chat
+  const leadStatus = clean(body.lead_status, 12) === 'partiel' ? 'partiel' : 'complet';
+  const leadUid = clean(body.lead_uid, 60);
+  const isContact = source === 'contact';
+  const isChat = source === 'chat';
+  const isPartial = leadStatus === 'partiel';
+
+  // Validation des listes blanches
   const type_demande = clean(body.type_demande, 20);
   const type_bien = clean(body.type_bien, 20);
-  const typologie = clean(body.typologie, 10);
+  const age_bien = clean(body.age_bien, 20);
   if (type_demande && !DEMANDES.includes(type_demande)) return json({ error: 'Demande invalide.' }, 400);
   if (type_bien && !BIENS.includes(type_bien)) return json({ error: 'Type de bien invalide.' }, 400);
-  if (typologie && !TYPOS.includes(typologie)) return json({ error: 'Typologie invalide.' }, 400);
+  if (age_bien && !AGES.includes(age_bien)) return json({ error: 'Âge du bien invalide.' }, 400);
 
-  // Coordonnées (email obligatoire seulement pour le formulaire de contact)
-  const source = clean(body.source, 120);
-  const isContact = source === 'contact';
-  const isPartial = source === 'devis-partiel';
   const nom = clean(body.nom, 120);
   const telephone = clean(body.telephone, 40);
   const email = clean(body.email, 160);
-  if (!telephone) return json({ error: 'Le téléphone est requis.' }, 400);
-  if (!isPartial && !nom) return json({ error: 'Le nom est requis.' }, 400);
-  if (isContact && !email) return json({ error: "L'email est requis." }, 400);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
 
-  // Âge du bien (liste blanche)
-  const age_bien = clean(body.age_bien, 20);
-  if (age_bien && !['avant1949', 'intermediaire', 'recent'].includes(age_bien)) {
-    return json({ error: 'Âge du bien invalide.' }, 400);
+  // Exigences selon le contexte (lenientes pour un lead partiel)
+  if (isPartial) {
+    if (!leadUid) return json({ error: 'Identifiant de session requis.' }, 400);
+  } else if (isContact) {
+    if (!nom || !telephone || !email) return json({ error: 'Nom, téléphone et email sont requis.' }, 400);
+  } else if (isChat) {
+    if (!nom || !telephone) return json({ error: 'Nom et téléphone sont requis.' }, 400);
+  } else {
+    // devis complet
+    if (!nom || !telephone) return json({ error: 'Le nom et le téléphone sont requis.' }, 400);
   }
 
   const surfaceNum = Number(body.surface);
   const estimationNum = Number(body.estimation);
 
-  const record = {
-    type_demande,
-    type_bien,
-    typologie,
-    age_bien,
-    surface: Number.isFinite(surfaceNum) && surfaceNum > 0 ? Math.round(surfaceNum) : null,
-    secteur: clean(body.secteur, 120),
-    estimation: Number.isFinite(estimationNum) && estimationNum > 0 ? Math.round(estimationNum) : null,
-    nom,
-    telephone,
-    email,
-    message: clean(body.message, 1000),
-    source: clean(body.source, 120),
-    medium: clean(body.medium, 120),
-    campaign: clean(body.campaign, 160),
-    term: clean(body.term, 160),
-    content: clean(body.content, 160),
-    gclid: clean(body.gclid, 255),
-    fbclid: clean(body.fbclid, 255),
-    landing_path: clean(body.landing_path, 255),
-    statut: 'nouveau',
+  // Payload pour la fonction RPC (la fonction applique nullif/cast)
+  const payload: Record<string, string> = {
+    lead_uid: leadUid || '',
+    lead_status: leadStatus,
+    source,
+    type_demande: type_demande || '',
+    type_bien: type_bien || '',
+    age_bien: age_bien || '',
+    surface: Number.isFinite(surfaceNum) && surfaceNum > 0 ? String(Math.round(surfaceNum)) : '',
+    secteur: clean(body.secteur, 120) || '',
+    estimation: Number.isFinite(estimationNum) && estimationNum > 0 ? String(Math.round(estimationNum)) : '',
+    nom: nom || '',
+    telephone: telephone || '',
+    email: email || '',
+    message: clean(body.message, 1000) || '',
+    // acquisition
+    utm_source: clean(body.utm_source, 120) || '',
+    medium: clean(body.medium, 120) || '',
+    campaign: clean(body.campaign, 160) || '',
+    term: clean(body.term, 160) || '',
+    content: clean(body.content, 160) || '',
+    gclid: clean(body.gclid, 255) || '',
+    fbclid: clean(body.fbclid, 255) || '',
+    gads_keyword: clean(body.gads_keyword, 160) || '',
+    gads_campaign_id: clean(body.gads_campaign_id, 40) || '',
+    gads_adgroup_id: clean(body.gads_adgroup_id, 40) || '',
+    gads_creative_id: clean(body.gads_creative_id, 40) || '',
+    match_type: clean(body.match_type, 20) || '',
+    device: clean(body.device, 20) || '',
+    network: clean(body.network, 20) || '',
+    landing_path: clean(body.landing_path, 255) || '',
+    referrer: clean(body.referrer, 255) || '',
   };
 
-  // Clé : service_role si dispo, sinon anon (RLS autorise l'insert public)
   const url = import.meta.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = import.meta.env.SUPABASE_SERVICE_ROLE;
-  const anon = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-  const key = serviceRole && serviceRole !== '__A_REMPLACER__' ? serviceRole : anon;
-
+  const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return json({ error: 'Configuration serveur manquante.' }, 500);
 
-  // Insertion via PostgREST
+  // Upsert via la fonction RPC SECURITY DEFINER
+  let result: any;
   try {
-    const res = await fetch(`${url}/rest/v1/leads`, {
+    const res = await fetch(`${url}/rest/v1/rpc/upsert_lead`, {
       method: 'POST',
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify(record),
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload }),
     });
     if (!res.ok) {
-      const detail = await res.text();
-      console.error('[lead] PostgREST', res.status, detail);
+      console.error('[lead] RPC upsert_lead', res.status, await res.text());
       return json({ error: "L'enregistrement a échoué." }, 500);
     }
+    result = await res.json();
   } catch (e) {
-    console.error('[lead] fetch error', e);
+    console.error('[lead] fetch RPC error', e);
     return json({ error: "L'enregistrement a échoué." }, 500);
   }
 
-  // Notification interne (Telegram) — non bloquante, jamais une cause d'échec.
-  await notifyTelegram(record);
+  // Notifications (selon décision atomique de la fonction) — non bloquantes
+  try {
+    const lead = (result && result.lead) || {};
+    if (result && result.notify_complete) {
+      await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet');
+    } else if (result && result.notify_partial) {
+      await notifyTelegram(lead, 'partiel');
+    }
+  } catch (e) {
+    console.error('[lead] notif post-upsert', e);
+  }
 
-  return json({ ok: true }, 201);
+  // ⚠️ Aucune conversion ici : la conversion Google Ads est déclenchée côté client,
+  // uniquement quand le formulaire est validé à 100 %.
+  return json({ ok: true, lead_uid: result?.lead_uid || leadUid || null }, 201);
 };
 
 export const GET: APIRoute = () => json({ error: 'Méthode non autorisée.' }, 405);

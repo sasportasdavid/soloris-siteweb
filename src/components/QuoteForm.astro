@@ -130,11 +130,9 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
 
       <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
 
-      <input type="hidden" name="source" value="devis" />
-      <input type="hidden" name="surface" /><input type="hidden" name="age_bien_h" /><input type="hidden" name="estimation" />
-      <input type="hidden" name="utm_source" /><input type="hidden" name="medium" /><input type="hidden" name="campaign" />
-      <input type="hidden" name="term" /><input type="hidden" name="content" />
-      <input type="hidden" name="gclid" /><input type="hidden" name="fbclid" /><input type="hidden" name="landing_path" />
+      <input type="hidden" name="surface" /><input type="hidden" name="estimation" />
+
+      <p class="qprivacy">Vos informations sont enregistrées pour vous recontacter au sujet de votre demande.</p>
 
       <div class="qreassure">
         <span>🔒 Sans engagement</span><span>· Vos données restent confidentielles</span><span>· Réponse sous 48 h</span>
@@ -205,7 +203,8 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qnav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
   .qnav .btn-blue, .qnav .btn-gold { margin-left: auto; }
   .qreassure { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 18px; font-family: var(--sora); font-size: 12px; font-weight: 500; color: var(--blue-light); }
-  .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 12px; line-height: 1.55; }
+  .qprivacy { font-size: 11.5px; color: var(--ink-soft); margin-top: 14px; line-height: 1.5; font-style: italic; }
+  .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 10px; line-height: 1.55; }
   .qconsent a { color: var(--blue-light); text-decoration: underline; }
   .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
   .qerror { color: #b3261e; font-size: 13px; margin-top: 12px; }
@@ -224,6 +223,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     var current = 0;
     var submitted = false;
     var reachedEstimation = false;
+    var maxReached = 0;
     var AGE_IDX = { avant1949: 0, intermediaire: 1, recent: 2 };
 
     function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
@@ -259,6 +259,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       current = i;
       updateEstimation(); // rafraîchit estimation + visibilité âge/copropriété
       if (i === steps.length - 1) buildRecap(); // récap avant l'envoi (CRO #5)
+      if (i > maxReached) { maxReached = i; if (i >= 1) upsertLead('partiel'); } // capture progressive
       var f = steps[i].querySelector('input, select, textarea, button');
       if (f) f.focus();
       document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -365,16 +366,46 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       }
     });
 
-    // Attribution + préselection
-    (function fillAttribution() {
-      var store = {};
-      try { store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}'); } catch (e) {}
-      var map = { utm_source: 'utm_source', medium: 'utm_medium', campaign: 'utm_campaign', term: 'utm_term', content: 'utm_content', gclid: 'gclid', fbclid: 'fbclid', landing_path: 'landing_path' };
-      Object.keys(map).forEach(function (field) {
-        var input = form.querySelector('[name="' + field + '"]');
-        if (input) input.value = store[map[field]] || (field === 'landing_path' ? window.location.pathname : '');
-      });
-    })();
+    // ── Identifiant de session (capture progressive) + acquisition ──
+    function uuid() {
+      try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+    }
+    function getLeadUid() {
+      var name = 'soloris_lead_id';
+      var v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
+      if (!v) { v = uuid(); var d = new Date(); d.setTime(d.getTime() + 30 * 864e5); document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax'; }
+      return v;
+    }
+    function getAcq() {
+      try { var raw = (document.cookie.split('; ').find(function (c) { return c.indexOf('soloris_acq=') === 0; }) || '').split('=')[1]; return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; }
+    }
+    function buildPayload(status) {
+      var a = getAcq();
+      return {
+        lead_uid: getLeadUid(), lead_status: status, source: 'devis',
+        type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
+        surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
+        nom: val('nom'), telephone: val('telephone'), email: val('email'), message: val('message'),
+        utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
+        term: a.utm_term || '', content: a.utm_content || '', gclid: a.gclid || '', fbclid: a.fbclid || '',
+        gads_keyword: a.keyword || '', gads_campaign_id: a.campaignid || '', gads_adgroup_id: a.adgroupid || '',
+        gads_creative_id: a.creative || '', match_type: a.matchtype || '', device: a.device || '', network: a.network || '',
+        landing_path: a.landing_path || window.location.pathname, referrer: a.referrer || '',
+      };
+    }
+    // Upsert progressif (statut partiel) — fire & forget, AUCUNE conversion
+    function upsertLead(status) {
+      var p = buildPayload(status);
+      if (!p.type_demande) return; // rien tant que le projet n'est pas choisi
+      fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).catch(function () {});
+    }
+    // Capture progressive : à chaque nouvelle étape atteinte + au blur tel/email
+    ['telephone', 'email'].forEach(function (n) {
+      var el = form.querySelector('[name="' + n + '"]');
+      if (el) el.addEventListener('blur', function () { if (val('telephone') || val('email')) upsertLead('partiel'); });
+    });
+
     (function preselect() {
       var t = new URLSearchParams(window.location.search).get('type');
       if (!t) return;
@@ -417,18 +448,11 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     // ── Capture anticipée : lead « partiel » si abandon après l'estimation ──
     function sendPartial() {
       if (submitted || !reachedEstimation) return;
-      var tel = val('telephone').trim();
-      if (!tel) return;
+      if (!(val('telephone') || val('email'))) return; // uniquement si un contact a été saisi
       try {
-        var payload = {
-          source: 'devis-partiel', telephone: tel, nom: val('nom') || 'Lead partiel',
-          type_demande: demande(), type_bien: bien(), age_bien: checkedVal('age_bien') || '',
-          surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
-          gclid: val('gclid'), fbclid: val('fbclid'), landing_path: val('landing_path'),
-        };
-        navigator.sendBeacon('/api/lead', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-        submitted = true; // évite le doublon avec une soumission complète
-      } catch (e) {}
+        var p = buildPayload('partiel');
+        navigator.sendBeacon('/api/lead', new Blob([JSON.stringify(p)], { type: 'application/json' }));
+      } catch (e) {} // upsert idempotent (même lead_uid) — ne bloque pas une soumission ultérieure
     }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') sendPartial(); });
     window.addEventListener('pagehide', sendPartial);
@@ -440,11 +464,8 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       var btn = document.getElementById('qsubmit'); btn.disabled = true; btn.textContent = 'Envoi…';
       submitted = true; // n'envoie plus de partiel
 
-      var fd = new FormData(form); var payload = {};
-      fd.forEach(function (v2, k) { payload[k] = v2; });
-      // mappe utm_source → source ? non : source="devis" déjà ; on garde utm_source à part
-      payload.source = payload.utm_source || 'devis';
-      payload.age_bien = checkedVal('age_bien') || '';
+      // Lead COMPLET : upsert (statut complet) + conversion (uniquement ici)
+      var payload = buildPayload('complet');
 
       fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })

@@ -59,14 +59,7 @@
     var submit = document.getElementById('csubmit');
     var errEl = document.getElementById('cerror');
 
-    // Attribution utile (gclid/fbclid/landing_path) — source reste "contact"
-    try {
-      var store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}');
-      ['gclid', 'fbclid', 'landing_path'].forEach(function (k) {
-        var input = form.querySelector('input[name="' + k + '"]');
-        if (input) input.value = store[k] || (k === 'landing_path' ? window.location.pathname : '');
-      });
-    } catch (e) {}
+    function getAcq() { try { var raw = (document.cookie.split('; ').find(function (c) { return c.indexOf('soloris_acq=') === 0; }) || '').split('=')[1]; return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; } }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -84,6 +77,15 @@
       submit.disabled = true; submit.textContent = 'Envoi…';
       var fd = new FormData(form); var payload = {};
       fd.forEach(function (v, k) { payload[k] = v; });
+      payload.lead_status = 'complet';
+      var a = getAcq();
+      payload.gclid = a.gclid || ''; payload.fbclid = a.fbclid || '';
+      payload.utm_source = a.utm_source || ''; payload.medium = a.utm_medium || ''; payload.campaign = a.utm_campaign || '';
+      payload.term = a.utm_term || ''; payload.content = a.utm_content || '';
+      payload.gads_keyword = a.keyword || ''; payload.gads_campaign_id = a.campaignid || '';
+      payload.gads_adgroup_id = a.adgroupid || ''; payload.gads_creative_id = a.creative || '';
+      payload.match_type = a.matchtype || ''; payload.device = a.device || ''; payload.network = a.network || '';
+      payload.landing_path = a.landing_path || window.location.pathname; payload.referrer = a.referrer || '';
 
       fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })

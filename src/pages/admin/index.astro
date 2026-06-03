@@ -38,6 +38,12 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="ads">Publicité</option>
         <option value="organique">Organique</option>
       </select>
+      <select id="filter-lead" style="border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;font-family:var(--sora)">
+        <option value="">Tous les leads</option>
+        <option value="rappel">🟠 Partiels à rappeler</option>
+        <option value="partiel">Partiels</option>
+        <option value="complet">Complets</option>
+      </select>
     </div>
 
     <!-- Tableau -->
@@ -107,12 +113,24 @@ const STATUT_LABELS: Record<string, string> = {
       const q = (document.getElementById('search') as HTMLInputElement).value.toLowerCase().trim();
       const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
+      const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
 
       let rows = allLeads.slice();
       if (fStatut) rows = rows.filter((l) => l.statut === fStatut);
       if (fSource === 'ads') rows = rows.filter(isAds);
       if (fSource === 'organique') rows = rows.filter((l) => !isAds(l));
-      if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign].some((v) => String(v ?? '').toLowerCase().includes(q)));
+      if (fLead === 'rappel') rows = rows.filter((l) => l.lead_status === 'partiel' && l.telephone);
+      else if (fLead === 'partiel') rows = rows.filter((l) => l.lead_status === 'partiel');
+      else if (fLead === 'complet') rows = rows.filter((l) => l.lead_status === 'complet');
+      if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword].some((v) => String(v ?? '').toLowerCase().includes(q)));
+
+      // Partiels à rappeler (avec téléphone) en tête, puis par date décroissante
+      rows.sort((a, b) => {
+        const ra = a.lead_status === 'partiel' && a.telephone ? 1 : 0;
+        const rb = b.lead_status === 'partiel' && b.telephone ? 1 : 0;
+        if (ra !== rb) return rb - ra;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
       const body = document.getElementById('leads-body') as HTMLElement;
       (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
@@ -120,15 +138,27 @@ const STATUT_LABELS: Record<string, string> = {
       body.innerHTML = rows.map((l) => {
         const date = new Date(l.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
         const sourceTag = isAds(l)
-          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Pub${l.campaign ? ' · ' + esc(l.campaign) : ''}</span>`
+          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Pub</span>`
           : `<span style="background:rgba(46,111,174,.1);color:var(--blue-light);font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;font-family:var(--sora)">Organique</span>`;
+        const leadBadge = l.lead_status === 'partiel'
+          ? `<span style="background:rgba(245,166,35,.18);color:#8a5a00;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🟠 partiel</span> `
+          : l.lead_status === 'complet'
+            ? `<span style="background:rgba(34,160,90,.14);color:#1d7a48;font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;font-family:var(--sora)">🟢 complet</span> `
+            : '';
+        const channel = l.source && l.source !== 'devis' ? ` <span class="muted" style="font-size:10px">${esc(l.source)}</span>` : '';
+        const acqBits: string[] = [];
+        if (l.gads_keyword) acqBits.push('🎯 Mot-clé ciblé : <b>' + esc(l.gads_keyword) + '</b>');
+        if (l.campaign) acqBits.push('Campagne : ' + esc(l.campaign));
+        if (l.gads_creative_id) acqBits.push('Annonce : ' + esc(l.gads_creative_id));
+        if (l.gclid) acqBits.push('gclid ✓');
+        const acqInfo = acqBits.length ? `<br><span class="muted" style="font-size:10px;line-height:1.5">${acqBits.join('<br>')}</span>` : '';
         return `<tr>
           <td>${date}</td>
-          <td>${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span></td>
+          <td>${leadBadge}${esc(l.type_demande || '—')}<br><span class="muted" style="font-size:11px">${esc(l.type_bien || '')}${l.surface ? ' · ' + esc(l.surface) + ' m²' : ''}${l.age_bien ? ' · ' + esc(l.age_bien) : ''}</span></td>
           <td>${esc(l.secteur || '—')}</td>
           <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
           <td><b>${esc(l.nom || '—')}</b><br><a href="tel:${esc(l.telephone)}">${esc(l.telephone || '')}</a><br><a href="mailto:${esc(l.email)}" style="font-size:11px">${esc(l.email || '')}</a></td>
-          <td>${sourceTag}</td>
+          <td>${sourceTag}${channel}${acqInfo}</td>
           <td>${statutSelect(l)}</td>
           <td><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}" style="border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px"></td>
           <td><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€" style="width:74px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-size:12px"></td>
@@ -148,7 +178,7 @@ const STATUT_LABELS: Record<string, string> = {
     }
 
     function wireEvents() {
-      ['search', 'filter-statut', 'filter-source'].forEach((id) => {
+      ['search', 'filter-statut', 'filter-source', 'filter-lead'].forEach((id) => {
         document.getElementById(id)!.addEventListener('input', render);
       });
       const body = document.getElementById('leads-body')!;

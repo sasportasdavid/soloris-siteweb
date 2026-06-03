@@ -107,14 +107,18 @@
       if (!ok) return;
       send.disabled = true; send.textContent = 'Envoi…';
 
-      var store = {};
-      try { store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}'); } catch (e) {}
+      var a = {};
+      try { var raw = (document.cookie.split('; ').find(function (c) { return c.indexOf('soloris_acq=') === 0; }) || '').split('=')[1]; a = raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) {}
       var payload = {
-        source: 'chat',
+        source: 'chat', lead_status: 'complet',
         nom: form.nom.value, telephone: form.telephone.value, message: form.message.value,
         website: form.website.value,
-        gclid: store.gclid || '', fbclid: store.fbclid || '',
-        landing_path: (store.landing_path || window.location.pathname),
+        gclid: a.gclid || '', fbclid: a.fbclid || '',
+        utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
+        term: a.utm_term || '', content: a.utm_content || '',
+        gads_keyword: a.keyword || '', gads_campaign_id: a.campaignid || '', gads_adgroup_id: a.adgroupid || '',
+        gads_creative_id: a.creative || '', match_type: a.matchtype || '', device: a.device || '', network: a.network || '',
+        landing_path: a.landing_path || window.location.pathname, referrer: a.referrer || '',
       };
 
       fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })

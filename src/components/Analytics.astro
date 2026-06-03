@@ -47,20 +47,25 @@ const PHONE_SEND_TO =
   if (GA4 && GA4 !== '__A_REMPLACER__') gtag('config', GA4, { anonymize_ip: true });
   if (GADS && GADS !== '__A_REMPLACER__') gtag('config', GADS);
 
-  // ── Capture d'attribution publicitaire ─────────────────────────────
-  (function captureAttribution() {
+  // ── Capture d'acquisition (cookie first-party, PREMIÈRE TOUCHE, 30 j) ─────
+  // gclid + UTM + ValueTrack Google Ads (keyword/campaignid/adgroupid/creative/
+  // matchtype/device/network) + landing_path + referrer. Cookie strictement
+  // first-party à usage interne (CRM) ; l'envoi vers Google/GA reste soumis au
+  // Consent Mode. NB : « keyword » = mot-clé CIBLÉ, jamais la requête réelle.
+  (function captureAcquisition() {
     try {
+      var name = 'soloris_acq';
+      var existing = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
+      if (existing) return; // première touche conservée
       var params = new URLSearchParams(window.location.search);
-      var keys = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'];
-      var store = JSON.parse(sessionStorage.getItem('soloris_attribution') || '{}');
-      var changed = false;
-      keys.forEach(function (k) {
-        var v = params.get(k);
-        if (v) { store[k] = v; changed = true; }
-      });
-      if (!store.landing_path) { store.landing_path = window.location.pathname; changed = true; }
-      if (changed) sessionStorage.setItem('soloris_attribution', JSON.stringify(store));
-    } catch (e) { /* sessionStorage indisponible : on ignore */ }
+      var keys = ['gclid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'keyword', 'campaignid', 'adgroupid', 'creative', 'matchtype', 'device', 'network'];
+      var acq = {};
+      keys.forEach(function (k) { var v = params.get(k); if (v) acq[k] = v.slice(0, 255); });
+      acq.landing_path = window.location.pathname;
+      try { var ref = document.referrer || ''; if (ref && new URL(ref).host !== window.location.host) acq.referrer = ref.slice(0, 255); } catch (e) {}
+      var d = new Date(); d.setTime(d.getTime() + 30 * 864e5);
+      document.cookie = name + '=' + encodeURIComponent(JSON.stringify(acq)) + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+    } catch (e) { /* cookies indisponibles : on ignore */ }
   })();
 
   // ── Helpers de consentement (appelés par le bandeau CNIL) ───────────
