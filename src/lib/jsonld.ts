@@ -57,6 +57,14 @@ export function localBusiness() {
   return ld;
 }
 
+/** LocalBusiness ciblé sur une zone précise (pages locales). */
+export function localBusinessArea(areaName: string) {
+  return {
+    ...localBusiness(),
+    areaServed: { '@type': 'City', name: areaName },
+  };
+}
+
 /** Service pour une offre donnée. */
 export function service(opts: { name: string; description: string; url: string; priceFrom: number }) {
   return {

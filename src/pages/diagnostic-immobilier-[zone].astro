@@ -1,0 +1,142 @@
+---
+/**
+ * Gabarit des pages locales : /diagnostic-immobilier-{zone}
+ * Une seule route dynamique alimentée par ZONES (scalable : ajouter une zone =
+ * une entrée dans src/lib/zones.ts). Slugs additifs, aucun slug existant touché.
+ * JSON-LD : LocalBusiness (areaServed = zone) + FAQPage + BreadcrumbList.
+ * Conformité : aucune promesse de résultat DPE, aucun « pas cher », prix = grille.
+ */
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import ReassuranceBar from '../components/ReassuranceBar.astro';
+import OfferCard from '../components/OfferCard.astro';
+import PricingTable from '../components/PricingTable.astro';
+import Reviews from '../components/Reviews.astro';
+import Faq from '../components/Faq.astro';
+import { OFFERS } from '../lib/offers';
+import { prixDes } from '../lib/pricing';
+import { ZONES, type Zone } from '../lib/zones';
+import { localBusinessArea, faqPage, breadcrumb } from '../lib/jsonld';
+
+export function getStaticPaths() {
+  return ZONES.map((z) => ({ params: { zone: z.slug }, props: { zone: z } }));
+}
+
+interface Props { zone: Zone }
+const { zone } = Astro.props;
+const url = `/diagnostic-immobilier-${zone.slug}`;
+const where = `${zone.prep} ${zone.name}`;
+
+const title = `Diagnostic immobilier ${where} | Soloris`;
+
+const faq = [
+  {
+    q: `Intervenez-vous ${where} ?`,
+    a: `Oui. Soloris réalise vos diagnostics immobiliers ${where} (${zone.dept}) et dans toute l'Île-de-France, avec un rendez-vous et un rapport sous 48 h dans la plupart des cas.`,
+  },
+  {
+    q: `Combien coûte un DPE ${where} ?`,
+    a: `Un DPE est tout compris dès ${prixDes('dpe')} € (studio/T1), déplacement inclus, le prix variant selon la typologie. Vous obtenez une estimation immédiate via notre formulaire de devis.`,
+  },
+  {
+    q: `Quels diagnostics sont nécessaires pour vendre ${where} ?`,
+    a: `Selon le bien : DPE et ERP, complétés par l'amiante, le plomb, l'électricité, le gaz, le mesurage Loi Carrez et, en zone concernée, les termites. Nous établissons la liste applicable à votre logement au moment du devis.`,
+  },
+  {
+    q: `Quels sont vos délais ${where} ?`,
+    a: `Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas ${where} et en Île-de-France.`,
+  },
+];
+
+const jsonLd = [
+  localBusinessArea(zone.name),
+  faqPage(faq),
+  breadcrumb([
+    { name: 'Accueil', url: '/' },
+    { name: `Diagnostic immobilier ${where}`, url },
+  ]),
+];
+---
+<Base title={title} description={zone.metaDesc} path={url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+      <a href="/">Accueil</a> <span>/</span> <span aria-current="page">Diagnostic immobilier {where}</span>
+    </nav>
+  </div>
+
+  <Hero
+    tagpill={`${zone.dept} · Certifié COFRAC`}
+    h1={`Diagnostic immobilier ${where}, <span class="hl">sous 48 h</span>`}
+    sub={`DPE, vente, location, audit : tarif tout compris, déplacement inclus. Soloris intervient ${where} et en Île-de-France.`}
+    primaryHref="/devis"
+    primaryLabel="Obtenir mon devis en 2 min"
+    secondaryHref="#tarifs"
+    secondaryLabel="Voir les tarifs"
+    showTrust={true}
+    sun={true}
+  />
+
+  <ReassuranceBar />
+
+  <!-- Contexte local (unique par zone) -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:820px">
+      <div class="eyebrow">Votre secteur</div>
+      <h2 class="sec-title">Vos diagnostics {where}</h2>
+      <p class="sec-intro" style="font-size:18px;color:var(--ink);max-width:none">{zone.intro}</p>
+      <p class="muted mt-2" style="font-size:14.5px">Codes postaux desservis : {zone.postalCodes.join(', ')} · et toute l'Île-de-France.</p>
+    </div>
+  </section>
+
+  <!-- Nos prestations -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Nos prestations</div>
+      <h2 class="sec-title">Quel diagnostic vous faut-il {where}&nbsp;?</h2>
+      <div class="grid grid-4 mt-5">
+        {OFFERS.map((o) => <OfferCard offer={o} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- Tarifs -->
+  <section class="section-line" id="tarifs">
+    <div class="wrap">
+      <div class="eyebrow">Tarif tout compris</div>
+      <h2 class="sec-title">Combien ça coûte {where}&nbsp;?</h2>
+      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente.</p>
+      <div class="mt-5"><PricingTable caption={`Tarifs Soloris ${where}`} /></div>
+    </div>
+  </section>
+
+  <!-- Avis -->
+  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+
+  <!-- Process 48 h -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Notre process</div>
+      <h2 class="sec-title">De la demande au rapport, sous 48&nbsp;h</h2>
+      <div class="grid grid-3 mt-5 steps">
+        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Estimation tout compris en 2 minutes, en ligne.</p></div>
+        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient {where}.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Document clair et opposable, livré rapidement.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ locale -->
+  <Faq items={faq} title={`Questions fréquentes ${where}`} eyebrow="FAQ" />
+
+  <!-- CTA final -->
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Vos diagnostics {where}, en toute clarté</h2>
+      <p>Estimation tout compris en 2 minutes, sans engagement.</p>
+      <div class="cta">
+        <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+        <a href="/tarifs" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir les tarifs</a>
+      </div>
+    </div>
+  </section>
+</Base>
