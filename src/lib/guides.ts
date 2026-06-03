@@ -12,6 +12,18 @@ export interface GuideMeta {
 
 export const GUIDES: GuideMeta[] = [
   {
+    slug: 'prix-diagnostic-immobilier-paris',
+    url: '/guides/prix-diagnostic-immobilier-paris',
+    title: 'Prix d\'un diagnostic immobilier à Paris (2026) | Soloris',
+    h1: 'Prix d\'un diagnostic immobilier à Paris : le guide 2026',
+    description:
+      'Combien coûte un diagnostic immobilier à Paris en 2026 ? DPE, packs vente et location, audit : fourchettes de prix et devis tout compris.',
+    excerpt:
+      "DPE, pack vente, pack location, audit : on détaille les fourchettes de prix à Paris, ce qui les fait varier, et pourquoi « tout compris » évite les mauvaises surprises.",
+    datePublished: '2026-06-03',
+    readMin: 7,
+  },
+  {
     slug: 'diagnostics-obligatoires-vente',
     url: '/guides/diagnostics-obligatoires-vente',
     title: 'Quels diagnostics obligatoires pour vendre un appartement ? | Soloris',

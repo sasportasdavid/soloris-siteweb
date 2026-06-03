@@ -1,0 +1,95 @@
+---
+import Base from '../../layouts/Base.astro';
+import PricingTable from '../../components/PricingTable.astro';
+import { getGuide } from '../../lib/guides';
+import { prixDes } from '../../lib/pricing';
+import { article, breadcrumb, faqPage } from '../../lib/jsonld';
+
+const g = getGuide('prix-diagnostic-immobilier-paris')!;
+
+const faq = [
+  {
+    q: 'Combien coûte un DPE à Paris ?',
+    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} € (studio/T1), déplacement inclus, le prix variant selon la typologie. Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
+  },
+  {
+    q: 'Quel est le prix d\'un pack de diagnostics pour vendre ?',
+    a: `Le pack vente Soloris démarre à ${prixDes('vente')} € tout compris pour un studio/T1, déplacement inclus. Le prix dépend de la typologie et des diagnostics réellement applicables à votre bien (année, énergie, zone).`,
+  },
+  {
+    q: 'Le déplacement est-il inclus dans le prix ?',
+    a: 'Oui. Tous les tarifs Soloris sont tout compris, déplacement inclus, à Paris et en Île-de-France. Le prix affiché au devis est le prix payé.',
+  },
+  {
+    q: 'Pourquoi les diagnostics sont-ils un peu plus chers à Paris ?',
+    a: 'Les tarifs en Île-de-France sont généralement supérieurs de 15 à 20 % au reste de la France, en raison du coût de la vie et de la demande dans la capitale.',
+  },
+  {
+    q: 'Qui paie les diagnostics, le vendeur ou l\'acheteur ?',
+    a: 'Pour une vente, le dossier de diagnostic technique est à la charge du vendeur. Pour une location, les diagnostics annexés au bail sont à la charge du bailleur.',
+  },
+];
+
+const jsonLd = [
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
+  faqPage(faq),
+];
+---
+<Base title={g.title} description={g.description} path={g.url} jsonLd={jsonLd}>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <a href="/guides">Guides</a> <span>/</span> <span aria-current="page">Prix à Paris</span></nav>
+  </div>
+  <article>
+    <section>
+      <div class="wrap prose">
+        <div class="eyebrow">Guide · {g.readMin} min</div>
+        <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
+        <p class="lead">Vous préparez une vente ou une location à Paris et vous voulez savoir à quoi vous attendre côté budget ? Voici les fourchettes de prix 2026, ce qui les fait varier, et comment obtenir un montant ferme en 2 minutes.</p>
+
+        <h2>Combien coûte un diagnostic immobilier à Paris ?</h2>
+        <p>Le prix dépend de la prestation (un DPE seul ou un pack complet), de la taille du logement et des diagnostics réellement applicables. À titre de repère, sur le marché parisien, un <strong>DPE</strong> se situe le plus souvent entre <strong>100 et 160 €</strong>, et un <strong>pack vente complet</strong> entre environ <strong>250 et 400 €</strong> selon le bien.</p>
+        <p>Voici la grille Soloris, <strong>tout compris, déplacement inclus</strong> :</p>
+        <div style="margin:8px 0 10px">
+          <PricingTable caption="Grille tarifaire Soloris" />
+        </div>
+
+        <h2>Ce qui fait varier le prix</h2>
+        <ul>
+          <li><strong>La typologie</strong> — plus le logement compte de pièces, plus la visite et les relevés sont longs : le prix augmente du studio au T4 et plus.</li>
+          <li><strong>L'année de construction et l'énergie</strong> — un bien ancien peut nécessiter des diagnostics supplémentaires (plomb avant 1949, amiante pour les permis antérieurs au 1ᵉʳ juillet 1997, électricité/gaz au-delà de 15 ans).</li>
+          <li><strong>La localisation</strong> — en Île-de-France, les tarifs sont généralement <strong>15 à 20 % plus élevés</strong> que dans le reste de la France.</li>
+          <li><strong>Le nombre de diagnostics</strong> — regrouper les diagnostics dans un pack revient toujours moins cher que de les commander un par un.</li>
+        </ul>
+
+        <h2>Pourquoi le « tout compris » change tout</h2>
+        <p>Beaucoup d'annonces affichent un prix d'appel… auquel s'ajoutent ensuite le déplacement, des diagnostics « en option » ou des frais de dossier. Chez Soloris, le principe est simple : <strong>le prix affiché au devis est le prix que vous payez</strong>, déplacement inclus. Pas le moins cher, pas le luxe : un tarif juste, et la transparence en prime.</p>
+        <blockquote>Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat. Un DPE reflète l'état réel de votre logement.</blockquote>
+
+        <h2>Le prix selon votre besoin</h2>
+        <h3>DPE seul</h3>
+        <p>Dès {prixDes('dpe')} € tout compris. Idéal si vous avez seulement besoin de l'étiquette énergétique. Voir l'offre <a href="/dpe">DPE</a> et notre guide <a href="/guides/comprendre-etiquette-dpe">comprendre votre étiquette</a>.</p>
+        <h3>Pack vente</h3>
+        <p>Dès {prixDes('vente')} € tout compris. Le dossier de diagnostic technique complet, prêt pour le notaire. Voir <a href="/diagnostics-vente">diagnostics pour vendre</a> et <a href="/guides/diagnostics-obligatoires-vente">quels diagnostics sont obligatoires</a>.</p>
+        <h3>Pack location</h3>
+        <p>Dès {prixDes('location')} € tout compris. Les diagnostics à annexer au bail. Voir <a href="/diagnostics-location">diagnostics pour louer</a>.</p>
+        <h3>Audit énergétique</h3>
+        <p>Dès {prixDes('audit')} € tout compris. Requis à la vente de certains logements énergivores. Voir <a href="/audit-energetique">l'audit énergétique</a> et le guide <a href="/guides/reforme-dpe">réforme DPE</a>.</p>
+
+        <h2>Comment obtenir un prix ferme</h2>
+        <p>La grille ci-dessus donne des montants « à partir de ». Pour connaître <strong>votre</strong> prix exact, le plus simple est notre <a href="/devis">formulaire de devis</a> : quelques questions, une estimation immédiate à l'écran, puis un devis confirmé sans engagement. Vous pouvez aussi consulter le détail sur la page <a href="/tarifs">tarifs</a>.</p>
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <h2>Votre prix tout compris en 2 minutes</h2>
+        <p>Estimation immédiate, devis confirmé sans engagement.</p>
+        <div class="cta">
+          <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+          <a href="/tarifs" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir les tarifs</a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
