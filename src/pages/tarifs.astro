@@ -7,7 +7,7 @@ import PricingTable from '../components/PricingTable.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
-import { ADDONS, APPART_GRID, MAISON_SUPP, DPE_FROM, AUDIT_FROM } from '../lib/pricing';
+import { ADDONS, APPART_GRID, MAISON_SUPP, DPE_FROM, AUDIT_FROM, LOT_ANNEXE_PRICE } from '../lib/pricing';
 import { SITE } from '../lib/site';
 import { faqPage, breadcrumb } from '../lib/jsonld';
 
@@ -104,6 +104,12 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
         </table>
       </div>
       <p class="price-note">Montants TTC indicatifs. La liste exacte applicable à votre bien est confirmée au devis.</p>
+
+      <div style="margin-top:18px;background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:16px 20px">
+        <strong style="font-family:var(--sora);color:var(--blue)">Cave, parking ou box vendu seul</strong>
+        <span class="price"> — {LOT_ANNEXE_PRICE} € tout compris</span>
+        <span style="display:block;font-size:13.5px;margin-top:4px;color:var(--ink-soft)">Tarif unique pour ces lots, déplacement inclus.</span>
+      </div>
     </div>
   </section>
 

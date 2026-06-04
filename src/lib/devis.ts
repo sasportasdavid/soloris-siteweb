@@ -4,6 +4,8 @@
  * Construit un brouillon de devis à partir d'un lead (objet, lignes, montant).
  */
 
+import { LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, isLotAnnexe } from './pricing';
+
 export const DEMANDE_PACK: Record<string, string> = {
   vente: 'Pack diagnostics avant vente',
   location: 'Pack diagnostics location',
@@ -45,6 +47,16 @@ export function buildDevisDraftFromLead(l: any): DevisDraft {
   const pack = DEMANDE_PACK[d] || 'Prestation de diagnostics';
   const lignes: DevisLigne[] = [];
   let objet = pack;
+
+  // Lot annexe vendu/loué seul (cave / parking / box) : tarif unique, PAS de DPE.
+  // TODO diagnostics exacts à confirmer : ERP quasi systématique ; amiante selon
+  // l'année de construction (permis de construire < 1997) et la présence de matériaux.
+  if (isLotAnnexe(l.type_bien)) {
+    const label = TYPE_BIEN_LABELS[l.type_bien as keyof typeof TYPE_BIEN_LABELS] || 'Lot annexe';
+    objet = `Diagnostics — ${label}`;
+    lignes.push({ libelle: `Diagnostics ${label.toLowerCase()} (lot vendu seul, tout compris)`, montant: LOT_ANNEXE_PRICE });
+    return { objet, lignes, montant: LOT_ANNEXE_PRICE, validite_jours: 30 };
+  }
 
   if (d === 'vente' || d === 'location') {
     const detail = [bienTxt, surfTxt, ageTxt].filter(Boolean).join(', ');

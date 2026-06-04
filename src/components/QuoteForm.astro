@@ -11,7 +11,7 @@
  */
 import {
   DEMANDE_LABELS, AGE_LABELS, AGE_DESC, SURFACE_BANDS, APPART_GRID,
-  MAISON_SUPP, AUDIT_FROM,
+  MAISON_SUPP, AUDIT_FROM, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS,
 } from '../lib/pricing';
 import { SITE } from '../lib/site';
 
@@ -69,6 +69,17 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         <label class="qopt"><input type="radio" name="type_bien" value="appartement" required /><span class="qopt-body"><b>Appartement</b><span class="qopt-desc">En immeuble / copropriété</span></span></label>
         <label class="qopt"><input type="radio" name="type_bien" value="maison" required /><span class="qopt-body"><b>Maison</b><span class="qopt-desc">Individuelle</span></span></label>
       </div>
+
+      <!-- Lots annexes vendus/loués seuls (cave/parking/box) — tarif unique. Affiché pour vente/location uniquement. -->
+      <div id="lot-annexe-block" hidden>
+        <span class="qgroup-label" style="display:block;margin:16px 0 9px">Ou un lot annexe seul</span>
+        <div class="qgrid qgrid-2">
+          <label class="qopt"><input type="radio" name="type_bien" value="cave" /><span class="qopt-body"><b>Cave</b><span class="qopt-desc">Lot de cave</span></span></label>
+          <label class="qopt"><input type="radio" name="type_bien" value="parking" /><span class="qopt-body"><b>Parking</b><span class="qopt-desc">Place de stationnement</span></span></label>
+          <label class="qopt"><input type="radio" name="type_bien" value="box" /><span class="qopt-body"><b>Box</b><span class="qopt-desc">Box fermé</span></span></label>
+        </div>
+      </div>
+
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
@@ -79,7 +90,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
 
       <label class="qfield">
         <span>Surface du bien</span>
-        <select name="surface_band" required>
+        <select name="surface_band">
           <option value="" disabled selected>Choisissez une tranche de surface</option>
           {surfaceBands.map((label, i) => <option value={i}>{label}</option>)}
         </select>
@@ -225,7 +236,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: 20, ANNEXE_SUPP: 99, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: 20, ANNEXE_SUPP: 99, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -254,6 +265,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     function checkedVal(name) { var el = form.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
     function demande() { return checkedVal('type_demande'); }
     function bien() { return checkedVal('type_bien'); }
+    function isLotBien() { var b = bien(); return b === 'cave' || b === 'parking' || b === 'box'; }
     function ageNeeded() { var d = demande(); return d === 'vente' || d === 'location'; }
     function bandIndex() { var s = form.querySelector('[name="surface_band"]'); return s && s.value !== '' ? Number(s.value) : null; }
 
@@ -304,8 +316,13 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
         if (!el.value.trim()) { ok = false; el.style.borderColor = '#b3261e'; } else { el.style.borderColor = ''; }
         if (el.type === 'email' && el.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value)) { ok = false; el.style.borderColor = '#b3261e'; }
       });
-      // étape 3 : âge requis seulement pour vente/location
-      if (step.getAttribute('data-step') === '3' && ageNeeded() && !checkedVal('age_bien')) ok = false;
+      // étape 3 : logement → surface obligatoire (+ âge pour vente/location) ;
+      //           lot annexe (cave/parking/box) → surface facultative, pas d'âge.
+      if (step.getAttribute('data-step') === '3' && !isLotBien()) {
+        var sb = form.querySelector('[name="surface_band"]');
+        if (!sb || sb.value === '') { ok = false; if (sb) sb.style.borderColor = '#b3261e'; } else if (sb) { sb.style.borderColor = ''; }
+        if (ageNeeded() && !checkedVal('age_bien')) ok = false;
+      }
       // étape 4 : code postal valide (5 chiffres, Île-de-France)
       if (step.getAttribute('data-step') === '4') {
         var cp = (val('secteur') || '').trim();
@@ -326,7 +343,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien'), est = val('estimation');
       var parts = [];
       if (d && DEMANDE_LABELS[d]) parts.push(DEMANDE_LABELS[d]);
-      if (b) parts.push(b === 'maison' ? 'Maison' : 'Appartement');
+      if (b) parts.push(BIEN_LABELS[b] || b);
       if (bi != null && SURF_LABELS[bi]) parts.push(SURF_LABELS[bi]);
       if (age && AGE_LABELS[age]) parts.push(AGE_LABELS[age]);
       var ax = annexeState();
@@ -348,17 +365,29 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       var annexeMaisonBlock = document.getElementById('annexe-maison-block');
       var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien');
       var isPack = (d === 'vente' || d === 'location');
+      var lot = isLotBien();
 
-      if (ageBlock) ageBlock.hidden = !ageNeeded();
+      // Lots annexes (cave/parking/box) : proposés pour vente/location uniquement.
+      var lotBlock = document.getElementById('lot-annexe-block');
+      if (lotBlock) lotBlock.hidden = !isPack;
+      // Si on quitte vente/location avec un lot sélectionné, il devient invalide → on le désélectionne.
+      if (lot && !isPack) {
+        var selLot = form.querySelector('input[name="type_bien"]:checked');
+        if (selLot) selLot.checked = false;
+        b = null; lot = false;
+      }
+
+      if (ageBlock) ageBlock.hidden = !ageNeeded() || lot; // pas d'âge pour un lot annexe
       if (coproBlock) coproBlock.hidden = !(b === 'maison' && isPack); // copropriété : maison + pack
       if (annexeAppartBlock) annexeAppartBlock.hidden = !(b === 'appartement' && isPack);
       if (annexeMaisonBlock) annexeMaisonBlock.hidden = !(b === 'maison' && isPack);
       if (hSurf && bi != null) hSurf.value = String(BANDS_MAX[bi]);
 
-      // Sous-titre conditionnel (P3) : pas de mention d'âge pour DPE seul / audit
+      // Sous-titre conditionnel : lot annexe / DPE-audit / vente-location
       var sub = document.getElementById('step3-sub');
       if (sub) {
-        if (ageNeeded()) sub.textContent = abStepsB
+        if (lot) sub.textContent = 'La surface est facultative pour ce type de lot. Le tarif est unique, tout compris.';
+        else if (ageNeeded()) sub.textContent = abStepsB
           ? 'Type de bien, surface et âge — on calcule votre estimation.'
           : "Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.";
         else sub.textContent = abStepsB
@@ -367,7 +396,8 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       }
 
       var value = null, surDevis = false;
-      if (d === 'audit') { value = AUDIT_FROM; }
+      if (lot) { value = LOT_ANNEXE_PRICE; } // cave / parking / box — tarif unique
+      else if (d === 'audit') { value = AUDIT_FROM; }
       else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = dpeByBand(bi); }
       else { // vente / location
         if (bi == null || (ageNeeded() && !age)) { box.hidden = true; return; }

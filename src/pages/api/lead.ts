@@ -28,7 +28,7 @@ function envVar(runtime: string | undefined, buildtime: string | undefined): str
 const P = typeof process !== 'undefined' && process.env ? process.env : ({} as Record<string, string | undefined>);
 
 const DEMANDES = ['vente', 'location', 'dpe', 'audit'];
-const BIENS = ['appartement', 'maison'];
+const BIENS = ['appartement', 'maison', 'cave', 'parking', 'box'];
 const AGES = ['avant1949', 'intermediaire', 'recent'];
 
 const HITS = new Map<string, number[]>();

@@ -49,6 +49,14 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="partiel">Partiels</option>
         <option value="complet">Complets</option>
       </select>
+      <select id="filter-bien">
+        <option value="">Tous les biens</option>
+        <option value="appartement">Appartement</option>
+        <option value="maison">Maison</option>
+        <option value="cave">Cave</option>
+        <option value="parking">Parking</option>
+        <option value="box">Box</option>
+      </select>
       <span class="adm-count" id="adm-count"></span>
     </div>
 
@@ -180,7 +188,7 @@ const STATUT_LABELS: Record<string, string> = {
     const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
     const DEMANDE_LBL: Record<string, string> = { vente: 'Vente', location: 'Location', dpe: 'DPE seul', audit: 'Audit énergétique' };
-    const BIEN_LBL: Record<string, string> = { appartement: 'Appartement', maison: 'Maison' };
+    const BIEN_LBL: Record<string, string> = { appartement: 'Appartement', maison: 'Maison', cave: 'Cave', parking: 'Parking', box: 'Box' };
     const AGE_LBL: Record<string, string> = { avant1949: 'Avant 1949', intermediaire: '1949 à <15 ans', recent: 'Moins de 15 ans' };
     const ANNEXE_LBL: Record<string, string> = { cave_parking: 'Cave / parking / box', garage_dependance: 'Garage / dépendance' };
     const MATCH_LBL: Record<string, string> = { e: 'Exact', p: 'Expression', b: 'Large' };
@@ -259,8 +267,10 @@ const STATUT_LABELS: Record<string, string> = {
       const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
       const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
+      const fBien = (document.getElementById('filter-bien') as HTMLSelectElement).value;
 
       let rows = allLeads.slice();
+      if (fBien) rows = rows.filter((l) => l.type_bien === fBien);
       if (fStatut) rows = rows.filter((l) => l.statut === fStatut);
       if (fSource === 'ads') rows = rows.filter(isAds);
       if (fSource === 'organique') rows = rows.filter((l) => !isAds(l));
@@ -556,7 +566,7 @@ const STATUT_LABELS: Record<string, string> = {
     }
 
     function wireEvents() {
-      ['search', 'filter-statut', 'filter-source', 'filter-lead'].forEach((id) => {
+      ['search', 'filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
         document.getElementById(id)!.addEventListener('input', render);
       });
 

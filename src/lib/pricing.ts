@@ -86,9 +86,23 @@ export const DPE_FROM = 120; // DPE seul dès 120 € (inchangé, 120–190 €)
 
 /** Mentions / suppléments fixes. */
 export const FIXED = {
-  caveParking: 99, // diagnostic cave / parking
+  caveParking: 99, // diagnostic cave / parking EN OPTION (annexe d'un logement vendu/loué)
   coproSupp: 20, // maison en copropriété : + 20 €
 };
+
+/**
+ * Types de bien. Un logement (appartement/maison) suit la grille âge × surface ;
+ * un LOT ANNEXE diagnostiqué seul (cave, parking, box) a un tarif UNIQUE.
+ */
+export type TypeBien = 'appartement' | 'maison' | 'cave' | 'parking' | 'box';
+export const LOTS_ANNEXES = ['cave', 'parking', 'box'] as const;
+export const LOT_ANNEXE_PRICE = 179; // cave / parking / box vendu seul — tarif unique TTC, déplacement inclus
+export const TYPE_BIEN_LABELS: Record<TypeBien, string> = {
+  appartement: 'Appartement', maison: 'Maison', cave: 'Cave', parking: 'Parking', box: 'Box',
+};
+export function isLotAnnexe(t: string | null | undefined): boolean {
+  return t === 'cave' || t === 'parking' || t === 'box';
+}
 
 /** Diagnostics à l'unité (à la carte) — info page tarifs (cohérent avec /diagnostics). */
 export const ADDONS = [
