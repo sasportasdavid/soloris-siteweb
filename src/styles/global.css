@@ -17,6 +17,11 @@
   --ink: #0B1F33;         /* Texte */
   --ink-soft: #5B6B7C;    /* Texte secondaire, légendes */
 
+  /* Teintes « sur fond bleu » (charte) — formalisées en tokens */
+  --ink-on-dark: #7FA3C6;                 /* texte secondaire sur bleu */
+  --ink-on-dark-strong: #C3D2E2;          /* texte accentué sur bleu */
+  --rule-on-dark: rgba(255, 255, 255, .22); /* filets sur bleu */
+
   /* Bleu profond, variante utilitaire (hovers) */
   --blue-700: #0A2342;
 

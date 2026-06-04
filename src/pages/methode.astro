@@ -4,6 +4,7 @@
  * ⚠️ Aucun n° COFRAC inventé : [À REMPLACER]. Aucune promesse de résultat.
  */
 import Base from '../layouts/Base.astro';
+import GroupEndorsement from '../components/GroupEndorsement.astro';
 import { SITE } from '../lib/site';
 import { breadcrumb } from '../lib/jsonld';
 
@@ -24,6 +25,7 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Méthode', u
       <div class="eyebrow">Notre méthode</div>
       <h1 class="sec-title" style="font-size:44px">Le diagnostic, mené avec rigueur et transparence</h1>
       <p class="sec-intro">Notre métier est sérieux : un rapport opposable engage votre responsabilité comme la nôtre. Voici comment nous travaillons.</p>
+      <div style="margin-top:18px"><GroupEndorsement variant="light" /></div>
     </div>
   </section>
 

@@ -3,6 +3,7 @@
  * /mentions-legales — champs éditeur/hébergeur [À REMPLACER].
  */
 import Base from '../layouts/Base.astro';
+import GroupEndorsement from '../components/GroupEndorsement.astro';
 import { SITE, fullAddress } from '../lib/site';
 ---
 <Base
@@ -25,6 +26,7 @@ import { SITE, fullAddress } from '../lib/site';
         Téléphone : {SITE.phoneDisplay} · Email : {SITE.email}<br />
         Directeur de la publication : {SITE.director}
       </p>
+      <div style="margin-top:6px"><GroupEndorsement variant="light" /></div>
 
       <h2>Certification</h2>
       <p>Les diagnostics sont réalisés par un diagnostiqueur certifié, conformément à la réglementation applicable.</p>

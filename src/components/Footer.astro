@@ -4,6 +4,7 @@
  * coordonnées NAP cohérentes (depuis site.ts) et liens légaux.
  */
 import Logo from './Logo.astro';
+import GroupEndorsement from './GroupEndorsement.astro';
 import { SITE, fullAddress } from '../lib/site';
 import { OFFERS } from '../lib/offers';
 
@@ -17,6 +18,7 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
       <div>
         <Logo variant="dark" size={26} />
         <p class="baseline">{SITE.baseline}</p>
+        <div style="margin-top:16px"><GroupEndorsement variant="dark" /></div>
         <p style="color:#9FB8D2;font-size:13.5px;margin-top:18px;line-height:1.7">
           Diagnostics immobiliers<br />
           <strong style="color:#fff;font-weight:500">Paris &amp; Île-de-France</strong>
