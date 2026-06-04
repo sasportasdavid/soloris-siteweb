@@ -22,7 +22,8 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
       </div>
 
       <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Ouvrir le menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        <svg class="ico-open" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        <svg class="ico-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
 
       <div class="nav-links" id="primary-nav">
@@ -73,9 +74,56 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
     var toggle = document.getElementById('nav-toggle');
     var nav = document.getElementById('primary-nav');
     if (!toggle || !nav) return;
+    var mq = window.matchMedia('(max-width: 920px)');
+
+    function closeAccordions() {
+      nav.querySelectorAll('.has-menu.open').forEach(function (m) {
+        m.classList.remove('open');
+        var b = m.querySelector('.menu-btn');
+        if (b) b.setAttribute('aria-expanded', 'false');
+      });
+    }
+    function closeMenu() {
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Ouvrir le menu');
+      document.body.classList.remove('nav-open');
+      closeAccordions();
+    }
+    function openMenu() {
+      nav.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Fermer le menu');
+      document.body.classList.add('nav-open');
+    }
     toggle.addEventListener('click', function () {
-      var open = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(open));
+      if (nav.classList.contains('open')) closeMenu(); else openMenu();
     });
+
+    // Accordéons « Nos offres » / « Les diagnostics » (mobile : le survol gère le desktop)
+    nav.querySelectorAll('.has-menu .menu-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        if (!mq.matches) return;
+        e.preventDefault();
+        var parent = btn.closest('.has-menu');
+        var willOpen = !parent.classList.contains('open');
+        closeAccordions(); // un seul panneau ouvert à la fois
+        if (willOpen) { parent.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      });
+    });
+
+    // Fermer le menu après le clic sur un vrai lien de navigation
+    nav.addEventListener('click', function (e) {
+      var link = e.target.closest && e.target.closest('a[href]');
+      if (link && nav.classList.contains('open')) closeMenu();
+    });
+
+    // Échap, clic en dehors, retour au desktop → on referme proprement
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+    document.addEventListener('click', function (e) {
+      if (!nav.classList.contains('open')) return;
+      if (!nav.contains(e.target) && !toggle.contains(e.target)) closeMenu();
+    });
+    mq.addEventListener('change', function (e) { if (!e.matches) closeMenu(); });
   })();
 </script>
