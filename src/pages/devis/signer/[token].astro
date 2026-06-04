@@ -105,6 +105,7 @@ const isRefused = devis?.statut === 'refuse';
           <span>Établi le <b>{frDate(devis.created_at)}</b></span>
           {expiry && <span>Valable jusqu'au <b>{expiry}</b></span>}
           {devis.client_nom && <span>Pour <b>{devis.client_nom}</b></span>}
+          {devis.client_adresse && <span>Adresse <b>{devis.client_adresse}</b></span>}
         </div>
 
         <table class="lig">

@@ -33,6 +33,7 @@ export interface DevisPdfData {
   client_email?: string;
   client_tel?: string;
   client_cp?: string;
+  client_adresse?: string;
   objet?: string;
   lignes?: { libelle: string; montant: number }[];
   montant?: number;
@@ -103,19 +104,23 @@ export async function generateDevisPdf(d: DevisPdfData, opts: { signUrl?: string
   ];
   const client: [string, any][] = ([
     [d.client_nom || '-', bold],
+    d.client_adresse ? [d.client_adresse, font] : null,               // adresse exacte (prioritaire)
     [d.client_email || '', font],
     [d.client_tel || '', font],
-    [d.client_cp ? `Code postal ${d.client_cp}` : '', font],
-  ] as [string, any][]).filter((r) => r[0]);
+    !d.client_adresse && d.client_cp ? [`Code postal ${d.client_cp}`, font] : null, // repli CP si pas d'adresse
+  ].filter(Boolean) as [string, any][]);
 
-  const nrows = Math.max(emetteur.length, client.length);
-  let yy = y;
-  for (let i = 0; i < nrows; i++) {
-    if (emetteur[i]) text(emetteur[i][0], M, yy, 9.5, emetteur[i][1], emetteur[i][1] === bold ? BLUE : INK);
-    if (client[i]) text(client[i][0], colR, yy, 9.5, client[i][1], client[i][1] === bold ? BLUE : INK);
-    yy -= 14;
+  // Rendu colonne par colonne avec retour à la ligne (l'adresse exacte peut être longue).
+  function drawCol(rows: [string, any][], x: number, maxW: number, startY: number): number {
+    let cy = startY;
+    for (const [txt, f] of rows) {
+      for (const ln of wrap(txt, f, 9.5, maxW)) { text(ln, x, cy, 9.5, f, f === bold ? BLUE : INK); cy -= 13; }
+    }
+    return cy;
   }
-  y = yy - 8;
+  const yE = drawCol(emetteur, M, colR - M - 16, y);
+  const yC = drawCol(client, colR, right - colR, y);
+  y = Math.min(yE, yC) - 8;
   hr(y);
   y -= 22;
 

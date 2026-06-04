@@ -174,6 +174,14 @@ const STATUT_LABELS: Record<string, string> = {
     .dv-total b { color:var(--blue); font-family:var(--sora); font-size:16px; margin-left:6px; }
     #dv-msg { min-height:16px; }
     #dv-msg.err { color:#b3261e; }
+
+    /* Adresse exacte + autocomplétion */
+    .adm-adresse-input { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); }
+    .adm-adresse-input:focus { outline:none; border-color:var(--blue-light); }
+    .adm-suggest { position:absolute; z-index:10; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow-soft); max-height:230px; overflow-y:auto; }
+    .adm-suggest button { display:block; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--line); padding:9px 12px; font-size:13.5px; color:var(--ink); cursor:pointer; font-family:var(--inter); line-height:1.4; }
+    .adm-suggest button:last-child { border-bottom:none; }
+    .adm-suggest button:hover { background:var(--paper); }
   </style>
 
   <script define:vars={{ STATUTS, STATUT_LABELS }}>
@@ -199,6 +207,7 @@ const STATUT_LABELS: Record<string, string> = {
     let allDevis: any[] = [];
     let devisByLead: Record<string, any> = {}; // lead_id → devis le plus récent
     let currentLeadId: string | null = null;
+    let adresseTimer: any = null; // debounce autocomplétion adresse
 
     function esc(s: any): string {
       return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -429,7 +438,7 @@ const STATUT_LABELS: Record<string, string> = {
       const l = allLeads.find((x) => x.id === leadId);
       if (!l) return;
       const draft = buildDevisDraftFromLead(l);
-      const row = { lead_id: l.id, client_nom: l.nom, client_email: l.email, client_tel: l.telephone, client_cp: l.secteur, objet: draft.objet, lignes: draft.lignes, montant: draft.montant, validite_jours: draft.validite_jours };
+      const row = { lead_id: l.id, client_nom: l.nom, client_email: l.email, client_tel: l.telephone, client_cp: l.secteur, client_adresse: l.adresse || null, objet: draft.objet, lignes: draft.lignes, montant: draft.montant, validite_jours: draft.validite_jours };
       const { data, error } = await supabase.from('devis').insert(row).select('*').single();
       if (error) { alert('Création du devis impossible : ' + error.message); return; }
       syncDevis(data);
@@ -443,7 +452,8 @@ const STATUT_LABELS: Record<string, string> = {
       const validite = parseInt((document.getElementById('dv-validite') as HTMLInputElement).value, 10) || 30;
       const lignes = collectLignes();
       const montant = lignes.reduce((s, l) => s + (Number(l.montant) || 0), 0);
-      const { data, error } = await supabase.from('devis').update({ objet, validite_jours: validite, lignes, montant, updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+      const adr = (allLeads.find((x) => x.id === currentLeadId) || {}).adresse || null; // adresse exacte à jour
+      const { data, error } = await supabase.from('devis').update({ objet, validite_jours: validite, lignes, montant, client_adresse: adr, updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
       if (error) { devisMsg('Échec de l’enregistrement : ' + error.message, true); return false; }
       if (data) syncDevis(data);
       if (!silent) devisMsg('Devis enregistré ✓');
@@ -473,6 +483,27 @@ const STATUT_LABELS: Record<string, string> = {
     }
     function copyDevisLink(link: string) {
       navigator.clipboard.writeText(link).then(() => devisMsg('Lien de signature copié ✓')).catch(() => devisMsg(link));
+    }
+
+    // Autocomplétion d'adresse via la Base Adresse Nationale (gratuite, sans clé, RGPD).
+    function adresseAutocomplete(q: string) {
+      const box = document.getElementById('adresse-suggest');
+      if (!box) return;
+      clearTimeout(adresseTimer);
+      if (!q || q.trim().length < 4) { box.hidden = true; box.innerHTML = ''; return; }
+      adresseTimer = setTimeout(async () => {
+        try {
+          const res = await fetch('https://api-adresse.data.gouv.fr/search/?limit=5&q=' + encodeURIComponent(q));
+          if (!res.ok) return;
+          const data = await res.json();
+          const feats = data.features || [];
+          if (!feats.length) { box.hidden = true; box.innerHTML = ''; return; }
+          box.innerHTML = feats.map((f: any) =>
+            `<button type="button" data-adr="${esc(f.properties.label)}" data-cp="${esc(f.properties.postcode || '')}">${esc(f.properties.label)}</button>`
+          ).join('');
+          box.hidden = false;
+        } catch (e) { /* hors-ligne / API indispo : on ignore, saisie manuelle possible */ }
+      }, 250);
     }
 
     function openDrawer(id: string) {
@@ -529,6 +560,14 @@ const STATUT_LABELS: Record<string, string> = {
           ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
         </div>
 
+        <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
+          <div style="position:relative">
+            <input type="text" id="lead-adresse" class="adm-adresse-input" data-id="${l.id}" data-field="adresse" value="${esc(l.adresse || '')}" placeholder="Commencez à taper l'adresse…" autocomplete="off">
+            <div id="adresse-suggest" class="adm-suggest" hidden></div>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:6px">Autocomplétion (Base Adresse Nationale). Le formulaire public ne demande que le code postal ; l'adresse saisie ici figure sur le devis PDF.</p>
+        </div>
+
         <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
           <div class="adm-edit">
             <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
@@ -559,6 +598,13 @@ const STATUT_LABELS: Record<string, string> = {
       if (error) { alert('Échec de la mise à jour : ' + error.message); return; }
       const lead = allLeads.find((l) => l.id === id);
       if (lead) lead[field] = patch[field];
+      // L'adresse exacte se répercute sur le devis existant (pour le PDF / la signature)
+      if (field === 'adresse' && devisByLead[id]) {
+        try {
+          const { data: dvu } = await supabase.from('devis').update({ client_adresse: patch.adresse, updated_at: new Date().toISOString() }).eq('id', devisByLead[id].id).select('*').single();
+          if (dvu) syncDevis(dvu);
+        } catch (e) { /* non bloquant */ }
+      }
       renderStats(allLeads);
       render();
       const saved = document.getElementById('adm-saved');
@@ -596,6 +642,13 @@ const STATUT_LABELS: Record<string, string> = {
       // Actions Devis
       panel.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
+        const adr = t.closest('[data-adr]') as HTMLElement | null;
+        if (adr) {
+          const input = document.getElementById('lead-adresse') as HTMLInputElement | null;
+          if (input) { input.value = adr.getAttribute('data-adr') || ''; input.dispatchEvent(new Event('change', { bubbles: true })); }
+          const box = document.getElementById('adresse-suggest'); if (box) box.hidden = true;
+          return;
+        }
         if (t.closest('[data-devis-create]')) createDevis(currentLeadId as string);
         else if (t.closest('[data-lig-add]')) { const c = document.getElementById('dv-lignes'); if (c) c.insertAdjacentHTML('beforeend', ligneRowHtml({})); }
         else if (t.closest('[data-lig-del]')) { const r = t.closest('[data-lig]'); if (r) { r.remove(); recomputeTotal(); } }
@@ -603,7 +656,18 @@ const STATUT_LABELS: Record<string, string> = {
         else if (t.closest('[data-devis-copy]')) copyDevisLink((t.closest('[data-devis-copy]') as HTMLElement).getAttribute('data-link') || '');
         else if (t.closest('[data-devis-send]')) sendDevis();
       });
-      panel.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#dv-lignes')) recomputeTotal(); });
+      panel.addEventListener('input', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.id === 'lead-adresse') { adresseAutocomplete((t as HTMLInputElement).value); return; }
+        if (t.closest('#dv-lignes')) recomputeTotal();
+      });
+      // Masquer les suggestions d'adresse au clic en dehors
+      document.addEventListener('click', (e) => {
+        const box = document.getElementById('adresse-suggest');
+        if (!box || box.hidden) return;
+        const t = e.target as HTMLElement;
+        if (!t.closest('#adresse-suggest') && t.id !== 'lead-adresse') box.hidden = true;
+      });
       // Fermeture du drawer (backdrop, bouton, Échap)
       document.getElementById('adm-drawer')!.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('[data-close]')) closeDrawer();
