@@ -4,6 +4,7 @@
  * cliquable et CTA or « Obtenir un devis ».
  */
 import Logo from './Logo.astro';
+import GroupEndorsement from './GroupEndorsement.astro';
 import { SITE } from '../lib/site';
 import { OFFERS } from '../lib/offers';
 import { DIAGNOSTICS } from '../lib/diagnostics';
@@ -15,9 +16,10 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
 <header class="site-header">
   <div class="wrap">
     <nav class="bar" aria-label="Navigation principale">
-      <a href="/" aria-label="Accueil Soloris">
-        <Logo size={24} />
-      </a>
+      <div class="brand-lockup">
+        <a href="/" aria-label="Accueil Soloris"><Logo size={24} /></a>
+        <GroupEndorsement variant="light" />
+      </div>
 
       <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Ouvrir le menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>

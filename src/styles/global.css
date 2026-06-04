@@ -181,7 +181,10 @@ section { padding: 92px 0; }
   background: rgba(251, 250, 246, .88); backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--line);
 }
-.site-header .bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 24px; }
+.site-header .bar { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; gap: 24px; }
+/* Lockup « logo endossé » : wordmark + mention de groupe dessous */
+.brand-lockup { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.brand-lockup > a { display: inline-flex; line-height: 0; }
 .nav-links { display: flex; gap: 28px; align-items: center; font-family: var(--sora); font-size: 14px; color: var(--ink); font-weight: 500; }
 .nav-links a { color: var(--ink); }
 .nav-links a:hover { color: var(--blue-light); text-decoration: none; }
