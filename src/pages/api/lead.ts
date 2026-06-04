@@ -11,6 +11,7 @@
  *   📨 contact · 💬 chat. Les flags sont gérés atomiquement par la fonction.
  */
 import type { APIRoute } from 'astro';
+import { sendLeadConfirmation } from '../../lib/confirmEmail';
 
 export const prerender = false;
 
@@ -252,6 +253,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const lead = (result && result.lead) || {};
     if (result && result.notify_complete) {
       await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet');
+      // Email de confirmation au client (serveur, non bloquant : un échec ne doit
+      // jamais empêcher l'enregistrement du lead ni la réponse). Anti-doublon : la
+      // branche notify_complete est atomique (1 seule fois par lead).
+      try { await sendLeadConfirmation(lead); }
+      catch (e) { console.error('[lead] email de confirmation échoué (lead bien enregistré):', e); }
     } else if (result && result.notify_partial) {
       await notifyTelegram(lead, 'partiel');
     }

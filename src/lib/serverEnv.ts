@@ -17,6 +17,8 @@ export const SUPABASE_ANON = pick(P.PUBLIC_SUPABASE_ANON_KEY, import.meta.env.PU
 export const RESEND_API_KEY = pick(P.RESEND_API_KEY, import.meta.env.RESEND_API_KEY);
 /** Expéditeur des emails. Domaine à vérifier dans Resend (ex. "Soloris <devis@soloris.fr>"). */
 export const DEVIS_FROM_EMAIL = pick(P.DEVIS_FROM_EMAIL, import.meta.env.DEVIS_FROM_EMAIL) || 'Soloris <onboarding@resend.dev>';
+/** Expéditeur de l'email de confirmation au lead (domaine vérifié Resend). */
+export const CONFIRM_FROM_EMAIL = pick(P.CONFIRM_FROM_EMAIL, import.meta.env.CONFIRM_FROM_EMAIL) || 'Soloris <contact@soloris.fr>';
 
 export const TELEGRAM_BOT_TOKEN = pick(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
 export const TELEGRAM_CHAT_ID = pick(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
