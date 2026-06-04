@@ -30,6 +30,7 @@ import ConsentBanner from '../components/ConsentBanner.astro';
 import MobileCtaBar from '../components/MobileCtaBar.astro';
 import AnnouncementBar from '../components/AnnouncementBar.astro';
 import ChatWidget from '../components/ChatWidget.astro';
+import BehaviorTracking from '../components/BehaviorTracking.astro';
 
 interface Props {
   title: string;
@@ -76,5 +77,6 @@ const hasGTM = !!GTM && GTM !== '__A_REMPLACER__';
     <MobileCtaBar />
     <ChatWidget />
     <ConsentBanner />
+    <BehaviorTracking />
   </body>
 </html>

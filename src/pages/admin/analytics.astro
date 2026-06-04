@@ -1,0 +1,368 @@
+---
+/**
+ * /admin/analytics — Dashboard analytics comportemental first-party.
+ * Protégé (Supabase Auth, RLS authenticated). Lit les vues d'analyse + sessions
+ * + chunks rrweb. Filtre prioritaire « trafic payant » (gclid / medium=cpc).
+ * Quanti (funnel /devis au champ, payant vs organique, top pages, géo hors zone,
+ * engagement, rage-clicks) + heatmaps (canvas local) + session replay (rrweb-player).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+<AdminLayout title="Analytics" showNav={true}>
+  <div id="an-loading" style="text-align:center;padding:60px 0;color:var(--ink-soft)">Chargement…</div>
+
+  <div id="an-app" hidden>
+    <div class="an-head">
+      <div>
+        <h1 class="adm-h1">Analytics comportemental</h1>
+        <p class="muted adm-sub">Parcours, funnel /devis, heatmaps et replays — données first-party (Supabase), conformes RGPD.</p>
+      </div>
+      <label class="an-paid"><input type="checkbox" id="flt-paid" /> <span>Trafic payant uniquement (gclid / cpc)</span></label>
+    </div>
+
+    <!-- KPIs -->
+    <div class="adm-stats">
+      <div class="adm-stat"><div class="lbl">Sessions</div><div class="val" id="k-sessions">—</div></div>
+      <div class="adm-stat"><div class="lbl">Visiteurs</div><div class="val" id="k-visiteurs">—</div></div>
+      <div class="adm-stat"><div class="lbl">Pages / session</div><div class="val" id="k-pps">—</div></div>
+      <div class="adm-stat"><div class="lbl">Durée moy.</div><div class="val" id="k-duree">—</div></div>
+      <div class="adm-stat"><div class="lbl">Taux de rebond</div><div class="val" id="k-rebond">—</div></div>
+      <div class="adm-stat"><div class="lbl">Leads liés</div><div class="val" id="k-leads">—</div></div>
+    </div>
+
+    <div class="an-grid">
+      <!-- Funnel /devis -->
+      <section class="an-card an-col2">
+        <h3>Funnel /devis <span class="an-h-sub" id="funnel-canal"></span></h3>
+        <div id="funnel"></div>
+        <h4 class="an-sub2">Dernier champ touché avant abandon</h4>
+        <div id="dropoff" class="an-bars"></div>
+      </section>
+
+      <!-- Sessions / jour -->
+      <section class="an-card">
+        <h3>Sessions / jour</h3>
+        <div id="daily" class="an-bars an-bars-v"></div>
+      </section>
+
+      <!-- Payant vs organique -->
+      <section class="an-card">
+        <h3>Payant vs organique</h3>
+        <div id="pvo"></div>
+      </section>
+
+      <!-- Top pages -->
+      <section class="an-card">
+        <h3>Top pages</h3>
+        <div id="toppages" class="an-table-mini"></div>
+      </section>
+
+      <!-- Entrées / sorties -->
+      <section class="an-card">
+        <h3>Pages d'entrée & de sortie</h3>
+        <div id="entryexit" class="an-table-mini"></div>
+      </section>
+
+      <!-- Hors zone -->
+      <section class="an-card an-col2">
+        <h3>Qualité géo — hors zone Paris + 93 <span class="an-flag">⚠︎</span></h3>
+        <div id="horszone"></div>
+      </section>
+
+      <!-- Rage clicks -->
+      <section class="an-card">
+        <h3>Rage-clicks (friction)</h3>
+        <div id="rage" class="an-table-mini"></div>
+      </section>
+
+      <!-- Heatmaps -->
+      <section class="an-card an-col3">
+        <h3>Heatmaps</h3>
+        <div class="an-hm-ctrls">
+          <select id="hm-path"></select>
+          <select id="hm-device"><option value="all">Tous devices</option><option value="m">Mobile</option><option value="t">Tablette</option><option value="c">Ordinateur</option></select>
+          <select id="hm-kind"><option value="click">Clics</option><option value="scroll">Profondeur de scroll</option></select>
+        </div>
+        <div class="an-hm-wrap"><canvas id="hm-canvas" width="360" height="640"></canvas><div id="hm-empty" class="muted" hidden>Aucune donnée heatmap pour cette page (agrégat quotidien — disponible J+1).</div></div>
+      </section>
+
+      <!-- Replays -->
+      <section class="an-card an-col3">
+        <h3>Session replays <span class="an-h-sub">(rrweb, ≤ 30 j)</span></h3>
+        <div class="an-replay-layout">
+          <div id="replay-list" class="an-replay-list"></div>
+          <div id="replay-player" class="an-replay-player"><p class="muted" style="padding:20px">Sélectionnez une session à gauche pour la rejouer.</p></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <style is:global>
+    .an-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+    .an-paid { display:flex; align-items:center; gap:8px; background:rgba(245,166,35,.1); border:1px solid var(--line); border-radius:10px; padding:9px 14px; font-family:var(--sora); font-size:13px; color:var(--blue); cursor:pointer; }
+    .an-paid input { width:16px; height:16px; accent-color:var(--gold); }
+    .an-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .an-col2 { grid-column:span 2; } .an-col3 { grid-column:span 3; }
+    @media (max-width:1000px){ .an-grid{ grid-template-columns:1fr; } .an-col2,.an-col3{ grid-column:span 1; } }
+    .an-card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+    .an-card h3 { font-family:var(--sora); font-weight:600; font-size:14px; color:var(--blue); margin-bottom:14px; }
+    .an-h-sub { font-weight:400; font-size:12px; color:var(--ink-soft); }
+    .an-sub2 { font-family:var(--sora); font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:18px 0 10px; }
+    .an-flag { color:#b3261e; }
+    /* Funnel */
+    .fn-row { display:grid; grid-template-columns:160px 1fr 64px; align-items:center; gap:10px; margin-bottom:8px; font-size:13px; }
+    .fn-bar { height:22px; background:var(--paper); border-radius:6px; overflow:hidden; }
+    .fn-fill { height:100%; background:linear-gradient(90deg,var(--blue-light),var(--blue)); border-radius:6px; }
+    .fn-pct { text-align:right; font-family:var(--sora); font-size:12px; color:var(--ink-soft); }
+    .fn-drop { color:#b3261e; font-size:11px; }
+    /* Bars */
+    .an-bars { display:flex; flex-direction:column; gap:6px; }
+    .an-bar-row { display:grid; grid-template-columns:120px 1fr 40px; align-items:center; gap:8px; font-size:12.5px; }
+    .an-bar { height:16px; background:var(--paper); border-radius:5px; }
+    .an-bar-fill { height:100%; background:var(--gold); border-radius:5px; }
+    .an-bars-v { flex-direction:row; align-items:flex-end; gap:3px; height:140px; overflow-x:auto; }
+    .an-vbar { flex:1; min-width:8px; background:var(--blue-light); border-radius:3px 3px 0 0; position:relative; }
+    .an-vbar.paid { background:var(--gold); }
+    /* Mini table */
+    .an-table-mini { font-size:12.5px; }
+    .an-tr { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); }
+    .an-tr:last-child { border-bottom:none; }
+    .an-tr .p { color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .an-tr .n { font-family:var(--sora); color:var(--blue); flex:none; }
+    .an-pill-sm { display:inline-block; font-family:var(--sora); font-size:10px; padding:1px 7px; border-radius:100px; }
+    .pill-pay { background:rgba(245,166,35,.18); color:#8a5a00; } .pill-org { background:rgba(46,111,174,.1); color:var(--blue-light); }
+    .pill-out { background:rgba(179,38,30,.12); color:#b3261e; }
+    /* Heatmap */
+    .an-hm-ctrls { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .an-hm-ctrls select { border:1.5px solid var(--line); border-radius:8px; padding:7px 10px; font-size:13px; font-family:var(--sora); background:#fff; }
+    .an-hm-wrap { display:flex; justify-content:center; background:var(--paper); border-radius:10px; padding:12px; position:relative; }
+    #hm-canvas { background:#fff; border:1px solid var(--line); border-radius:6px; max-width:100%; }
+    /* Replay */
+    .an-replay-layout { display:grid; grid-template-columns:300px 1fr; gap:14px; }
+    @media (max-width:800px){ .an-replay-layout{ grid-template-columns:1fr; } }
+    .an-replay-list { max-height:520px; overflow-y:auto; border:1px solid var(--line); border-radius:10px; }
+    .an-rl-item { padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12.5px; }
+    .an-rl-item:hover { background:var(--paper); } .an-rl-item.active { background:rgba(46,111,174,.08); }
+    .an-rl-item .meta { color:var(--ink-soft); margin-top:3px; font-size:11.5px; }
+    .an-replay-player { border:1px solid var(--line); border-radius:10px; min-height:420px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .an-replay-player .rr-player { box-shadow:none !important; }
+  </style>
+
+  <script>
+    import { supabase } from '../../lib/supabase';
+    import rrwebPlayer from 'rrweb-player';
+    import 'rrweb-player/dist/style.css';
+
+    const PAID_MEDIUMS = ['cpc','ppc','paid','paidsearch','paid_social','display'];
+    const isPaid = (s: any) => !!s.gclid || PAID_MEDIUMS.includes(String(s.utm_medium || '').toLowerCase());
+    const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c] as string));
+    const fmtDur = (s: any) => { const n = Number(s)||0; return n >= 60 ? `${Math.floor(n/60)}m${String(n%60).padStart(2,'0')}` : `${n}s`; };
+
+    const D: any = {};
+    let paidOnly = false;
+
+    function el(id: string) { return document.getElementById(id) as HTMLElement; }
+
+    // ── KPIs (depuis v_paid_vs_organic) ──
+    function renderKpis() {
+      const rows = D.pvo.filter((r: any) => !paidOnly || r.canal === 'payant');
+      const sum = (k: string) => rows.reduce((a: number, r: any) => a + (Number(r[k]) || 0), 0);
+      const sessions = sum('sessions'), visiteurs = sum('visiteurs'), leads = sum('leads');
+      const wavg = (k: string) => sessions ? Math.round(rows.reduce((a: number, r: any) => a + Number(r[k]) * Number(r.sessions), 0) / sessions) : 0;
+      el('k-sessions').textContent = String(sessions);
+      el('k-visiteurs').textContent = String(visiteurs);
+      el('k-pps').textContent = sessions ? (rows.reduce((a: number, r: any) => a + Number(r.pages_par_session) * Number(r.sessions), 0) / sessions).toFixed(2) : '0';
+      el('k-duree').textContent = fmtDur(wavg('duree_moy_s'));
+      el('k-rebond').textContent = (sessions ? Math.round(rows.reduce((a: number, r: any) => a + Number(r.taux_rebond_pct) * Number(r.sessions), 0) / sessions) : 0) + '%';
+      el('k-leads').textContent = String(leads);
+    }
+
+    // ── Funnel /devis ──
+    function renderFunnel() {
+      const rows = D.funnel.filter((r: any) => !paidOnly || r.canal === 'payant');
+      const agg = (k: string) => rows.reduce((a: number, r: any) => a + (Number(r[k]) || 0), 0);
+      const steps = [
+        ['Visite /devis','visites_devis'], ['Vue formulaire','vues_formulaire'], ['1er champ','champ_commence'],
+        ['Estimation','etape_estimation'], ['Coordonnées','etape_coordonnees'], ['Soumission','soumissions'],
+      ];
+      const base = agg('visites_devis') || 1;
+      let prev = agg('visites_devis');
+      el('funnel-canal').textContent = paidOnly ? '· payant' : '· tous canaux';
+      el('funnel').innerHTML = steps.map(([lbl, k]) => {
+        const v = agg(k); const pct = Math.round((v / base) * 100);
+        const drop = prev > 0 && v < prev ? Math.round(((prev - v) / prev) * 100) : 0;
+        prev = v;
+        return `<div class="fn-row"><span>${lbl}</span><div class="fn-bar"><div class="fn-fill" style="width:${pct}%"></div></div>
+          <span class="fn-pct">${v} <span class="fn-drop">${drop ? '−' + drop + '%' : ''}</span></span></div>`;
+      }).join('');
+
+      const dmax = Math.max(1, ...D.dropoff.map((d: any) => Number(d.abandons)));
+      el('dropoff').innerHTML = D.dropoff.length ? D.dropoff.map((d: any) =>
+        `<div class="an-bar-row"><span class="p">${esc(d.dernier_champ)}</span><div class="an-bar"><div class="an-bar-fill" style="width:${(d.abandons/dmax)*100}%"></div></div><span class="n">${d.abandons}</span></div>`
+      ).join('') : '<p class="muted" style="font-size:12.5px">Aucun abandon enregistré.</p>';
+    }
+
+    // ── Sessions / jour ──
+    function renderDaily() {
+      const rows = [...D.daily].reverse().slice(-30);
+      const max = Math.max(1, ...rows.map((r: any) => Number(r.sessions)));
+      el('daily').innerHTML = rows.map((r: any) => {
+        const h = Math.round((Number(r.sessions)/max)*130) + 4;
+        const pp = paidOnly ? ' paid' : '';
+        const v = paidOnly ? r.sessions_payant : r.sessions;
+        return `<div class="an-vbar${pp}" style="height:${Math.max(4, Math.round((Number(v)/max)*130))}px" title="${r.jour}: ${v} sessions"></div>`;
+      }).join('') || '<p class="muted" style="font-size:12.5px">Pas encore de sessions.</p>';
+    }
+
+    // ── Payant vs organique ──
+    function renderPvo() {
+      el('pvo').innerHTML = D.pvo.map((r: any) => {
+        const pill = r.canal === 'payant' ? '<span class="an-pill-sm pill-pay">Payant</span>' : '<span class="an-pill-sm pill-org">Organique</span>';
+        return `<div style="margin-bottom:12px">${pill}
+          <div class="an-tr"><span class="p">Sessions</span><span class="n">${r.sessions}</span></div>
+          <div class="an-tr"><span class="p">Pages / session</span><span class="n">${r.pages_par_session}</span></div>
+          <div class="an-tr"><span class="p">Durée moy.</span><span class="n">${fmtDur(r.duree_moy_s)}</span></div>
+          <div class="an-tr"><span class="p">Taux de rebond</span><span class="n">${r.taux_rebond_pct}%</span></div>
+          <div class="an-tr"><span class="p">Leads</span><span class="n">${r.leads}</span></div></div>`;
+      }).join('');
+    }
+
+    function miniTable(id: string, rows: any[], pathKey: string, nKey: string, fmt?: (r:any)=>string) {
+      const max = Math.max(1, ...rows.map((r) => Number(r[nKey])));
+      el(id).innerHTML = rows.slice(0, 12).map((r) =>
+        `<div class="an-tr"><span class="p">${esc(r[pathKey] || '—')}</span><span class="n">${fmt ? fmt(r) : r[nKey]}</span></div>`
+      ).join('') || '<p class="muted" style="font-size:12.5px">—</p>';
+    }
+
+    function renderHorsZone() {
+      const leads = D.horszoneLeads, sess = D.horszoneSess;
+      let html = '';
+      if (leads.length) {
+        html += '<h4 class="an-sub2">Leads hors zone (CP ≠ 75/93)</h4>';
+        html += leads.map((l: any) => `<div class="an-tr"><span class="p"><span class="an-pill-sm pill-out">${esc(l.secteur)}</span> ${esc(l.type_demande||'')} ${l.payant?'<span class="an-pill-sm pill-pay">pub</span>':''}</span><span class="n">${l.estimation?l.estimation+' €':''}</span></div>`).join('');
+      }
+      if (sess.length) {
+        html += '<h4 class="an-sub2">Sessions hors Île-de-France</h4>';
+        html += sess.slice(0,10).map((s: any) => `<div class="an-tr"><span class="p"><span class="an-pill-sm pill-out">${esc(s.geo_region||'?')}</span> ${esc(s.geo_city||'')} ${s.payant?'<span class="an-pill-sm pill-pay">pub</span>':''}</span><span class="n">${esc(s.entry_path||'')}</span></div>`).join('');
+      }
+      el('horszone').innerHTML = html || '<p class="muted" style="font-size:12.5px">✓ Aucun trafic/lead hors zone détecté.</p>';
+    }
+
+    // ── Heatmap (canvas local, sans lib externe) ──
+    function renderHeatmapControls() {
+      const sel = el('hm-path') as HTMLSelectElement;
+      sel.innerHTML = D.hmPaths.map((p: string) => `<option value="${esc(p)}">${esc(p)}</option>`).join('') || '<option>—</option>';
+    }
+    async function drawHeatmap() {
+      const path = (el('hm-path') as HTMLSelectElement).value;
+      const device = (el('hm-device') as HTMLSelectElement).value;
+      const kind = (el('hm-kind') as HTMLSelectElement).value;
+      const cv = el('hm-canvas') as HTMLCanvasElement;
+      const ctx = cv.getContext('2d')!;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      el('hm-empty').hidden = true;
+      let q = supabase.from('analytics_heatmap_daily').select('gx,gy,weight,device').eq('path', path).eq('kind', kind);
+      if (kind === 'click' && device !== 'all') q = q.eq('device', device);
+      const { data } = await q;
+      const rows = data || [];
+      if (!rows.length) { el('hm-empty').hidden = false; return; }
+      if (kind === 'click') {
+        const max = Math.max(1, ...rows.map((r: any) => r.weight));
+        rows.forEach((r: any) => {
+          const x = (r.gx / 50) * cv.width, y = (r.gy / 200) * cv.height;
+          const a = Math.min(0.85, 0.15 + (r.weight / max) * 0.7);
+          const rad = 26;
+          const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+          g.addColorStop(0, `rgba(245,80,40,${a})`); g.addColorStop(1, 'rgba(245,80,40,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
+        });
+      } else {
+        // profondeur de scroll : bandes horizontales (gy = 0..100)
+        const byDepth: Record<number, number> = {};
+        rows.forEach((r: any) => { byDepth[r.gy] = (byDepth[r.gy]||0) + r.weight; });
+        const max = Math.max(1, ...Object.values(byDepth));
+        for (let d = 0; d <= 100; d += 5) {
+          const w = byDepth[d] || 0;
+          const a = (w / max) * 0.8;
+          ctx.fillStyle = `rgba(46,111,174,${a})`;
+          ctx.fillRect(0, (d/100)*cv.height, cv.width, cv.height/20);
+        }
+        ctx.fillStyle = '#0B2A4A'; ctx.font = '11px sans-serif';
+        ctx.fillText('0%', 6, 14); ctx.fillText('50%', 6, cv.height/2); ctx.fillText('100%', 6, cv.height-6);
+      }
+    }
+
+    // ── Replays ──
+    function renderReplayList() {
+      let sess = D.sessions.filter((s: any) => D.replaySessionIds.has(s.id));
+      if (paidOnly) sess = sess.filter(isPaid);
+      el('replay-list').innerHTML = sess.length ? sess.map((s: any) => {
+        const out = s.geo_region && !/le-de-France/i.test(s.geo_region);
+        return `<div class="an-rl-item" data-sid="${s.id}">
+          <div>${isPaid(s) ? '<span class="an-pill-sm pill-pay">pub</span> ' : ''}${out ? '<span class="an-pill-sm pill-out">hors zone</span> ' : ''}${s.lead_id ? '🟢 lead ' : ''}${esc(s.entry_path||'/')}</div>
+          <div class="meta">${new Date(s.started_at).toLocaleString('fr-FR')} · ${s.device||'?'} · ${fmtDur(s.duration_s)} · ${s.page_count} pages</div>
+        </div>`;
+      }).join('') : '<p class="muted" style="padding:14px;font-size:12.5px">Aucun replay disponible (consentement requis ; rétention 30 j).</p>';
+    }
+    let player: any = null;
+    async function playSession(sid: string) {
+      document.querySelectorAll('.an-rl-item').forEach((n) => n.classList.toggle('active', (n as HTMLElement).dataset.sid === sid));
+      const wrap = el('replay-player');
+      wrap.innerHTML = '<p class="muted" style="padding:20px">Chargement du replay…</p>';
+      const { data } = await supabase.from('analytics_replay_chunks').select('seq,events').eq('session_id', sid).order('seq');
+      const events: any[] = [];
+      (data || []).forEach((c: any) => { if (Array.isArray(c.events)) events.push(...c.events); });
+      if (events.length < 2) { wrap.innerHTML = '<p class="muted" style="padding:20px">Replay trop court ou indisponible.</p>'; return; }
+      wrap.innerHTML = '';
+      try {
+        if (player && player.$destroy) player.$destroy();
+        player = new rrwebPlayer({
+          target: wrap,
+          props: { events, width: wrap.clientWidth - 4, height: 400, autoPlay: true, showController: true },
+        });
+      } catch (e) { wrap.innerHTML = '<p class="muted" style="padding:20px">Lecture impossible : ' + esc((e as Error).message) + '</p>'; }
+    }
+
+    function renderAll() {
+      renderKpis(); renderFunnel(); renderDaily(); renderPvo();
+      miniTable('toppages', D.toppages, 'path', 'vues', (r) => `${r.vues} vues`);
+      miniTable('entryexit', D.entryexit.filter((r:any)=>r.type==='entrée'), 'path', 'n', (r) => `↘ ${r.n}`);
+      el('entryexit').innerHTML += D.entryexit.filter((r:any)=>r.type==='sortie').slice(0,6).map((r:any)=>`<div class="an-tr"><span class="p">${esc(r.path||'—')}</span><span class="n">↗ ${r.n}</span></div>`).join('');
+      miniTable('rage', D.rage, 'path', 'rage_clicks', (r) => `${r.rage_clicks}`);
+      renderHorsZone(); renderReplayList();
+    }
+
+    async function init() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) { window.location.href = '/admin/login'; return; }
+
+      const q = (v: string) => supabase.from(v).select('*');
+      const [funnel, dropoff, pvo, toppages, entryexit, daily, rage, hzLeads, hzSess, sessions, chunks] = await Promise.all([
+        q('v_devis_funnel'), q('v_devis_dropoff_fields'), q('v_paid_vs_organic'), q('v_top_pages'),
+        q('v_entry_exit_pages'), q('v_sessions_daily'), q('v_rage_clicks'),
+        q('v_leads_hors_zone'), q('v_sessions_hors_idf'),
+        supabase.from('analytics_sessions').select('id,started_at,gclid,utm_medium,device,entry_path,exit_path,page_count,duration_s,lead_id,geo_region,geo_city').order('started_at', { ascending: false }).limit(300),
+        supabase.from('analytics_replay_chunks').select('session_id'),
+      ]);
+      D.funnel = funnel.data || []; D.dropoff = dropoff.data || []; D.pvo = pvo.data || [];
+      D.toppages = toppages.data || []; D.entryexit = entryexit.data || []; D.daily = daily.data || [];
+      D.rage = rage.data || []; D.horszoneLeads = hzLeads.data || []; D.horszoneSess = hzSess.data || [];
+      D.sessions = sessions.data || [];
+      D.replaySessionIds = new Set((chunks.data || []).map((c: any) => c.session_id));
+      D.hmPaths = D.toppages.map((p: any) => p.path);
+
+      el('an-loading').hidden = true; el('an-app').hidden = false;
+      renderHeatmapControls(); renderAll(); drawHeatmap();
+
+      el('flt-paid').addEventListener('change', (e) => { paidOnly = (e.target as HTMLInputElement).checked; renderAll(); });
+      ['hm-path','hm-device','hm-kind'].forEach((id) => el(id).addEventListener('change', drawHeatmap));
+      el('replay-list').addEventListener('click', (e) => {
+        const it = (e.target as HTMLElement).closest('.an-rl-item') as HTMLElement | null;
+        if (it && it.dataset.sid) playSession(it.dataset.sid);
+      });
+      el('logout-btn')?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = '/admin/login'; });
+    }
+
+    init();
+  </script>
+</AdminLayout>

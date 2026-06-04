@@ -49,6 +49,11 @@ function clean(v: unknown, max = 500): string | null {
   return s.length ? s : null;
 }
 
+/** Valide un uuid (sinon chaîne vide : la fonction RPC l'ignore via nullif). */
+function uuidOrEmpty(v: unknown): string {
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : '';
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -225,6 +230,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     network: clean(body.network, 20) || '',
     landing_path: clean(body.landing_path, 255) || '',
     referrer: clean(body.referrer, 255) || '',
+    // Lien lead ↔ comportement (uuid posés par le tracker first-party ; ignorés si absents/invalides)
+    session_id: uuidOrEmpty(body.session_id),
+    visitor_id: uuidOrEmpty(body.visitor_id),
   };
 
   const url = envVar(P.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_URL);

@@ -1,0 +1,13 @@
+---
+/**
+ * Chargeur du tracker comportemental first-party.
+ * - Module bundlé (TS) chargé en différé, NON bloquant pour le LCP.
+ * - Le tracker ne démarre QUE si le consentement « Analyse de navigation »
+ *   (catégorie `behavior`) est accordé. rrweb est chargé en chunk séparé,
+ *   uniquement à ce moment-là.
+ */
+---
+<script>
+  import { initBehaviorTracking } from '../lib/track/tracker';
+  initBehaviorTracking();
+</script>
