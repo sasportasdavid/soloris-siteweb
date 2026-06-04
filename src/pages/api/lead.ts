@@ -169,11 +169,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const email = clean(body.email, 160);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
 
-  // Exigences selon le contexte
+  // Exigences selon le contexte (lenientes pour un lead partiel : on capture TOUT,
+  // même sans nom — c'est l'intérêt de la capture progressive).
   if (isPartial) {
     if (!leadUid) return json({ error: 'Identifiant de session requis.' }, 400);
-    // Nom obligatoire pour TOUT lead enregistré : aucun « lead sans nom », même partiel.
-    if (!nom) return json({ error: 'Le nom est requis.' }, 400);
   } else if (isContact) {
     if (!nom || !telephone || !email) return json({ error: 'Nom, téléphone et email sont requis.' }, 400);
   } else if (isChat) {

@@ -481,7 +481,6 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     function upsertLead(status) {
       var p = buildPayload(status);
       if (!p.type_demande) return; // rien tant que le projet n'est pas choisi
-      if (status === 'partiel' && !p.nom) return; // nom obligatoire : aucun lead « sans nom »
       fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).catch(function () {});
     }
     // Capture progressive : à chaque nouvelle étape atteinte + au blur tel/email
@@ -532,7 +531,6 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     // ── Capture anticipée : lead « partiel » si abandon après l'estimation ──
     function sendPartial() {
       if (submitted || !reachedEstimation) return;
-      if (!val('nom')) return; // nom obligatoire : aucun lead « sans nom »
       if (!(val('telephone') || val('email'))) return; // uniquement si un contact a été saisi
       try {
         var p = buildPayload('partiel');
