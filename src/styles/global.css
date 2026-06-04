@@ -200,7 +200,12 @@ section { padding: 92px 0; }
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-soft);
   padding: 10px; min-width: 280px; display: none; flex-direction: column; gap: 2px;
 }
-.has-menu:hover .menu-panel, .has-menu:focus-within .menu-panel { display: flex; }
+/* Ouverture au survol / focus : DESKTOP uniquement. Sur mobile, l'ouverture est
+   pilotée par la classe .has-menu.open (sinon le focus du bouton garderait le
+   panneau ouvert et empêcherait de le refermer au tactile). */
+@media (min-width: 921px) {
+  .has-menu:hover .menu-panel, .has-menu:focus-within .menu-panel { display: flex; }
+}
 .menu-item { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; }
 .menu-item:hover { background: var(--paper); text-decoration: none; }
 .menu-item b { font-family: var(--sora); font-weight: 600; font-size: 14px; color: var(--blue); }
