@@ -8,11 +8,12 @@
  */
 interface Props {
   variant?: 'light' | 'dark';
+  compact?: boolean; // version réduite/discrète (ex. sous le logo du header)
   class?: string;
 }
-const { variant = 'light', class: cls = '' } = Astro.props;
+const { variant = 'light', compact = false, class: cls = '' } = Astro.props;
 ---
-<span class={`endorse ${variant === 'dark' ? 'on-dark' : ''} ${cls}`.trim()}>Une marque du groupe <b>ISDIAG</b></span>
+<span class={`endorse ${variant === 'dark' ? 'on-dark' : ''} ${compact ? 'sm' : ''} ${cls}`.replace(/\s+/g, ' ').trim()}>Une marque du groupe <b>ISDIAG</b></span>
 
 <style>
   .endorse {
@@ -37,4 +38,9 @@ const { variant = 'light', class: cls = '' } = Astro.props;
   .endorse.on-dark { color: var(--ink-on-dark); }
   .endorse.on-dark::before { background: var(--rule-on-dark); }
   .endorse.on-dark b { color: var(--ink-on-dark-strong); }
+
+  /* Version compacte/discrète (sous le logo du header) */
+  .endorse.sm { font-size: 8.5px; letter-spacing: .09em; gap: 6px; opacity: .85; }
+  .endorse.sm::before { width: 9px; }
+  .endorse.sm b { letter-spacing: .06em; }
 </style>
