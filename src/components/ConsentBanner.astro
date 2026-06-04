@@ -24,6 +24,10 @@
           <input type="checkbox" id="opt-ads" />
           <span><b>Publicité</b> — mesure de nos campagnes (Google Ads, Meta).</span>
         </label>
+        <label class="consent-opt">
+          <input type="checkbox" id="opt-behavior" />
+          <span><b>Analyse de navigation</b> — comprendre votre parcours pour améliorer le site (statistiques internes, enregistrement de session anonymisé, sans aucune donnée tierce).</span>
+        </label>
       </div>
     </div>
 
@@ -83,6 +87,7 @@
     var options = document.getElementById('consent-options');
     var optAnalytics = document.getElementById('opt-analytics');
     var optAds = document.getElementById('opt-ads');
+    var optBehavior = document.getElementById('opt-behavior');
     var btnAccept = document.getElementById('consent-accept');
     var btnRefuse = document.getElementById('consent-refuse');
     var btnCustom = document.getElementById('consent-custom');
@@ -97,7 +102,9 @@
     }
 
     function apply(consent) {
-      if (window.solorisApplyConsent) window.solorisApplyConsent(consent);
+      if (window.solorisApplyConsent) window.solorisApplyConsent(consent); // gtag/Consent Mode (analytics/ads)
+      // Tracker comportemental first-party (catégorie « behavior ») : démarre/arrête + purge au retrait.
+      try { window.dispatchEvent(new CustomEvent('soloris-consent', { detail: consent })); } catch (e) {}
       hide();
     }
 
@@ -106,18 +113,19 @@
     if (saved) { if (window.solorisApplyConsent) window.solorisApplyConsent(saved); reopen.hidden = false; }
     else { show(); }
 
-    btnAccept.addEventListener('click', function () { apply({ analytics: true, ads: true }); });
-    btnRefuse.addEventListener('click', function () { apply({ analytics: false, ads: false }); });
+    btnAccept.addEventListener('click', function () { apply({ analytics: true, ads: true, behavior: true }); });
+    btnRefuse.addEventListener('click', function () { apply({ analytics: false, ads: false, behavior: false }); });
     btnCustom.addEventListener('click', function () {
       options.hidden = false; btnSave.hidden = false; btnCustom.hidden = true;
     });
     btnSave.addEventListener('click', function () {
-      apply({ analytics: optAnalytics.checked, ads: optAds.checked });
+      apply({ analytics: optAnalytics.checked, ads: optAds.checked, behavior: optBehavior.checked });
     });
     reopen.addEventListener('click', function () {
       var s = stored();
       optAnalytics.checked = !!(s && s.analytics);
       optAds.checked = !!(s && s.ads);
+      optBehavior.checked = !!(s && s.behavior);
       options.hidden = false; btnSave.hidden = false; btnCustom.hidden = true;
       show();
     });

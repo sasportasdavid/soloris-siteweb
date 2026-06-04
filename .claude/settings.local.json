@@ -13,7 +13,8 @@
       "Bash(magick -background none favicon.svg -resize 192x192 icon-192.png)",
       "Bash(magick -background none favicon.svg -resize 512x512 icon-512.png)",
       "Bash(magick -background \"#0B2A4A\" og-default.svg -resize 1200x630 og-default.png)",
-      "Bash(ls /System/Library/Fonts/Supplemental/ 2>/dev/null | grep -iE \"arial|helvetica|georgia|times\" | head; echo \"---core---\"; ls /System/Library/Fonts/ | grep -iE \"helvetica|geneva|times\" | head)"
+      "Bash(ls /System/Library/Fonts/Supplemental/ 2>/dev/null | grep -iE \"arial|helvetica|georgia|times\" | head; echo \"---core---\"; ls /System/Library/Fonts/ | grep -iE \"helvetica|geneva|times\" | head)",
+      "mcp__Supabase__list_extensions"
     ]
   }
 }

@@ -461,11 +461,16 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     function getAcq() {
       try { var raw = (document.cookie.split('; ').find(function (c) { return c.indexOf('soloris_acq=') === 0; }) || '').split('=')[1]; return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; }
     }
+    function readCookie(name) {
+      return (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1] || '';
+    }
     function buildPayload(status) {
       var a = getAcq();
       var ax = annexeState();
       return {
         lead_uid: getLeadUid(), lead_status: status, source: 'devis',
+        // Lien lead ↔ comportement (cookies posés par le tracker si consentement « Analyse de navigation »)
+        session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
         type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
         surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
         annexe: ax.on ? '1' : '0', annexe_type: ax.on ? ax.type : '',
