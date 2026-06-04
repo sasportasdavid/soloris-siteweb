@@ -28,7 +28,11 @@ const { title, showNav = false } = Astro.props;
       <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
         <a href="/admin" aria-label="Tableau de bord"><Logo variant="dark" size={20} /></a>
         {showNav && (
-          <button id="logout-btn" class="btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)">Déconnexion</button>
+          <nav style="display:flex;align-items:center;gap:14px">
+            <a href="/admin" style="color:#fff;opacity:.85;font-family:var(--sora);font-size:13px;text-decoration:none">Leads</a>
+            <a href="/admin/analytics" style="color:#fff;opacity:.85;font-family:var(--sora);font-size:13px;text-decoration:none">Analytics</a>
+            <button id="logout-btn" class="btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)">Déconnexion</button>
+          </nav>
         )}
       </div>
     </header>
