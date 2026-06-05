@@ -11,7 +11,12 @@
  * GTM et gtag partagent le même dataLayer et le même état de consentement.
  */
 const GTM = import.meta.env.PUBLIC_GTM_ID;
-const GA4 = import.meta.env.PUBLIC_GA4_ID;
+// Flux GA4 : on lit la variable d'env si elle est définie, sinon on retombe sur
+// l'ID de mesure direct (valeur PUBLIQUE, déjà exposée dans la page). Câblage
+// direct via gtag → GA4 reçoit les hits indépendamment de la config GTM, sous Consent Mode.
+const GA4 = import.meta.env.PUBLIC_GA4_ID && import.meta.env.PUBLIC_GA4_ID !== '__A_REMPLACER__'
+  ? import.meta.env.PUBLIC_GA4_ID
+  : 'G-RYDHXHGSRM';
 const GADS = import.meta.env.PUBLIC_GADS_ID;
 const GADS_PHONE_LABEL = import.meta.env.PUBLIC_GADS_PHONE_LABEL;
 const META = import.meta.env.PUBLIC_META_PIXEL_ID;
