@@ -64,9 +64,27 @@ matview serait vidée avec sa source) et évite de recalculer tout l'historique 
 
 ## 4. Conformité RGPD / CNIL
 
+### Deux modes de mesure
+
+1. **Mesure d'audience anonyme — SANS consentement (exemption CNIL).** Active par défaut
+   pour 100 % des visiteurs. First-party, aucune donnée tierce, **IP jetée** côté serveur,
+   **aucun cookie/identifiant persistant** (id de session en `sessionStorage`, effacé à la
+   fermeture de l'onglet, pas de lien inter-sessions), **pas de hash d'UA stocké**
+   (`ua_hash = null`). Données limitées : pages vues, temps par page, profondeur de scroll,
+   **étapes du funnel `/devis`**. Marquées `consent_state = 'exempt'`.
+   → Pas de coordonnées de clic (heatmap), pas de suivi champ par champ, **pas de replay**.
+2. **Analyse détaillée — APRÈS consentement** (`behavior`). Ajoute clics + coordonnées
+   (heatmaps), rage-clicks, funnel au champ (dernier champ avant abandon), **session replay
+   rrweb**, et un `visitor_id` persistant (lien lead ↔ comportement). Retrait = purge + retour
+   en mode anonyme.
+
+Base de l'exemption CNIL : mesure d'audience strictement first-party, finalité limitée aux
+statistiques internes, pas de recoupement entre sites, pas de partage tiers, IP anonymisée,
+pas d'identifiant persistant ré-identifiant. (Lignes 1 = exempt ; lignes 2 = consentement.)
+
 | Exigence | Mise en œuvre |
 |---|---|
-| **Consentement préalable** | Catégorie dédiée **« Analyse de navigation »** (`behavior`) dans le bandeau (`ConsentBanner.astro`), opt-in, distincte de « Mesure d'audience » (GA4) et « Publicité ». **Aucun** event/replay/heatmap tant que `behavior` n'est pas accordé. |
+| **Consentement** | Catégorie dédiée **« Analyse de navigation »** (`behavior`) dans le bandeau, opt-in, distincte de « Mesure d'audience » (GA4) et « Publicité ». La mesure **anonyme** tourne sans consentement (exemption) ; **replay/heatmaps/champ par champ/visitor_id persistant** exigent `behavior`. |
 | **Base légale** | Consentement (art. 6.1.a RGPD). Le session replay étant intrusif, il a sa propre case et son propre retrait. |
 | **Anonymisation IP** | L'IP n'est **jamais** stockée : `/api/track` dérive une géo grossière (région/ville) des en-têtes Vercel puis jette l'IP. `ua_hash` = SHA-256 tronqué, pas l'UA brut. |
 | **Aucune PII** | rrweb `maskAllInputs:true` + `maskInputOptions {password,email,tel,text}` + classe `.pii` bloquée/masquée. Les events ne portent que des **métadonnées de champ** (`field_name`, `filled`, `len`) — **jamais** `telephone/email/nom/adresse`. |

@@ -1,20 +1,19 @@
 /**
- * Tracker comportemental first-party (Soloris) — PII-safe, consent-gated.
+ * Tracker comportemental first-party (Soloris) — PII-safe.
  *
- * Démarre UNIQUEMENT après consentement « Analyse de navigation » (catégorie
- * `behavior` du bandeau CNIL). Tant que ce consentement n'est pas accordé :
- * aucun event, aucun replay, aucune écriture.
+ * DEUX MODES :
+ *  1. « anonymous » (par défaut, SANS consentement) — mesure d'audience exemptée
+ *     de consentement au sens CNIL : aucune donnée tierce, IP jetée côté serveur,
+ *     AUCUN cookie/identifiant persistant (id de session en sessionStorage,
+ *     effacé à la fermeture de l'onglet, pas de lien inter-sessions), pas d'UA
+ *     stocké. On ne capte que des statistiques d'audience anonymes : pages vues,
+ *     temps par page, profondeur de scroll, et étapes du funnel /devis.
+ *     PAS de coordonnées de clic (heatmap), PAS de champ par champ, PAS de replay.
+ *  2. « full » (APRÈS consentement « Analyse de navigation ») — ajoute clics +
+ *     coords (heatmap), rage-clicks, funnel au champ, session replay rrweb, et un
+ *     visitor_id persistant (lien lead ↔ comportement). Retrait = purge + retour anonyme.
  *
- * Garde-fous RGPD/CNIL :
- *  - Jamais de valeur de champ (telephone/email/nom/adresse…) : on ne capte que
- *    des MÉTADONNÉES (nom du champ, rempli/vide, longueur, focus/blur).
- *  - rrweb en `maskAllInputs:true` + masquage des éléments `.pii`.
- *  - `visitor_id` (first-party) et `session_id` (30 min) générés localement ;
- *    l'IP n'est jamais lue ici (géo grossière dérivée côté serveur, IP jetée).
- *  - Retrait du consentement → arrêt immédiat + purge de la session (RPC serveur).
- *
- * Perf : envoi par batch (sendBeacon / fetch keepalive), scroll throttlé,
- * rrweb chargé en chunk séparé (dynamic import) seulement si replay consenti.
+ * Garde-fous PII : jamais de valeur de champ ; rrweb maskAllInputs ; classe .pii bloquée.
  */
 
 type Consent = { analytics?: boolean; ads?: boolean; behavior?: boolean };
@@ -22,19 +21,16 @@ type Ev = { type: string; path: string; element?: string; ts_client: string; met
 type ReplayChunk = { seq: number; events: unknown[]; masked: boolean };
 
 const ENDPOINT = '/api/track';
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min d'inactivité
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 const FLUSH_INTERVAL_MS = 5000;
 const MAX_BATCH = 30;
 const SCROLL_THROTTLE_MS = 500;
-const VID_TTL_DAYS = 390; // ~13 mois (aligné sur la rétention)
+const VID_TTL_DAYS = 390; // ~13 mois (mode full uniquement)
 const REPLAY_CHUNK_MS = 5000;
 
-const FUNNEL_TYPES = new Set([
-  'form_view', 'field_focus', 'field_blur', 'field_change', 'form_step', 'form_submit', 'form_abandon',
-]);
-
-// ── État module ──
+// ── État ──
 let started = false;
+let full = false;
 let consent: Consent = {};
 let sessionId = '';
 let visitorId = '';
@@ -50,6 +46,7 @@ let formViewed = false;
 let formStarted = false;
 let formSubmitted = false;
 let flushTimer: number | null = null;
+let bound = false;
 let stopReplay: (() => void) | null = null;
 let replaySeq = 0;
 let replayBuffer: unknown[] = [];
@@ -75,10 +72,8 @@ function delCookie(name: string) {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 }
 function getAcq(): Record<string, string> {
-  try {
-    const raw = getCookie('soloris_acq');
-    return raw ? JSON.parse(decodeURIComponent(raw)) : {};
-  } catch { return {}; }
+  try { const raw = getCookie('soloris_acq'); return raw ? JSON.parse(decodeURIComponent(raw)) : {}; }
+  catch { return {}; }
 }
 function deviceClass(): string {
   const w = window.innerWidth || 0;
@@ -88,7 +83,6 @@ function deviceClass(): string {
 }
 function now(): string { return new Date().toISOString(); }
 
-/** Sélecteur court + texte non-PII (jamais de valeur de champ). */
 function describeEl(el: Element | null): string {
   if (!el) return '';
   const tag = el.tagName ? el.tagName.toLowerCase() : '';
@@ -99,7 +93,6 @@ function describeEl(el: Element | null): string {
   if (first && first !== 'pii') sel += '.' + first;
   const dt = el.getAttribute && (el.getAttribute('data-track') || el.getAttribute('aria-label'));
   if (dt) sel += `[${dt.slice(0, 40)}]`;
-  // Texte seulement pour les éléments à faible risque PII (liens, boutons, titres)
   if (['a', 'button', 'h1', 'h2', 'h3'].includes(tag) && !el.closest('.pii')) {
     const t = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 50);
     if (t) sel += ` "${t}"`;
@@ -107,56 +100,57 @@ function describeEl(el: Element | null): string {
   return sel.slice(0, 280);
 }
 
-// ── Identité ──
-function ensureVisitor() {
+// ── Identité : full = persistant (cookies) ; anonymous = session, sans cookie ──
+function setFullIds() {
   visitorId = getCookie('soloris_vid');
-  if (!/^[0-9a-f-]{36}$/i.test(visitorId)) {
-    visitorId = uuid();
-    setCookie('soloris_vid', visitorId, VID_TTL_DAYS);
-  }
-}
-function ensureSession() {
+  if (!/^[0-9a-f-]{36}$/i.test(visitorId)) { visitorId = uuid(); setCookie('soloris_vid', visitorId, VID_TTL_DAYS); }
   let raw: any = null;
   try { raw = JSON.parse(localStorage.getItem('soloris_sess') || 'null'); } catch { /* */ }
   const fresh = raw && raw.id && raw.last && (Date.now() - raw.last) < SESSION_TIMEOUT_MS;
-  if (fresh) {
-    sessionId = raw.id; entryPath = raw.entry || location.pathname;
-  } else {
-    sessionId = uuid(); entryPath = location.pathname;
-  }
-  persistSession();
-  setCookie('soloris_sid', sessionId, 1); // lisible par le formulaire pour relier lead ↔ session
+  sessionId = fresh ? raw.id : uuid();
+  entryPath = (fresh && raw.entry) ? raw.entry : location.pathname;
+  persist();
+  setCookie('soloris_sid', sessionId, 1); // lien lead ↔ session (formulaire)
 }
-function persistSession() {
+function setAnonymousIds() {
+  // id de session NON persistant (sessionStorage), pas de lien inter-sessions, pas de cookie
+  let raw: any = null;
+  try { raw = JSON.parse(sessionStorage.getItem('soloris_a_sess') || 'null'); } catch { /* */ }
+  sessionId = (raw && raw.id) ? raw.id : uuid();
+  entryPath = (raw && raw.entry) ? raw.entry : location.pathname;
+  visitorId = sessionId; // anonyme : « visiteur » = session, aucune ré-identification
+  persist();
+}
+function persist() {
   try {
-    localStorage.setItem('soloris_sess', JSON.stringify({ id: sessionId, entry: entryPath, last: Date.now() }));
+    if (full) localStorage.setItem('soloris_sess', JSON.stringify({ id: sessionId, entry: entryPath, last: Date.now() }));
+    else sessionStorage.setItem('soloris_a_sess', JSON.stringify({ id: sessionId, entry: entryPath }));
   } catch { /* */ }
+}
+function clearFullStorage() {
+  try { localStorage.removeItem('soloris_sess'); } catch { /* */ }
+  delCookie('soloris_sid'); delCookie('soloris_vid');
 }
 
 // ── File d'events ──
 function push(type: string, element?: string, meta?: Record<string, unknown>) {
   if (!started) return;
   queue.push({ type, path: location.pathname, element, ts_client: now(), meta });
-  persistSession();
+  persist();
   if (queue.length >= MAX_BATCH) flush(false);
 }
 
 function sessionMeta(): Record<string, unknown> {
   const a = getAcq();
   return {
-    id: sessionId,
-    visitor_id: visitorId,
-    entry_path: entryPath,
-    exit_path: location.pathname,
-    device: deviceClass(),
-    viewport_w: window.innerWidth,
-    viewport_h: window.innerHeight,
+    id: sessionId, visitor_id: visitorId, entry_path: entryPath, exit_path: location.pathname,
+    device: deviceClass(), viewport_w: window.innerWidth, viewport_h: window.innerHeight,
     utm_source: a.utm_source || '', utm_medium: a.utm_medium || '', utm_campaign: a.utm_campaign || '',
     utm_term: a.utm_term || '', utm_content: a.utm_content || '',
     gclid: a.gclid || '', fbclid: a.fbclid || '',
     referrer: a.referrer || (document.referrer || ''),
     referrer_host: (() => { try { return document.referrer ? new URL(document.referrer).host : ''; } catch { return ''; } })(),
-    consent_state: consent.behavior ? (consent.ads ? 'behavior+ads' : 'behavior') : 'none',
+    consent_state: full ? (consent.ads ? 'behavior+ads' : 'behavior') : 'exempt',
     duration_s: Math.round((Date.now() - pageStart) / 1000),
   };
 }
@@ -164,36 +158,23 @@ function sessionMeta(): Record<string, unknown> {
 function flush(useBeacon: boolean) {
   if (!started) return;
   if (!queue.length && !replayQueue.length) return;
-  const body = {
-    session: sessionMeta(),
-    events: queue,
-    replay: replayQueue,
-    page_views: pageViews,
-  };
+  const body = { session: sessionMeta(), events: queue, replay: replayQueue, page_views: pageViews };
   queue = []; replayQueue = []; pageViews = 0;
   const json = JSON.stringify(body);
   try {
-    if (useBeacon && navigator.sendBeacon) {
-      navigator.sendBeacon(ENDPOINT, new Blob([json], { type: 'application/json' }));
-      return;
-    }
-  } catch { /* repli fetch */ }
-  fetch(ENDPOINT, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json, keepalive: true,
-  }).catch(() => { /* perte tolérée : analytics non critique */ });
+    if (useBeacon && navigator.sendBeacon) { navigator.sendBeacon(ENDPOINT, new Blob([json], { type: 'application/json' })); return; }
+  } catch { /* */ }
+  fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json, keepalive: true }).catch(() => {});
 }
 
-// ── Captation quantitative ──
+// ── Captation ──
 function onScroll() {
   const doc = document.documentElement;
   const scrollable = (doc.scrollHeight - window.innerHeight) || 1;
   const depth = Math.min(100, Math.round((window.scrollY / scrollable) * 100));
   if (depth > maxScroll) maxScroll = depth;
   for (const m of [25, 50, 75, 100]) {
-    if (maxScroll >= m && !scrollMilestones.has(m)) {
-      scrollMilestones.add(m);
-      push('scroll', undefined, { scroll_depth: m });
-    }
+    if (maxScroll >= m && !scrollMilestones.has(m)) { scrollMilestones.add(m); push('scroll', undefined, { scroll_depth: m }); }
   }
 }
 function throttle<T extends (...a: any[]) => void>(fn: T, ms: number): T {
@@ -205,31 +186,26 @@ function throttle<T extends (...a: any[]) => void>(fn: T, ms: number): T {
   } as T;
 }
 
+// Clics + coords (heatmap) + rage-click : FULL uniquement (nécessite consentement)
 function onClick(e: MouseEvent) {
+  if (!started || !full) return;
   const el = e.target as Element | null;
   const docH = document.documentElement.scrollHeight || 1;
   const docW = document.documentElement.scrollWidth || 1;
   const xRel = Math.round(((e.pageX || 0) / docW) * 1000) / 1000;
   const yRel = Math.round(((e.pageY || 0) / docH) * 1000) / 1000;
   push('click', describeEl(el), { x_rel: xRel, y_rel: yRel, viewport: deviceClass() });
-
-  // Rage-click : ≥3 clics rapprochés dans un petit rayon
   const t = Date.now();
   recentClicks.push({ x: e.clientX, y: e.clientY, t });
   while (recentClicks.length && t - recentClicks[0].t > 800) recentClicks.shift();
   if (recentClicks.length >= 3) {
     const near = recentClicks.filter((c) => Math.hypot(c.x - e.clientX, c.y - e.clientY) < 35);
-    if (near.length >= 3) {
-      push('rage_click', describeEl(el), { x_rel: xRel, y_rel: yRel });
-      recentClicks.length = 0;
-    }
+    if (near.length >= 3) { push('rage_click', describeEl(el), { x_rel: xRel, y_rel: yRel }); recentClicks.length = 0; }
   }
 }
 
-// ── Funnel formulaire (métadonnées uniquement) ──
-function fieldName(el: Element): string {
-  return (el.getAttribute('name') || (el as HTMLElement).id || '').slice(0, 60);
-}
+// Champ par champ : FULL uniquement (métadonnées only, jamais de valeur)
+function fieldName(el: Element): string { return (el.getAttribute('name') || (el as HTMLElement).id || '').slice(0, 60); }
 function fieldFilled(el: Element): boolean {
   const t = (el as HTMLInputElement).type;
   if (t === 'checkbox' || t === 'radio') return (el as HTMLInputElement).checked;
@@ -239,62 +215,51 @@ function isField(el: Element | null): el is HTMLElement {
   return !!el && ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName) && !!el.closest('form');
 }
 function onFocusIn(e: FocusEvent) {
-  const el = e.target as Element;
-  if (!isField(el)) return;
-  formStarted = true;
-  const name = fieldName(el);
-  lastTouchedField = name;
-  push('field_focus', undefined, { field_name: name, filled: fieldFilled(el) });
+  if (!started || !full) return;
+  const el = e.target as Element; if (!isField(el)) return;
+  formStarted = true; lastTouchedField = fieldName(el);
+  push('field_focus', undefined, { field_name: lastTouchedField, filled: fieldFilled(el) });
 }
 function onFocusOut(e: FocusEvent) {
-  const el = e.target as Element;
-  if (!isField(el)) return;
-  const name = fieldName(el);
+  if (!started || !full) return;
+  const el = e.target as Element; if (!isField(el)) return;
   const val = (el as HTMLInputElement).value || '';
-  push('field_blur', undefined, { field_name: name, filled: fieldFilled(el), len: val.length });
+  push('field_blur', undefined, { field_name: fieldName(el), filled: fieldFilled(el), len: val.length });
 }
 function onChange(e: Event) {
-  const el = e.target as Element;
-  if (!isField(el)) return;
-  const name = fieldName(el);
-  lastTouchedField = name;
-  push('field_change', undefined, { field_name: name, filled: fieldFilled(el) });
+  if (!started || !full) return;
+  const el = e.target as Element; if (!isField(el)) return;
+  lastTouchedField = fieldName(el);
+  push('field_change', undefined, { field_name: lastTouchedField, filled: fieldFilled(el) });
 }
 function onSubmit() {
+  if (!started) return;
   formSubmitted = true;
-  push('form_submit', undefined, { last_field: lastTouchedField });
+  push('form_submit', undefined, full ? { last_field: lastTouchedField } : {});
   flush(false);
 }
 
-/** Détecte le passage d'étape du funnel /devis (fieldsets `.qstep[data-step]`). */
+// Funnel /devis : étapes (anonyme OK) ; le « dernier champ » reste full uniquement
 function setupDevisStepObserver() {
   if (!location.pathname.startsWith('/devis')) return;
-  const form = document.getElementById('quote-form');
-  if (!form) return;
+  const form = document.getElementById('quote-form'); if (!form) return;
   let lastStep = '';
   const emitStep = () => {
     const visible = form.querySelector('.qstep:not([hidden])') as HTMLElement | null;
     const step = visible ? (visible.getAttribute('data-step') || '') : '';
-    if (step && step !== lastStep) {
-      lastStep = step;
-      push('form_step', undefined, { step_index: Number(step) });
-    }
+    if (step && step !== lastStep) { lastStep = step; push('form_step', undefined, { step_index: Number(step) }); }
   };
   emitStep();
   const mo = new MutationObserver(emitStep);
   form.querySelectorAll('.qstep').forEach((s) => mo.observe(s, { attributes: true, attributeFilter: ['hidden'] }));
 }
-
 function setupFormView() {
-  const form = document.querySelector('form#quote-form, form#contact-form, form');
-  if (!form) return;
+  const form = document.querySelector('form#quote-form, form#contact-form, form'); if (!form) return;
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((en) => {
         if (en.isIntersecting && !formViewed) {
-          formViewed = true;
-          push('form_view', describeEl(form), { form_id: (form as HTMLElement).id || '' });
-          io.disconnect();
+          formViewed = true; push('form_view', describeEl(form), { form_id: (form as HTMLElement).id || '' }); io.disconnect();
         }
       });
     }, { threshold: 0.4 });
@@ -302,29 +267,27 @@ function setupFormView() {
   } else { formViewed = true; push('form_view'); }
 }
 
-// ── page_view / page_leave ──
-function emitPageView() {
-  pageViews += 1;
-  pageStart = Date.now();
-  maxScroll = 0; scrollMilestones.clear();
-  push('page_view', undefined, { title: document.title ? document.title.slice(0, 120) : '' });
-}
-function emitPageLeave(useBeacon: boolean) {
-  push('page_leave', undefined, { time_on_page_s: Math.round((Date.now() - pageStart) / 1000), max_scroll: maxScroll });
-  // Abandon de formulaire : vu/commencé mais non soumis
-  if ((formViewed || formStarted) && !formSubmitted) {
-    push('form_abandon', undefined, { last_field: lastTouchedField, step: getDevisStep() });
-  }
-  flush(useBeacon);
-}
 function getDevisStep(): number | null {
   const visible = document.querySelector('#quote-form .qstep:not([hidden])') as HTMLElement | null;
   return visible ? Number(visible.getAttribute('data-step')) : null;
 }
+function emitPageView() {
+  pageViews += 1; pageStart = Date.now(); maxScroll = 0; scrollMilestones.clear();
+  push('page_view', undefined, { title: document.title ? document.title.slice(0, 120) : '' });
+}
+function emitPageLeave(useBeacon: boolean) {
+  push('page_leave', undefined, { time_on_page_s: Math.round((Date.now() - pageStart) / 1000), max_scroll: maxScroll });
+  if ((formViewed || formStarted) && !formSubmitted) {
+    const meta: Record<string, unknown> = { step: getDevisStep() };
+    if (full) meta.last_field = lastTouchedField;
+    push('form_abandon', undefined, meta);
+  }
+  flush(useBeacon);
+}
 
-// ── Session replay (rrweb) — chargé seulement si replay consenti ──
+// ── Session replay (rrweb) — FULL uniquement ──
 async function startReplay() {
-  if (stopReplay || !consent.behavior) return;
+  if (stopReplay || !full || !consent.behavior) return;
   try {
     const rr = await import('rrweb');
     const record = (rr as any).record;
@@ -334,15 +297,12 @@ async function startReplay() {
         if (!replayTimer) replayTimer = window.setTimeout(flushReplayBuffer, REPLAY_CHUNK_MS);
         if (replayBuffer.length >= 50) flushReplayBuffer();
       },
-      maskAllInputs: true,            // aucune valeur de champ
-      maskTextClass: 'pii',           // textes marqués .pii masqués
-      blockClass: 'pii',              // éléments .pii non enregistrés
+      maskAllInputs: true, maskTextClass: 'pii', blockClass: 'pii',
       maskInputOptions: { password: true, email: true, tel: true, text: true },
-      recordCanvas: false,
-      collectFonts: false,
+      recordCanvas: false, collectFonts: false,
       sampling: { mousemove: 50, scroll: 150, input: 'last' },
     }) || null;
-  } catch (e) { /* rrweb indispo : on continue en quantitatif seul */ }
+  } catch { /* */ }
 }
 function flushReplayBuffer() {
   if (replayTimer) { clearTimeout(replayTimer); replayTimer = null; }
@@ -353,70 +313,69 @@ function flushReplayBuffer() {
 }
 function stopReplayRecording() {
   try { if (stopReplay) stopReplay(); } catch { /* */ }
-  stopReplay = null;
-  flushReplayBuffer();
+  stopReplay = null; flushReplayBuffer();
 }
 
-// ── Cycle de vie ──
-function bind() {
+// ── Liaisons (posées UNE fois ; les handlers se filtrent selon started/full) ──
+function bindOnce() {
+  if (bound) return; bound = true;
   window.addEventListener('scroll', throttle(onScroll, SCROLL_THROTTLE_MS), { passive: true });
   document.addEventListener('click', onClick, true);
   document.addEventListener('focusin', onFocusIn, true);
   document.addEventListener('focusout', onFocusOut, true);
   document.addEventListener('change', onChange, true);
   document.addEventListener('submit', onSubmit, true);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') { emitPageLeave(true); }
-  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') emitPageLeave(true); });
   window.addEventListener('pagehide', () => { stopReplayRecording(); emitPageLeave(true); });
-  // Astro MPA : un page_view par chargement. Support SPA si ClientRouter activé plus tard.
-  document.addEventListener('astro:page-load', () => { emitPageView(); setupPage(); });
+  document.addEventListener('astro:page-load', () => { if (started) { emitPageView(); setupPage(); } });
 }
-
 function setupPage() {
   formViewed = false; formStarted = false; formSubmitted = false; lastTouchedField = '';
   setupFormView();
   setupDevisStepObserver();
 }
 
-function start() {
-  if (started || !consent.behavior) return;
+// ── Démarrage / transitions de mode ──
+function startSession(asFull: boolean) {
+  full = asFull;
+  if (full) setFullIds(); else setAnonymousIds();
   started = true;
-  ensureVisitor();
-  ensureSession();
   pageStart = Date.now();
   emitPageView();
   setupPage();
-  bind();
-  flushTimer = window.setInterval(() => flush(false), FLUSH_INTERVAL_MS);
+  if (!flushTimer) flushTimer = window.setInterval(() => flush(false), FLUSH_INTERVAL_MS);
+  if (full) startReplay();
+}
+function upgradeToFull() {
+  flush(false);          // on envoie les events anonymes en attente sous l'id anonyme
+  full = true;
+  setFullIds();          // ids persistants + cookies (lien lead)
+  emitPageView();        // la session « consentie » démarre proprement
+  setupPage();
   startReplay();
 }
-
-/** Retrait du consentement : stop + purge serveur de la session du visiteur. */
-function purgeAndStop() {
-  const vid = visitorId || getCookie('soloris_vid');
+function downgradeToAnonymous() {
+  const vid = visitorId; // visiteur consenti à purger
   stopReplayRecording();
-  started = false;
-  queue = []; replayQueue = []; replayBuffer = [];
-  if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+  flush(false);
   try {
-    if (vid && navigator.sendBeacon) {
-      navigator.sendBeacon(ENDPOINT, new Blob([JSON.stringify({ action: 'purge', visitor_id: vid })], { type: 'application/json' }));
-    } else if (vid) {
-      fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'purge', visitor_id: vid }), keepalive: true }).catch(() => {});
-    }
+    const body = JSON.stringify({ action: 'purge', visitor_id: vid });
+    if (navigator.sendBeacon) navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' }));
+    else fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
   } catch { /* */ }
-  try { localStorage.removeItem('soloris_sess'); } catch { /* */ }
-  delCookie('soloris_sid');
-  delCookie('soloris_vid');
+  clearFullStorage();
+  full = false;
+  setAnonymousIds();     // bascule en mesure anonyme exemptée
+  emitPageView();
 }
 
-/** Applique un état de consentement (appelé par le bandeau CNIL). */
+/** Applique l'état de consentement (bandeau CNIL). Mesure anonyme toujours active. */
 function apply(c: Consent) {
-  const was = !!consent.behavior;
   consent = c || {};
-  if (consent.behavior && !was) start();
-  else if (!consent.behavior && was) purgeAndStop();
+  const wantFull = !!consent.behavior;
+  if (!started) startSession(wantFull);
+  else if (wantFull && !full) upgradeToFull();
+  else if (!wantFull && full) downgradeToAnonymous();
 }
 
 function readStoredConsent(): Consent {
@@ -425,8 +384,9 @@ function readStoredConsent(): Consent {
 
 export function initBehaviorTracking() {
   if ((window as any).solorisBehavior) return;
-  (window as any).solorisBehavior = { apply, isOn: () => started };
-  // Le bandeau émet `soloris-consent` ; on lit aussi l'état déjà mémorisé.
+  (window as any).solorisBehavior = { apply, isOn: () => started, isFull: () => full };
+  bindOnce();
   window.addEventListener('soloris-consent', (e: Event) => apply((e as CustomEvent).detail || {}));
+  // Démarre immédiatement : mesure anonyme (exemptée) si pas de consentement, full sinon.
   apply(readStoredConsent());
 }

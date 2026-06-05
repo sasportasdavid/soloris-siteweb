@@ -138,6 +138,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const geo = deriveGeo(request.headers);
   const ua = request.headers.get('user-agent') || '';
   const { browser, os } = parseUA(ua);
+  // Mesure anonyme exemptée (consent_state='exempt') : on ne stocke AUCUN hash d'UA
+  // (renforce l'anonymat). Le hash n'est conservé qu'en mode consenti (full).
+  const isExempt = session.consent_state === 'exempt';
   const payload = {
     session: {
       ...session,
@@ -145,7 +148,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       geo_city: session.geo_city || geo.city || null,
       browser: session.browser || browser,
       os: session.os || os,
-      ua_hash: await uaHash(ua),
+      ua_hash: isExempt ? null : await uaHash(ua),
     },
     events,
     replay,
