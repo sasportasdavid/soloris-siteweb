@@ -217,6 +217,10 @@ const STATUT_LABELS: Record<string, string> = {
       if (!s) return '—';
       return new Date(s).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
     }
+    function fmtTime(s: any): string {
+      if (!s) return '';
+      return new Date(s).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
     function fmtDateTime(s: any): string {
       if (!s) return '—';
       return new Date(s).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -321,7 +325,7 @@ const STATUT_LABELS: Record<string, string> = {
           : `<button type="button" class="adm-btn-sm" data-quick-devis="${l.id}">+ Devis</button>`;
 
         return `<tr class="adm-row" data-open="${l.id}">
-          <td>${fmtDate(l.created_at)}</td>
+          <td>${fmtDate(l.created_at)}<div class="adm-cell-sub">${fmtTime(l.created_at)}</div></td>
           <td>${leadBadge}<b class="adm-name">${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b><div class="adm-cell-sub">${esc(bienLine(l))}</div>${annexeTag}</td>
           <td><b>${esc(l.nom || '—')}</b>${l.telephone ? `<div><a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a></div>` : ''}${l.email ? `<div class="adm-cell-sub"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></div>` : ''}</td>
           <td>${esc(l.secteur || '—')}</td>
