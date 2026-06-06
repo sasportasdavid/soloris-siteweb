@@ -61,7 +61,7 @@ function json(data: unknown, status = 200): Response {
 
 /** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'.
  *  Renvoie le message_id de la carte postée (pour la réécrire ensuite), ou null. */
-async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: string | null): Promise<number | null> {
+async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: string | null, editMessageId?: number | null): Promise<number | null> {
   const token = envVar(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
   const chatId = envVar(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
   if (!token || !chatId) {
@@ -130,14 +130,21 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
+  const markup = leadId ? { reply_markup: leadKeyboard(leadId) } : {};
   try {
+    // Une seule carte par lead : si une carte existe déjà (ex. partiel), on la MET À JOUR
+    // (partiel → complet) au lieu d'en reposter une seconde. Repli : nouvelle carte si l'édition échoue.
+    if (editMessageId) {
+      const edit = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, message_id: editMessageId, text: lines.join('\n'), disable_web_page_preview: true, ...markup }),
+        signal: ctrl.signal,
+      });
+      if (edit.ok) return editMessageId;
+    }
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true,
-        ...(leadId ? { reply_markup: leadKeyboard(leadId) } : {}),
-      }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true, ...markup }),
       signal: ctrl.signal,
     });
     const j = await res.json().catch(() => null);
@@ -270,19 +277,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const lead = (result && result.lead) || {};
     let messageId: number | null = null;
     if (result && result.notify_complete) {
-      messageId = await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet', result.id);
+      // Édite la carte partielle existante (si présente) → une seule carte par lead.
+      messageId = await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet', result.id, result.telegram_message_id || null);
       // Email de confirmation au client (serveur, non bloquant : un échec ne doit
       // jamais empêcher l'enregistrement du lead ni la réponse). Anti-doublon : la
       // branche notify_complete est atomique (1 seule fois par lead).
       try { await sendLeadConfirmation(lead); }
       catch (e) { console.error('[lead] email de confirmation échoué (lead bien enregistré):', e); }
     } else if (result && result.notify_partial) {
-      messageId = await notifyTelegram(lead, 'partiel', result.id);
+      messageId = await notifyTelegram(lead, 'partiel', result.id, null);
     }
     // Mémorise l'id de la carte Telegram du lead → permet de la réécrire ensuite
-    // (confirmation de RDV, changement de statut depuis Telegram).
+    // (passage partiel→complet, confirmation de RDV, statut). Awaité pour fiabiliser
+    // la suite (la requête « complet » lira ce message_id pour éditer la carte).
     if (messageId && result && result.id) {
-      fetch(`${url}/rest/v1/rpc/set_lead_tg_message_id`, {
+      await fetch(`${url}/rest/v1/rpc/set_lead_tg_message_id`, {
         method: 'POST',
         headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_id: result.id, p_message_id: messageId }),
