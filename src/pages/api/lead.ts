@@ -58,13 +58,14 @@ function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-/** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'. */
-async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<void> {
+/** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'.
+ *  Renvoie le message_id de la carte postée (pour la réécrire ensuite), ou null. */
+async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<number | null> {
   const token = envVar(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
   const chatId = envVar(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
   if (!token || !chatId) {
     console.error('[lead] Telegram non configuré (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID absents) — lead enregistré, notification ignorée.');
-    return;
+    return null;
   }
 
   let dateHeure = '';
@@ -129,14 +130,17 @@ async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true }),
       signal: ctrl.signal,
     });
+    const j = await res.json().catch(() => null);
+    return j && j.result && typeof j.result.message_id === 'number' ? j.result.message_id : null;
   } catch (e) {
     console.error('[lead] notif Telegram échouée (lead bien enregistré):', e);
+    return null;
   } finally {
     clearTimeout(timer);
   }
@@ -260,15 +264,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // Notifications (selon décision atomique de la fonction) — non bloquantes
   try {
     const lead = (result && result.lead) || {};
+    let messageId: number | null = null;
     if (result && result.notify_complete) {
-      await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet');
+      messageId = await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet');
       // Email de confirmation au client (serveur, non bloquant : un échec ne doit
       // jamais empêcher l'enregistrement du lead ni la réponse). Anti-doublon : la
       // branche notify_complete est atomique (1 seule fois par lead).
       try { await sendLeadConfirmation(lead); }
       catch (e) { console.error('[lead] email de confirmation échoué (lead bien enregistré):', e); }
     } else if (result && result.notify_partial) {
-      await notifyTelegram(lead, 'partiel');
+      messageId = await notifyTelegram(lead, 'partiel');
+    }
+    // Mémorise l'id de la carte Telegram du lead → permet de la réécrire ensuite
+    // (confirmation de RDV, changement de statut depuis Telegram).
+    if (messageId && result && result.id) {
+      fetch(`${url}/rest/v1/rpc/set_lead_tg_message_id`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_id: result.id, p_message_id: messageId }),
+      }).catch(() => {});
     }
   } catch (e) {
     console.error('[lead] notif post-upsert', e);
