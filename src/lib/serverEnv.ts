@@ -22,6 +22,8 @@ export const CONFIRM_FROM_EMAIL = pick(P.CONFIRM_FROM_EMAIL, import.meta.env.CON
 
 export const TELEGRAM_BOT_TOKEN = pick(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
 export const TELEGRAM_CHAT_ID = pick(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
+/** Canal Telegram « Soloris Leads » pour les confirmations de RDV (repli sur la valeur fournie). */
+export const TELEGRAM_LEADS_CHAT_ID = pick(P.TELEGRAM_LEADS_CHAT_ID, import.meta.env.TELEGRAM_LEADS_CHAT_ID) || '-1003709950379';
 
 /** URL publique du site (liens dans les emails / PDF). */
 export const SITE_URL = (pick(P.SITE_URL, import.meta.env.SITE_URL) || 'https://www.soloris.fr').replace(/\/$/, '');

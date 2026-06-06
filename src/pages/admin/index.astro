@@ -382,9 +382,9 @@ const STATUT_LABELS: Record<string, string> = {
     function buildDevisSection(l: any): string {
       const d = devisByLead[l.id];
       if (!d) {
-        return `<div class="adm-sec" id="adm-devis"><h3>Devis</h3>
-          <p class="muted" style="font-size:13px;margin-bottom:10px">Aucun devis. Il sera pré-rempli depuis la demande (modifiable avant envoi).</p>
-          <button type="button" class="adm-btn" data-devis-create>Générer le devis</button></div>`;
+        return `<div class="adm-sec" id="adm-devis"><h3>Devis <span class="adm-pill pill-chan">optionnel</span></h3>
+          <p class="muted" style="font-size:13px;margin-bottom:10px">Flux secondaire — le défaut est désormais la confirmation de RDV ci-dessus. Devis à signer disponible si besoin (pré-rempli depuis la demande).</p>
+          <button type="button" class="adm-btn adm-btn-ghost" data-devis-create>Générer un devis à signer</button></div>`;
       }
       const signUrl = window.location.origin + '/devis/signer/' + d.sign_token;
       const pdfUrl = '/api/devis/' + d.sign_token + '.pdf';
@@ -414,6 +414,105 @@ const STATUT_LABELS: Record<string, string> = {
         <p class="muted" id="dv-msg" style="font-size:12.5px;margin-top:10px"></p>
       </div>`;
     }
+    // ── Rendez-vous : confirmation envoyée par le commercial (remplace le devis à signer) ──
+    function inputVal(id: string): string { const el = document.getElementById(id) as HTMLInputElement | null; return el ? el.value.trim() : ''; }
+    function pad2(n: number): string { return String(n).padStart(2, '0'); }
+    function toDateInput(d: Date): string { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+    function toTimeInput(d: Date): string { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+    function rdvMsg(m: string, err = false) { const el = document.getElementById('rdv-msg'); if (el) { el.textContent = m; el.style.color = err ? '#b3261e' : ''; } }
+
+    function buildRdvSection(l: any): string {
+      const confirmed = !!l.confirmation_rdv_envoyee_at;
+      const meta = confirmed ? [
+        dlRow('Confirmé pour', l.rdv_at ? fmtDateTime(l.rdv_at) : ''),
+        dlRow('Confirmation envoyée', fmtDateTime(l.confirmation_rdv_envoyee_at)),
+        dlRow('Prestation', esc(l.prestation || '')),
+        dlRow('Diagnostiqueur', esc(l.diagnostiqueur || '')),
+        dlRow('Prix tout compris', l.prix_total_ttc != null ? fmtEUR(l.prix_total_ttc) : ''),
+      ].filter(Boolean).join('') : '';
+      const badge = confirmed ? '<span class="adm-pill pill-complet">Confirmation envoyée</span>' : '';
+      return `<div class="adm-sec" id="adm-rdv"><h3>Rendez-vous ${badge}</h3>
+        ${confirmed
+          ? `<dl class="adm-dl">${meta}</dl>`
+          : '<p class="muted" style="font-size:13px;margin-bottom:10px">Confirmez l\'heure validée au téléphone et envoyez la confirmation au client (email + invitation agenda).</p>'}
+        <div id="rdv-form-wrap"></div>
+        <div class="adm-devis-actions">
+          <button type="button" class="adm-btn" data-rdv-open>${confirmed ? 'Modifier / renvoyer la confirmation' : 'Confirmer le RDV & envoyer'}</button>
+        </div>
+        <p class="muted" id="rdv-msg" style="font-size:12.5px;margin-top:10px"></p>
+      </div>`;
+    }
+
+    function openRdvForm(l: any) {
+      if (!l) return;
+      const draft = buildDevisDraftFromLead(l);
+      let dateVal = '', timeVal = '';
+      if (l.rdv_at) { const d = new Date(l.rdv_at); dateVal = toDateInput(d); timeVal = toTimeInput(d); }
+      else if (l.rdv_date) { dateVal = l.rdv_date; }
+      const adresse = l.rdv_adresse || l.adresse || (l.secteur ? 'CP ' + l.secteur : '');
+      const prestation = l.prestation || draft.objet || '';
+      const prix = l.prix_total_ttc != null ? l.prix_total_ttc : (draft.montant || l.estimation || '');
+      const wrap = document.getElementById('rdv-form-wrap');
+      if (!wrap) return;
+      wrap.innerHTML = `<div class="adm-edit" style="margin-top:6px">
+        <div><label>Date</label><input type="date" id="rdv-date" value="${dateVal}"></div>
+        <div><label>Heure</label><input type="time" id="rdv-time" value="${timeVal || '09:00'}"></div>
+        <div class="full"><label>Adresse du bien</label><input type="text" id="rdv-adresse" value="${esc(adresse)}"></div>
+        <div class="full"><label>Prestation</label><input type="text" id="rdv-prestation" value="${esc(prestation)}"></div>
+        <div><label>Diagnostiqueur</label><input type="text" id="rdv-diag" value="${esc(l.diagnostiqueur || '')}" placeholder="Nom du diagnostiqueur"></div>
+        <div><label>Prix tout compris (€ TTC)</label><input type="number" id="rdv-prix" value="${esc(prix)}"></div>
+        <div><label>Durée estimée (optionnel)</label><input type="text" id="rdv-duree" value="${esc(l.duree_estimee || '1 h')}"></div>
+        <div class="full"><label>Consignes (optionnel)</label><textarea id="rdv-consignes" placeholder="Accès, clés, badge, documents…">${esc(l.consignes || '')}</textarea></div>
+      </div>
+      <div class="adm-devis-actions">
+        <button type="button" class="adm-btn" data-rdv-send>Confirmer &amp; envoyer l'email</button>
+        <button type="button" class="adm-btn adm-btn-ghost" data-rdv-cancel>Annuler</button>
+      </div>`;
+    }
+
+    async function confirmRdv(resend: boolean) {
+      const l = allLeads.find((x) => x.id === currentLeadId);
+      if (!l) return;
+      const date = inputVal('rdv-date'), time = inputVal('rdv-time');
+      if (!date || !time) { rdvMsg("Indiquez la date et l'heure du rendez-vous.", true); return; }
+      const rdv_at = new Date(`${date}T${time}`);
+      if (isNaN(rdv_at.getTime())) { rdvMsg('Date ou heure invalide.', true); return; }
+      const payload = {
+        lead_id: l.id, rdv_at: rdv_at.toISOString(),
+        rdv_adresse: inputVal('rdv-adresse'), prestation: inputVal('rdv-prestation'),
+        diagnostiqueur: inputVal('rdv-diag'), prix_total_ttc: Number(inputVal('rdv-prix')) || 0,
+        duree_estimee: inputVal('rdv-duree'), consignes: inputVal('rdv-consignes'), resend: !!resend,
+      };
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess.session && sess.session.access_token;
+      if (!tok) { rdvMsg('Session expirée, reconnectez-vous.', true); return; }
+      const btn = document.querySelector('[data-rdv-send]') as HTMLButtonElement | null;
+      if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+      rdvMsg('Envoi en cours…');
+      try {
+        const res = await fetch('/api/rdv/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(payload) });
+        const j = await res.json();
+        if (j.needsConfirm) {
+          if (btn) { btn.disabled = false; btn.textContent = "Confirmer & envoyer l'email"; }
+          if (confirm('Une confirmation a déjà été envoyée à ce client. Renvoyer la confirmation ?')) return confirmRdv(true);
+          rdvMsg(''); return;
+        }
+        if (!res.ok || !j.ok) { rdvMsg('Échec : ' + (j.error || 'erreur'), true); if (btn) { btn.disabled = false; btn.textContent = "Confirmer & envoyer l'email"; } return; }
+        Object.assign(l, {
+          rdv_at: payload.rdv_at, rdv_adresse: payload.rdv_adresse, prestation: payload.prestation,
+          diagnostiqueur: payload.diagnostiqueur, prix_total_ttc: payload.prix_total_ttc,
+          duree_estimee: payload.duree_estimee, consignes: payload.consignes, statut: 'rdv_pris',
+        });
+        if (j.confirmation_rdv_envoyee_at) l.confirmation_rdv_envoyee_at = j.confirmation_rdv_envoyee_at;
+        renderStats(allLeads); render(); openDrawer(l.id);
+        if (j.emailSent) rdvMsg('Rendez-vous confirmé et email envoyé à ' + (j.to || 'le client') + ' ✓');
+        else rdvMsg('Rendez-vous enregistré ✓ — email NON envoyé (' + (j.reason || j.emailError || 'à vérifier') + ')', true);
+      } catch (e) {
+        rdvMsg("L'envoi a échoué.", true);
+        if (btn) { btn.disabled = false; btn.textContent = "Confirmer & envoyer l'email"; }
+      }
+    }
+
     function collectLignes(): any[] {
       const rows = Array.from(document.querySelectorAll('#dv-lignes [data-lig]'));
       return rows.map((r) => ({
@@ -582,6 +681,8 @@ const STATUT_LABELS: Record<string, string> = {
           </div>
         </div>
 
+        ${buildRdvSection(l)}
+
         ${buildDevisSection(l)}
 
         <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
@@ -653,7 +754,10 @@ const STATUT_LABELS: Record<string, string> = {
           const box = document.getElementById('adresse-suggest'); if (box) box.hidden = true;
           return;
         }
-        if (t.closest('[data-devis-create]')) createDevis(currentLeadId as string);
+        if (t.closest('[data-rdv-open]')) openRdvForm(allLeads.find((x) => x.id === currentLeadId));
+        else if (t.closest('[data-rdv-send]')) confirmRdv(false);
+        else if (t.closest('[data-rdv-cancel]')) { const w = document.getElementById('rdv-form-wrap'); if (w) w.innerHTML = ''; rdvMsg(''); }
+        else if (t.closest('[data-devis-create]')) createDevis(currentLeadId as string);
         else if (t.closest('[data-lig-add]')) { const c = document.getElementById('dv-lignes'); if (c) c.insertAdjacentHTML('beforeend', ligneRowHtml({})); }
         else if (t.closest('[data-lig-del]')) { const r = t.closest('[data-lig]'); if (r) { r.remove(); recomputeTotal(); } }
         else if (t.closest('[data-devis-save]')) saveDevis();
