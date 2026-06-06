@@ -191,6 +191,7 @@ const STATUT_LABELS: Record<string, string> = {
   <script>
     import { supabase } from '../../lib/supabase';
     import { buildDevisDraftFromLead } from '../../lib/devis';
+    import { rdvPrefill, renderRdvFormFields, RDV_FORM_CSS } from '../../lib/rdvForm';
 
     const { STATUTS, STATUT_LABELS } = (window as any).__ADMIN_CONST;
     const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -445,29 +446,14 @@ const STATUT_LABELS: Record<string, string> = {
 
     function openRdvForm(l: any) {
       if (!l) return;
-      const draft = buildDevisDraftFromLead(l);
-      let dateVal = '', timeVal = '';
-      if (l.rdv_at) { const d = new Date(l.rdv_at); dateVal = toDateInput(d); timeVal = toTimeInput(d); }
-      else if (l.rdv_date) { dateVal = l.rdv_date; }
-      const adresse = l.rdv_adresse || l.adresse || (l.secteur ? 'CP ' + l.secteur : '');
-      const prestation = l.prestation || draft.objet || '';
-      const prix = l.prix_total_ttc != null ? l.prix_total_ttc : (draft.montant || l.estimation || '');
       const wrap = document.getElementById('rdv-form-wrap');
       if (!wrap) return;
-      wrap.innerHTML = `<div class="adm-edit" style="margin-top:6px">
-        <div><label>Date</label><input type="date" id="rdv-date" value="${dateVal}"></div>
-        <div><label>Heure</label><input type="time" id="rdv-time" value="${timeVal || '09:00'}"></div>
-        <div class="full"><label>Adresse du bien</label><input type="text" id="rdv-adresse" value="${esc(adresse)}"></div>
-        <div class="full"><label>Prestation</label><input type="text" id="rdv-prestation" value="${esc(prestation)}"></div>
-        <div><label>Diagnostiqueur</label><input type="text" id="rdv-diag" value="${esc(l.diagnostiqueur || '')}" placeholder="Nom du diagnostiqueur"></div>
-        <div><label>Prix tout compris (€ TTC)</label><input type="number" id="rdv-prix" value="${esc(prix)}"></div>
-        <div><label>Durée estimée (optionnel)</label><input type="text" id="rdv-duree" value="${esc(l.duree_estimee || '1 h')}"></div>
-        <div class="full"><label>Consignes (optionnel)</label><textarea id="rdv-consignes" placeholder="Accès, clés, badge, documents…">${esc(l.consignes || '')}</textarea></div>
-      </div>
-      <div class="adm-devis-actions">
-        <button type="button" class="adm-btn" data-rdv-send>Confirmer &amp; envoyer l'email</button>
-        <button type="button" class="adm-btn adm-btn-ghost" data-rdv-cancel>Annuler</button>
-      </div>`;
+      // Formulaire issu de la SOURCE UNIQUE rdvForm.ts (réutilisé par le lien public).
+      wrap.innerHTML = renderRdvFormFields(rdvPrefill(l)) +
+        `<div class="adm-devis-actions" style="margin-top:14px">
+          <button type="button" class="adm-btn" data-rdv-send>Confirmer &amp; envoyer l'email</button>
+          <button type="button" class="adm-btn adm-btn-ghost" data-rdv-cancel>Annuler</button>
+        </div>`;
     }
 
     async function confirmRdv(resend: boolean) {
@@ -804,6 +790,9 @@ const STATUT_LABELS: Record<string, string> = {
 
       (document.getElementById('admin-loading') as HTMLElement).hidden = true;
       (document.getElementById('admin-app') as HTMLElement).hidden = false;
+      if (!document.getElementById('rdv-form-css')) {
+        const s = document.createElement('style'); s.id = 'rdv-form-css'; s.textContent = RDV_FORM_CSS; document.head.appendChild(s);
+      }
       renderStats(allLeads);
       render();
       wireEvents();
