@@ -12,6 +12,7 @@
  */
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
+import { leadKeyboard } from '../../lib/telegram';
 
 export const prerender = false;
 
@@ -60,7 +61,7 @@ function json(data: unknown, status = 200): Response {
 
 /** Notification Telegram (non bloquante). kind: 'partiel' | 'complet' | 'contact' | 'chat'.
  *  Renvoie le message_id de la carte postée (pour la réécrire ensuite), ou null. */
-async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<number | null> {
+async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: string | null): Promise<number | null> {
   const token = envVar(P.TELEGRAM_BOT_TOKEN, import.meta.env.TELEGRAM_BOT_TOKEN);
   const chatId = envVar(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
   if (!token || !chatId) {
@@ -133,7 +134,10 @@ async function notifyTelegram(lead: Record<string, any>, kind: string): Promise<
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true }),
+      body: JSON.stringify({
+        chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true,
+        ...(leadId ? { reply_markup: leadKeyboard(leadId) } : {}),
+      }),
       signal: ctrl.signal,
     });
     const j = await res.json().catch(() => null);
@@ -266,14 +270,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const lead = (result && result.lead) || {};
     let messageId: number | null = null;
     if (result && result.notify_complete) {
-      messageId = await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet');
+      messageId = await notifyTelegram(lead, isContact ? 'contact' : isChat ? 'chat' : 'complet', result.id);
       // Email de confirmation au client (serveur, non bloquant : un échec ne doit
       // jamais empêcher l'enregistrement du lead ni la réponse). Anti-doublon : la
       // branche notify_complete est atomique (1 seule fois par lead).
       try { await sendLeadConfirmation(lead); }
       catch (e) { console.error('[lead] email de confirmation échoué (lead bien enregistré):', e); }
     } else if (result && result.notify_partial) {
-      messageId = await notifyTelegram(lead, 'partiel');
+      messageId = await notifyTelegram(lead, 'partiel', result.id);
     }
     // Mémorise l'id de la carte Telegram du lead → permet de la réécrire ensuite
     // (confirmation de RDV, changement de statut depuis Telegram).

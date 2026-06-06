@@ -24,6 +24,10 @@ export const TELEGRAM_BOT_TOKEN = pick(P.TELEGRAM_BOT_TOKEN, import.meta.env.TEL
 export const TELEGRAM_CHAT_ID = pick(P.TELEGRAM_CHAT_ID, import.meta.env.TELEGRAM_CHAT_ID);
 /** Canal Telegram « Soloris Leads » pour les confirmations de RDV (repli sur la valeur fournie). */
 export const TELEGRAM_LEADS_CHAT_ID = pick(P.TELEGRAM_LEADS_CHAT_ID, import.meta.env.TELEGRAM_LEADS_CHAT_ID) || '-1003709950379';
+/** Secret vérifié sur chaque requête du webhook Telegram entrant (en-tête X-Telegram-Bot-Api-Secret-Token). */
+export const TELEGRAM_WEBHOOK_SECRET = pick(P.TELEGRAM_WEBHOOK_SECRET, import.meta.env.TELEGRAM_WEBHOOK_SECRET);
+/** Secret de signature HMAC des liens publics /rdv/{token}. */
+export const RDV_LINK_SECRET = pick(P.RDV_LINK_SECRET, import.meta.env.RDV_LINK_SECRET);
 
 /** URL publique du site (liens dans les emails / PDF). */
 export const SITE_URL = (pick(P.SITE_URL, import.meta.env.SITE_URL) || 'https://www.soloris.fr').replace(/\/$/, '');
