@@ -15,6 +15,30 @@ import {
 } from '../lib/pricing';
 import { SITE } from '../lib/site';
 
+/**
+ * Props (toutes optionnelles). Défauts = comportement HISTORIQUE inchangé : les deux
+ * tests A/B cookie (cta_devis, steps_order) tournent normalement, estimation affichée.
+ * Sur les landing pages /lp/vente-* on passe lockExperiments=true (baseline forcée,
+ * aucun cookie/impression cta_devis|steps_order) + priceModelVariant ('A'|'B') et
+ * revealEstimation (A=true affiche le prix, B=false le calcule mais ne l'affiche pas).
+ */
+interface Props {
+  lockExperiments?: boolean;
+  forceCta?: 'A' | 'B';
+  forceSteps?: 'A' | 'B';
+  priceModelVariant?: 'A' | 'B' | null;
+  revealEstimation?: boolean;
+  recallSla?: string;
+}
+const {
+  lockExperiments = false,
+  forceCta = 'A',
+  forceSteps = 'A',
+  priceModelVariant = null,
+  revealEstimation = true,
+  recallSla = '48 h',
+} = Astro.props;
+
 const GADS = import.meta.env.PUBLIC_GADS_ID;
 const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
 const PLACEHOLDER = '__A_REMPLACER__';
@@ -107,21 +131,30 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
 
       <label class="qcheck" id="copro-block" hidden>
         <input type="checkbox" name="copropriete" value="1" />
-        <span>Maison en copropriété <span class="qopt-tag">+ {FIXED.coproSupp} €</span></span>
+        <span>Maison en copropriété {revealEstimation && <span class="qopt-tag">+ {FIXED.coproSupp} €</span>}</span>
       </label>
 
       <label class="qcheck" id="annexe-appart-block" hidden>
         <input type="checkbox" name="annexe_appart" value="1" />
-        <span>Cave, parking ou box à diagnostiquer <span class="qopt-tag">+ {FIXED.caveParking} €</span><span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
+        <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
       </label>
       <label class="qcheck" id="annexe-maison-block" hidden>
         <input type="checkbox" name="annexe_maison" value="1" />
-        <span>Garage ou dépendance à diagnostiquer <span class="qopt-tag">+ {FIXED.caveParking} €</span><span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
+        <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
       </label>
 
       <div class="qestim" id="estim" hidden>
-        <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
-        <p class="qestim-note">Estimation indicative tout compris, déplacement inclus. Devis exact confirmé immédiatement, sans engagement.</p>
+        {revealEstimation ? (
+          <>
+            <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
+            <p class="qestim-note">Estimation indicative tout compris, déplacement inclus. Devis exact confirmé immédiatement, sans engagement.</p>
+          </>
+        ) : (
+          <>
+            <div class="qestim-amount">Obtenez votre devis personnalisé</div>
+            <p class="qestim-note">Tarif tout compris confirmé lors de votre rappel sous {recallSla}. Sans engagement, déplacement inclus.</p>
+          </>
+        )}
       </div>
 
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
@@ -237,7 +270,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -251,7 +284,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     var abStepsB = false; // variante B du test A/B (type de bien fusionné à l'étape surface)
     var AGE_IDX = { avant1949: 0, intermediaire: 1, recent: 2 };
 
-    // Option annexe (+99 €) : visible pour un pack (vente/location). Cave/parking pour
+    // Option annexe (supplément) : visible pour un pack (vente/location). Cave/parking pour
     // un appartement, garage/dépendance pour une maison. Mutuellement exclusif selon le bien.
     function annexeState() {
       var d = demande(), b = bien();
@@ -351,9 +384,14 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       if (m2 != null) parts.push(m2 + ' m²');
       if (age && AGE_LABELS[age]) parts.push(AGE_LABELS[age]);
       var ax = annexeState();
-      var annexeTxt = ax.on ? (ax.type === 'garage_dependance' ? ' + garage/dépendance (' + ANNEXE_SUPP + ' €)' : ' + cave/parking (' + ANNEXE_SUPP + ' €)') : '';
-      var price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
-        : ((d === 'vente' || d === 'location') ? ' — <span class="qrecap-price">sur devis</span>' : '');
+      var annexeLabel = ax.type === 'garage_dependance' ? ' + garage/dépendance' : ' + cave/parking';
+      // Le montant de l'annexe n'est affiché QUE si l'estimation est révélée (pas en LP-B).
+      var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (' + ANNEXE_SUPP + ' €)' : annexeLabel) : '';
+      var price = '';
+      if (REVEAL_ESTIMATION) {
+        price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
+          : ((d === 'vente' || d === 'location') ? ' — <span class="qrecap-price">sur devis</span>' : '');
+      }
       el.innerHTML = '<b>Votre demande :</b> ' + parts.join(' · ') + annexeTxt + price;
       el.hidden = parts.length === 0;
     }
@@ -413,12 +451,15 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
             value += MAISON_SUPP;
             if (form.querySelector('[name="copropriete"]:checked')) value += COPRO_SUPP;
           }
-          if (annexeState().on) value += ANNEXE_SUPP; // cave/parking ou garage/dépendance (+99 €)
+          if (annexeState().on) value += ANNEXE_SUPP; // cave/parking ou garage/dépendance (supplément)
         }
       }
-      if (surDevis) { amount.textContent = 'sur devis'; if (hEst) hEst.value = ''; }
-      else { amount.textContent = fmtEUR(value); if (hEst) hEst.value = String(value); }
-      box.hidden = false;
+      // RÈGLE NON NÉGOCIABLE : on calcule TOUJOURS prix_estime (champ caché hEst),
+      // même en LP-B. Seul l'AFFICHAGE du montant est conditionné par REVEAL_ESTIMATION.
+      if (surDevis) { if (hEst) hEst.value = ''; }
+      else { if (hEst) hEst.value = String(value); }
+      if (REVEAL_ESTIMATION && amount) { amount.textContent = surDevis ? 'sur devis' : fmtEUR(value); }
+      box.hidden = false; // affiche la boîte : montant (A) ou microcopy « devis personnalisé » (B)
       reachedEstimation = true;
     }
 
@@ -477,6 +518,8 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       var ax = annexeState();
       return {
         lead_uid: getLeadUid(), lead_status: status, source: 'devis',
+        // Variante du test A/B « price_model » (landing pages vente) — '' hors LP.
+        price_model: (PRICE_MODEL === 'A' || PRICE_MODEL === 'B') ? PRICE_MODEL : '',
         // Lien lead ↔ comportement (cookies posés par le tracker si consentement « Analyse de navigation »)
         session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
         type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
@@ -528,17 +571,31 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     })();
 
     // ── A/B test du CTA (variante stockée en cookie strictement nécessaire) ──
+    // Sur les LP (LOCK_EXPERIMENTS) : baseline forcée FORCE_CTA, AUCUN cookie lu/posé,
+    // AUCUNE impression 'cta_devis' (test isolé du test 'price_model').
     (function abCta() {
-      var name = 'soloris_ab_cta';
-      var v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
-      if (v !== 'A' && v !== 'B') {
-        v = Math.random() < 0.5 ? 'A' : 'B';
-        var d = new Date(); d.setTime(d.getTime() + 90 * 864e5);
-        document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+      var v;
+      if (LOCK_EXPERIMENTS) {
+        v = (FORCE_CTA === 'B') ? 'B' : 'A';
+      } else {
+        var name = 'soloris_ab_cta';
+        v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
+        if (v !== 'A' && v !== 'B') {
+          v = Math.random() < 0.5 ? 'A' : 'B';
+          var d = new Date(); d.setTime(d.getTime() + 90 * 864e5);
+          document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+        }
+        try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'cta_devis', variant: v }); } catch (e) {}
       }
       var btn = document.getElementById('qsubmit');
       if (btn && v === 'B') btn.textContent = 'Recevoir mon estimation gratuite';
-      try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'cta_devis', variant: v }); } catch (e) {}
+    })();
+
+    // ── Test 'price_model' (landing pages vente, réparti par URL via l'expérience Ads) ──
+    // Émis UNIQUEMENT quand priceModelVariant ∈ {A,B} (donc jamais hors LP). Aucun cookie.
+    (function priceModelImpression() {
+      if (PRICE_MODEL !== 'A' && PRICE_MODEL !== 'B') return;
+      try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'price_model', variant: PRICE_MODEL }); } catch (e) {}
     })();
 
     // ── Capture anticipée : lead « partiel » si abandon après l'estimation ──
@@ -616,14 +673,20 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     // ── A/B test de l'ordre/nombre d'étapes : A = 5 étapes ; B = « type de bien »
     //    fusionné dans l'étape surface (4 étapes perçues). Repli sûr sur A si erreur. ──
     (function abSteps() {
-      var name = 'soloris_ab_steps';
-      var v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
-      if (v !== 'A' && v !== 'B') {
-        v = Math.random() < 0.5 ? 'A' : 'B';
-        var dt = new Date(); dt.setTime(dt.getTime() + 90 * 864e5);
-        document.cookie = name + '=' + v + '; expires=' + dt.toUTCString() + '; path=/; SameSite=Lax';
+      var v;
+      if (LOCK_EXPERIMENTS) {
+        // LP : baseline forcée FORCE_STEPS, AUCUN cookie lu/posé, AUCUNE impression 'steps_order'.
+        v = (FORCE_STEPS === 'B') ? 'B' : 'A';
+      } else {
+        var name = 'soloris_ab_steps';
+        v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
+        if (v !== 'A' && v !== 'B') {
+          v = Math.random() < 0.5 ? 'A' : 'B';
+          var dt = new Date(); dt.setTime(dt.getTime() + 90 * 864e5);
+          document.cookie = name + '=' + v + '; expires=' + dt.toUTCString() + '; path=/; SameSite=Lax';
+        }
+        try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'steps_order', variant: v }); } catch (e) {}
       }
-      try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'steps_order', variant: v }); } catch (e) {}
       if (v !== 'B') return;
       try {
         var s2 = form.querySelector('.qstep[data-step="2"]');

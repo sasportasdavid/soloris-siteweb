@@ -1,0 +1,142 @@
+---
+/**
+ * Landing page « parcours vente » nav-strippée, partagée par les 2 bras du test
+ * A/B 'price_model' (réparti par URL via l'expérience Google Ads) :
+ *   variant 'A' (withPrices=true)  → prix affichés + estimation révélée dans le tunnel
+ *   variant 'B' (withPrices=false) → aucun prix sur la page + tunnel sans révélation
+ *                                    (le prix reste CALCULÉ en coulisse et poussé dans
+ *                                     lead_submitted — cf. RÈGLE NON NÉGOCIABLE).
+ * Le tunnel tourne en mode VERROUILLÉ : les tests cookie cta_devis/steps_order sont
+ * neutralisés (baseline A, aucun cookie, aucune impression) pour isoler 'price_model'.
+ * Contenu : arguments de /diagnostics-vente (offers.ts). Zéro prix en dur (module PR #11).
+ */
+import LandingLayout from '../layouts/LandingLayout.astro';
+import ReassuranceBar from './ReassuranceBar.astro';
+import PricingTable from './PricingTable.astro';
+import EnergyScale from './EnergyScale.astro';
+import Reviews from './Reviews.astro';
+import QuoteForm from './QuoteForm.astro';
+import { getOffer } from '../lib/offers';
+import { prixDes } from '../lib/pricing';
+
+interface Props { variant: 'A' | 'B' }
+const { variant } = Astro.props;
+const withPrices = variant === 'A';
+const recallSla = '48 h';
+
+const offer = getOffer('diagnostics-vente')!;
+
+const title = withPrices
+  ? 'Diagnostics avant vente — tarif tout compris, sous 48 h | Soloris'
+  : 'Diagnostics avant vente — devis personnalisé, sous 48 h | Soloris';
+const description = withPrices
+  ? `Pack diagnostics vente tout compris dès ${prixDes('vente')} €, rapport opposable sous 48 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC.`
+  : 'Pack diagnostics avant vente, rapport opposable sous 48 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC. Devis personnalisé immédiat.';
+const path = withPrices ? '/lp/vente-prix' : '/lp/vente-sans-prix';
+---
+<LandingLayout title={title} description={description} path={path}>
+  <!-- Hero (sans navigation, un seul CTA → tunnel) -->
+  <section class="lp-hero">
+    <div class="wrap">
+      <span class="tagpill">Certifié COFRAC · Rapport opposable · Sous 48 h</span>
+      <h1>Diagnostics avant vente — le dossier complet, prêt pour votre notaire</h1>
+      <p class="lp-sub">{offer.tagline}</p>
+      <div class="lp-cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
+    </div>
+  </section>
+
+  <!-- Réassurance (4,9 ★ · 111 avis · COFRAC · Assuré) -->
+  <ReassuranceBar />
+
+  <!-- Ce qui est inclus -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Ce qui est inclus</div>
+      <h2 class="sec-title">Le contenu de votre dossier de diagnostics</h2>
+      <p class="sec-intro">La composition exacte dépend de votre bien (année, énergie, zone) et vous est confirmée au devis.</p>
+      <ul class="incl grid grid-2 mt-5">
+        {offer.inclus.map((it) => (
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span><b>{it.label}</b><br /><span class="muted" style="font-size:14px" set:html={it.detail} /></span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Rapport opposable + étiquette illustrative -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:560px">
+      <div class="eyebrow">Rapport opposable</div>
+      <p class="muted" style="margin-bottom:16px">Vous recevez un rapport clair et opposable, certifié COFRAC. (Étiquette énergie illustrative — votre classe reflète l'état réel du bien.)</p>
+      <EnergyScale highlight="C" />
+    </div>
+  </section>
+
+  <!-- Tarif (LP-A uniquement : aucune mention chiffrée de prix sur LP-B) -->
+  {withPrices && (
+    <section class="section-line" id="tarifs">
+      <div class="wrap">
+        <div class="eyebrow">Tarif tout compris</div>
+        <h2 class="sec-title">Le prix selon la surface et l'âge du bien</h2>
+        <p class="sec-intro">Dès {prixDes('vente')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient).</p>
+        <div class="mt-5"><PricingTable caption="Tarifs diagnostics vente" /></div>
+      </div>
+    </section>
+  )}
+
+  <!-- Process 48 h -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Notre process</div>
+      <h2 class="sec-title">De la demande au rapport, sous 48&nbsp;h</h2>
+      <div class="grid grid-3 mt-5 steps">
+        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>{withPrices ? 'Estimation tout compris en 2 minutes, en ligne.' : 'Votre devis personnalisé en 2 minutes, en ligne.'}</p></div>
+        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Document clair et opposable, livré rapidement.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Preuve sociale -->
+  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+
+  <!-- Tunnel de devis (mode verrouillé) -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">Devis en 2 min</div>
+        <h2 class="sec-title">{withPrices ? 'Obtenez votre estimation' : 'Obtenez votre devis personnalisé'}</h2>
+        {!withPrices && <p class="sec-intro center">Tarif tout compris confirmé lors de votre rappel sous {recallSla}, sans engagement.</p>}
+      </div>
+      <div class="mt-5">
+        <QuoteForm
+          lockExperiments={true}
+          forceCta="A"
+          forceSteps="A"
+          priceModelVariant={variant}
+          revealEstimation={withPrices}
+          recallSla={recallSla}
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Votre dossier de diagnostics, en toute clarté</h2>
+      <p>{withPrices ? 'Estimation tout compris en 2 minutes, sans engagement.' : 'Devis personnalisé en 2 minutes, rappel sous ' + recallSla + ', sans engagement.'}</p>
+      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis</a></div>
+    </div>
+  </section>
+</LandingLayout>
+
+<style>
+  .lp-hero { padding: 48px 0 36px; background: linear-gradient(180deg, var(--paper), #fff); }
+  .lp-hero .tagpill { display: inline-block; font-family: var(--sora); font-weight: 600; font-size: 12.5px; color: var(--blue-light); background: rgba(46,111,174,.09); border-radius: 999px; padding: 6px 14px; margin-bottom: 16px; }
+  .lp-hero h1 { font-family: var(--sora); font-weight: 600; font-size: clamp(28px, 5vw, 44px); color: var(--blue); letter-spacing: -.01em; line-height: 1.12; max-width: 760px; }
+  .lp-sub { font-size: 18px; color: var(--ink-soft); margin-top: 14px; max-width: 600px; }
+  .lp-cta { margin-top: 26px; }
+</style>
