@@ -29,6 +29,10 @@ const { variant } = Astro.props;
 const withPrices = variant === 'A';
 const recallSla = '48 h';
 
+// Sous-titre LP vente (douleur + solution). Propre à la LP : on N'écrase PAS
+// offer.tagline (réutilisé tel quel sur la page offre /diagnostics-vente).
+const heroSub = 'Plus de délai qui bloque la signature : un seul rendez-vous, tous les diagnostics obligatoires, rapport opposable livré sous 48 h.';
+
 const offer = getOffer('diagnostics-vente')!;
 const hasReviews = Number(SITE.rating.count) > 0;
 
@@ -69,8 +73,8 @@ const piliers = [
           <svg width="14" height="14" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M 53 47 L 84 16" stroke="#F5A623" stroke-width="12" stroke-linecap="round" /><path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke="#2E6FAE" stroke-width="12" stroke-linecap="round" /></svg>
           Certifié COFRAC · Rapport opposable
         </span>
-        <h1>Diagnostics avant vente — le dossier complet, prêt pour votre notaire</h1>
-        <p class="lp-sub">{offer.tagline}</p>
+        <h1>Vendez sans accroc : tous vos diagnostics réunis, prêts pour le notaire — sous 48 h.</h1>
+        <p class="lp-sub">{heroSub}</p>
         {hasReviews && (
           <div class="lp-rating" aria-label={`Note ${SITE.rating.value} sur 5, ${SITE.rating.count} avis Google`}>
             <span class="stars" aria-hidden="true">
@@ -81,9 +85,10 @@ const piliers = [
         )}
         <div class="lp-cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
         <div class="lp-trust">
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport sous 48 h</span>
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Tout compris</span>
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Diagnostiqueur certifié</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Devis gratuit, sans engagement</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Prix tout compris, zéro frais surprise</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport opposable sous 48 h</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Certifié COFRAC</span>
         </div>
       </div>
       <div class="lp-hero-visual">
@@ -168,7 +173,7 @@ const piliers = [
   </section>
 
   <!-- Preuve sociale -->
-  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+  <Reviews limit={2} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
 
   <!-- Tunnel de devis (mode verrouillé) — heading IDENTIQUE A/B -->
   <section class="section-line">
@@ -195,7 +200,7 @@ const piliers = [
     <div class="wrap">
       <h2>Votre dossier de diagnostics, en toute clarté</h2>
       <p>Devis en 2 minutes, rendez-vous sous 48 h, sans engagement.</p>
-      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis</a></div>
+      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
     </div>
   </section>
 </LandingLayout>
