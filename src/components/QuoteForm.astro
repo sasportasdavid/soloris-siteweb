@@ -91,11 +91,9 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       <p class="qsub" id="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
 
       <label class="qfield">
-        <span>Surface du bien</span>
-        <select name="surface_band">
-          <option value="" disabled selected>Choisissez une tranche de surface</option>
-          {surfaceBands.map((label, i) => <option value={i}>{label}</option>)}
-        </select>
+        <span>Surface du bien (en m²)</span>
+        <input type="number" name="surface_m2" inputmode="numeric" min="1" max="2000" step="1" placeholder="ex : 75" autocomplete="off" />
+        <small class="qfield-help">Surface habitable approximative, en mètres carrés.</small>
       </label>
 
       <div id="age-block" class="qfield-group" hidden>
@@ -271,13 +269,17 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     function bien() { return checkedVal('type_bien'); }
     function isLotBien() { var b = bien(); return b === 'cave' || b === 'parking' || b === 'box'; }
     function ageNeeded() { var d = demande(); return d === 'vente' || d === 'location'; }
-    function bandIndex() { var s = form.querySelector('[name="surface_band"]'); return s && s.value !== '' ? Number(s.value) : null; }
+    // Surface saisie en m² (champ numérique). Renvoie null si vide/invalide.
+    function surfaceM2() { var el = form.querySelector('[name="surface_m2"]'); var v = el ? parseInt(el.value, 10) : NaN; return (isNaN(v) || v <= 0) ? null : v; }
+    // Index de la bande tarifaire correspondant à la surface en m² (grille pricing.ts).
+    function bandIndex() { var m2 = surfaceM2(); if (m2 == null) return null; for (var i = 0; i < BANDS_MAX.length; i++) { if (m2 <= BANDS_MAX[i]) return i; } return BANDS_MAX.length - 1; }
 
-    // Étape « à choix unique » : un seul groupe de radios requis, aucun autre champ requis
+    // Étape « à choix unique » : UN seul groupe de radios, et AUCUN autre champ à
+    // remplir (select, texte, nombre, case à cocher…). Sinon on garde « Continuer ».
     function isAutoStep(step) {
       if (!step) return false;
-      if (step.querySelector('select[required], input[required]:not([type="radio"]), textarea[required]')) return false;
-      var radios = step.querySelectorAll('input[type="radio"][required]');
+      if (step.querySelector('select, textarea, input:not([type="radio"]):not([type="hidden"])')) return false;
+      var radios = step.querySelectorAll('input[type="radio"]');
       if (!radios.length) return false;
       var names = {}; radios.forEach(function (r) { names[r.name] = 1; });
       return Object.keys(names).length === 1;
@@ -323,8 +325,8 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       // étape 3 : logement → surface obligatoire (+ âge pour vente/location) ;
       //           lot annexe (cave/parking/box) → surface facultative, pas d'âge.
       if (step.getAttribute('data-step') === '3' && !isLotBien()) {
-        var sb = form.querySelector('[name="surface_band"]');
-        if (!sb || sb.value === '') { ok = false; if (sb) sb.style.borderColor = '#b3261e'; } else if (sb) { sb.style.borderColor = ''; }
+        var sb = form.querySelector('[name="surface_m2"]');
+        if (surfaceM2() == null) { ok = false; if (sb) sb.style.borderColor = '#b3261e'; } else if (sb) { sb.style.borderColor = ''; }
         if (ageNeeded() && !checkedVal('age_bien')) ok = false;
       }
       // étape 4 : code postal valide (5 chiffres, Île-de-France)
@@ -342,11 +344,11 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     // Récap de la demande à la dernière étape (CRO #5)
     function buildRecap() {
       var el = document.getElementById('qrecap'); if (!el) return;
-      var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien'), est = val('estimation');
+      var d = demande(), b = bien(), m2 = surfaceM2(), age = checkedVal('age_bien'), est = val('estimation');
       var parts = [];
       if (d && DEMANDE_LABELS[d]) parts.push(DEMANDE_LABELS[d]);
       if (b) parts.push(BIEN_LABELS[b] || b);
-      if (bi != null && SURF_LABELS[bi]) parts.push(SURF_LABELS[bi]);
+      if (m2 != null) parts.push(m2 + ' m²');
       if (age && AGE_LABELS[age]) parts.push(AGE_LABELS[age]);
       var ax = annexeState();
       var annexeTxt = ax.on ? (ax.type === 'garage_dependance' ? ' + garage/dépendance (' + ANNEXE_SUPP + ' €)' : ' + cave/parking (' + ANNEXE_SUPP + ' €)') : '';
@@ -383,7 +385,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       if (coproBlock) coproBlock.hidden = !(b === 'maison' && isPack); // copropriété : maison + pack
       if (annexeAppartBlock) annexeAppartBlock.hidden = !(b === 'appartement' && isPack);
       if (annexeMaisonBlock) annexeMaisonBlock.hidden = !(b === 'maison' && isPack);
-      if (hSurf && bi != null) hSurf.value = String(BANDS_MAX[bi]);
+      if (hSurf) { var sM2 = surfaceM2(); hSurf.value = sM2 != null ? String(sM2) : ''; } // surface réelle (m²)
 
       // Sous-titre conditionnel : lot annexe / DPE-audit / vente-location
       var sub = document.getElementById('step3-sub');
@@ -431,10 +433,14 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     }
 
     form.addEventListener('change', function (e) {
-      if (['type_demande', 'type_bien', 'surface_band', 'age_bien', 'copropriete', 'annexe_appart', 'annexe_maison'].indexOf(e.target.name) > -1) {
+      if (['type_demande', 'type_bien', 'surface_m2', 'age_bien', 'copropriete', 'annexe_appart', 'annexe_maison'].indexOf(e.target.name) > -1) {
         updateEstimation();
       }
       if (e.target.type === 'radio') maybeAutoAdvance(e.target);
+    });
+    // Estimation en direct pendant la saisie de la surface (sans attendre le blur).
+    form.addEventListener('input', function (e) {
+      if (e.target.name === 'surface_m2') { e.target.style.borderColor = ''; updateEstimation(); }
     });
 
     form.addEventListener('click', function (e) {
