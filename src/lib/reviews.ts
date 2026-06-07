@@ -11,21 +11,18 @@ export interface Review {
 
 export const REVIEWS: Review[] = [
   {
-    txt: 'Société très compétente et très réactive lors des différents échanges, je recommande cette dernière pour toutes opération de diagnostic.',
-    who: 'M. Lambt',
+    txt: 'Merci à M. Teboul, il nous a sauvé la vente : RDV express avec des tarifs compétitifs.',
+    who: 'Samuel M.',
     sub: 'Avis Google',
   },
   {
-    txt: 'Travail rapide et bien exécuté. M. Teboul est très sympathique.',
-    who: 'Philippe G.',
+    txt: 'Très réactif. A refait le DPE de notre appartement acheté récemment. Pas de surprise et très professionnel. Je recommande.',
+    who: 'Didier T.',
     sub: 'Avis Google',
   },
   {
-    // ⚠️ PLACEHOLDER — l'ancien texte (« Vous avez réalisé les diagnostics… ») était un fragment
-    // tronqué, pas une recommandation. À remplacer par un AVIS GOOGLE RÉEL parlant de la clarté
-    // du prix ou du délai tenu (verbatim authentique, fiche « is diag »). Ne pas inventer.
-    txt: '[À REMPLACER : avis Google réel — clarté prix / délai]',
-    who: '[À REMPLACER]',
+    txt: 'Très satisfaite, RV pris rapidement et le rapport envoyé le jour même. Je recommande fortement.',
+    who: 'Elisa E.',
     sub: 'Avis Google',
   },
 ];
