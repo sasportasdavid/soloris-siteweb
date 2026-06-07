@@ -84,11 +84,11 @@ export const OFFERS: Offer[] = [
     nav: 'Diagnostics pour louer',
     navDesc: 'Le pack bailleur, clair et rapide',
     shortLabel: 'dossier de diagnostics pour louer',
-    h1: 'Diagnostics pour louer — le pack bailleur',
-    title: 'Diagnostics pour louer (pack bailleur) | Soloris',
+    h1: 'Diagnostics location à Paris & Île-de-France',
+    title: 'Diagnostics location (pack bailleur) Paris & IDF | Soloris',
     metaDesc:
       'Pack diagnostics location tout compris pour bailleurs, sous 48 h à Paris et en Île-de-France. Rapport clair, diagnostiqueur certifié COFRAC. Devis en 2 min.',
-    tagline: "Le dossier de diagnostic technique à annexer au bail, sans prise de tête.",
+    tagline: "Préparez votre mise en location avec les diagnostics obligatoires : tarif clair, intervention rapide et rapport sous 48 h.",
     intro:
       "Avant de louer, certains diagnostics doivent être annexés au bail. Soloris réunit le pack bailleur applicable à votre logement, avec un rapport lisible que vous pouvez transmettre directement à votre locataire ou à votre agence.",
     inclus: [
@@ -134,11 +134,11 @@ export const OFFERS: Offer[] = [
     nav: 'DPE seul',
     navDesc: 'Rapide, sous 48 h',
     shortLabel: 'DPE',
-    h1: 'DPE à Paris et en Île-de-France, sous 48 h',
-    title: 'DPE à Paris & Île-de-France sous 48 h | Soloris',
+    h1: `DPE à Paris & Île-de-France dès ${DPE_FROM} €`,
+    title: `DPE Paris & Île-de-France dès ${DPE_FROM} € | Soloris`,
     metaDesc:
-      `DPE sous 48 h à Paris et en Île-de-France. Tarif tout compris dès ${DPE_FROM} €, rapport clair, diagnostiqueur certifié COFRAC. Estimation immédiate.`,
-    tagline: "Votre étiquette énergétique, expliquée clairement.",
+      `Faites réaliser votre DPE dès ${DPE_FROM} € par un diagnostiqueur certifié. Rendez-vous rapide, prix clair, rapport sous 48 h à Paris et en Île-de-France.`,
+    tagline: "Faites réaliser votre diagnostic de performance énergétique par un diagnostiqueur certifié, avec rapport transmis sous 48 h.",
     intro:
       "Le DPE évalue la performance énergétique de votre logement et lui attribue une étiquette de A à G. Soloris le réalise rapidement et vous remet un rapport pédagogique : vous comprenez votre étiquette et les pistes d'amélioration, sans jargon.",
     inclus: [
@@ -178,11 +178,11 @@ export const OFFERS: Offer[] = [
     nav: 'Audit énergétique',
     navDesc: "Pour les logements énergivores",
     shortLabel: 'audit énergétique',
-    h1: 'Audit énergétique — par un expert certifié',
-    title: 'Audit énergétique à Paris & Île-de-France | Soloris',
+    h1: 'Audit énergétique réglementaire à Paris & Île-de-France',
+    title: 'Audit énergétique réglementaire Paris & IDF | Soloris',
     metaDesc:
-      "Audit énergétique réglementaire pour logements énergivores à Paris et en Île-de-France. Scénarios de travaux chiffrés, expert certifié. Devis en 2 min.",
-    tagline: "Un plan de travaux clair pour améliorer votre étiquette.",
+      "Audit énergétique réglementaire pour logements classés E, F ou G à Paris et en Île-de-France. Scénarios de travaux chiffrés, expert certifié. Devis en 2 min.",
+    tagline: "Vous vendez une maison ou un immeuble en monopropriété classé E, F ou G ? Vérifiez si l'audit énergétique est obligatoire pour votre vente.",
     intro:
       "L'audit énergétique va plus loin que le DPE : il dresse un état des lieux complet et propose des scénarios de travaux hiérarchisés pour améliorer la performance du logement. Soloris vous le restitue sans jargon, avec des ordres de grandeur clairs.",
     inclus: [
