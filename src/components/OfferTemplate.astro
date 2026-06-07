@@ -42,7 +42,7 @@ const jsonLd = [
     tagpill="Certifié COFRAC · Rapport opposable"
     h1={offer.h1}
     sub={offer.tagline}
-    primaryHref={`/devis?type=${offer.demande}`}
+    primaryHref={offer.heroCtaHref ?? `/devis?type=${offer.demande}`}
     primaryLabel="Obtenir mon devis en 2 min"
     secondaryHref="#tarifs"
     secondaryLabel="Voir les tarifs"

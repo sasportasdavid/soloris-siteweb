@@ -21,8 +21,11 @@ export const REVIEWS: Review[] = [
     sub: 'Avis Google',
   },
   {
-    txt: "Vous avez réalisé les diagnostics d'un appartement mis en vente dans mon agence immobilière à Paris.",
-    who: 'Julie A.',
-    sub: 'Avis Google · agence immobilière',
+    // ⚠️ PLACEHOLDER — l'ancien texte (« Vous avez réalisé les diagnostics… ») était un fragment
+    // tronqué, pas une recommandation. À remplacer par un AVIS GOOGLE RÉEL parlant de la clarté
+    // du prix ou du délai tenu (verbatim authentique, fiche « is diag »). Ne pas inventer.
+    txt: '[À REMPLACER : avis Google réel — clarté prix / délai]',
+    who: '[À REMPLACER]',
+    sub: 'Avis Google',
   },
 ];

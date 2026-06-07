@@ -21,6 +21,9 @@ export interface Offer {
   title: string;
   metaDesc: string;
   tagline: string;
+  /** CTA héro : si défini, ancre interne (ex. '#qform') pour scroller vers le formulaire
+   *  embarqué au lieu de naviguer ; défaut = /devis?type=<demande>. */
+  heroCtaHref?: string;
   intro: string;
   // « ce qui est inclus / peut être inclus »
   inclus: { label: string; detail: string }[];
@@ -37,11 +40,13 @@ export const OFFERS: Offer[] = [
     nav: 'Diagnostics pour vendre',
     navDesc: 'Le pack complet, tout compris, sous 48 h',
     shortLabel: 'dossier de diagnostics pour vendre',
-    h1: 'Diagnostics pour vendre — le pack complet',
+    h1: 'Tous vos diagnostics de vente, prêts pour le notaire — sous 48 h, prix tout compris affiché.',
     title: 'Diagnostics pour vendre à Paris & IDF | Soloris',
     metaDesc:
       'Pack diagnostics vente tout compris, rapport opposable sous 48 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC. Devis en 2 min.',
-    tagline: 'Le dossier de diagnostic technique (DDT) complet, prêt pour votre notaire.',
+    tagline: "Un seul rendez-vous, un prix annoncé d'avance, aucun frais surprise le jour J.",
+    // CTA héro : scroll vers le formulaire embarqué (#qform), même tunnel, sans quitter la page.
+    heroCtaHref: '#qform',
     intro:
       "Pour vendre, l'acquéreur reçoit un dossier de diagnostic technique (DDT) annexé à la promesse de vente. Soloris réunit l'ensemble des diagnostics requis selon votre bien, en un seul rendez-vous, avec un rapport clair et opposable.",
     inclus: [
