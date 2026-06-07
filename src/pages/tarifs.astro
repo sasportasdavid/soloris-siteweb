@@ -3,7 +3,7 @@
  * /tarifs — pilier Clarté. Grille complète + add-ons. JSON-LD AggregateOffer + FAQ.
  */
 import Base from '../layouts/Base.astro';
-import PricingTable from '../components/PricingTable.astro';
+import PriceSimulator from '../components/PriceSimulator.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
@@ -67,10 +67,12 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
 
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">Pack vente & location</div>
-      <h2 class="sec-title" style="font-size:28px">Le prix selon la surface et l'âge du bien</h2>
-      <p class="sec-intro">Le tarif dépend de l'âge du logement, car les diagnostics obligatoires changent : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents.</p>
-      <div class="mt-5"><PricingTable caption="Grille tarifaire Soloris" /></div>
+      <div class="sec-head center">
+        <div class="eyebrow center">Votre devis en direct</div>
+        <h2 class="sec-title" style="font-size:28px">Estimez votre prix, tout compris</h2>
+        <p class="sec-intro">Renseignez votre bien : l'estimation s'affiche immédiatement, déplacement inclus. Le prix n'est jamais caché — vous le voyez avant même de laisser vos coordonnées.</p>
+      </div>
+      <div class="mt-5"><PriceSimulator /></div>
     </div>
   </section>
 
