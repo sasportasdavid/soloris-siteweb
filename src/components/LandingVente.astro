@@ -19,6 +19,7 @@ import ReassuranceBar from './ReassuranceBar.astro';
 import PricingTable from './PricingTable.astro';
 import ReportPreview from './ReportPreview.astro';
 import Reviews from './Reviews.astro';
+import Faq from './Faq.astro';
 import QuoteForm from './QuoteForm.astro';
 import { getOffer } from '../lib/offers';
 import { prixDes } from '../lib/pricing';
@@ -99,6 +100,16 @@ const piliers = [
 
   <!-- Réassurance (4,9 ★ · 111 avis · COFRAC · Assuré) -->
   <ReassuranceBar />
+
+  <!-- Section douleur (PAS : Problem → Agitate → Solve) — juste après le hero -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:820px">
+      <div class="eyebrow">Le problème</div>
+      <h2 class="sec-title">Votre vente ne doit pas attendre les diagnostics</h2>
+      <p class="sec-intro">Sans le dossier de diagnostics complet, la promesse de vente reste en attente : les délais s'allongent, l'acquéreur et le notaire patientent, et il faut souvent coordonner plusieurs prestataires différents.</p>
+      <p class="sec-intro mt-3">Soloris réunit <b>tous</b> les diagnostics obligatoires de votre bien en <b>un seul rendez-vous</b> et vous remet un rapport clair et opposable <b>sous 48 h</b> — prix tout compris annoncé d'avance, sans frais surprise.</p>
+    </div>
+  </section>
 
   <!-- Ce qui est inclus -->
   <section class="section-line">
@@ -194,6 +205,9 @@ const piliers = [
       </div>
     </div>
   </section>
+
+  <!-- FAQ / objections (contenu réel partagé avec la page offre) — avant la fermeture -->
+  <Faq items={offer.faq} title="Vos questions sur les diagnostics de vente" eyebrow="FAQ" />
 
   <!-- CTA final — IDENTIQUE A/B -->
   <section class="cta-final">
