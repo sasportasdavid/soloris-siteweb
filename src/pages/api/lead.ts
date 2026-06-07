@@ -13,7 +13,6 @@
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
 import { leadKeyboard } from '../../lib/telegram';
-import { FIXED } from '../../lib/pricing';
 
 export const prerender = false;
 
@@ -78,7 +77,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
   const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
     .filter(Boolean).join(' · ');
   const annexeLine = lead.annexe
-    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (+${FIXED.caveParking} €)`
+    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (inclus)`
     : '';
   const acqLine = (lead.gads_keyword || lead.campaign)
     ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
