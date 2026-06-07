@@ -87,7 +87,8 @@ export const DPE_TO = 190; // DPE seul plafond (120 → 190 € selon la surface
 
 /** Mentions / suppléments fixes. */
 export const FIXED = {
-  caveParking: 99, // diagnostic cave / parking EN OPTION (annexe d'un logement vendu/loué)
+  caveParking: 0, // ⚠️ DÉPRÉCIÉ : l'annexe RATTACHÉE à un logement (cave/parking/box/garage) est
+                  // désormais INCLUSE (0 €). Le lot vendu SEUL garde LOT_ANNEXE_PRICE (179 €).
   coproSupp: 20, // maison en copropriété : + 20 €
 };
 
