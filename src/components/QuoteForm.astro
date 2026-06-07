@@ -131,11 +131,11 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
 
       <label class="qcheck" id="annexe-appart-block" hidden>
         <input type="checkbox" name="annexe_appart" value="1" />
-        <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
+        <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien — inclus dans le pack.</span></span>
       </label>
       <label class="qcheck" id="annexe-maison-block" hidden>
         <input type="checkbox" name="annexe_maison" value="1" />
-        <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
+        <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance) — incluse dans le pack.</span></span>
       </label>
 
       <div class="qestim" id="estim" hidden>
@@ -224,6 +224,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
   .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
   .qopt-tag { font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); }
+  .qopt-tag-incl { font-weight: 600; color: #1a7f4b; text-transform: uppercase; letter-spacing: .03em; font-size: 11px; }
   .qfield { display: block; margin-top: 16px; }
   .qfield:first-of-type { margin-top: 0; }
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
@@ -265,7 +266,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -381,7 +382,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       var ax = annexeState();
       var annexeLabel = ax.type === 'garage_dependance' ? ' + garage/dépendance' : ' + cave/parking';
       // Le montant de l'annexe n'est affiché QUE si l'estimation est révélée (pas en LP-B).
-      var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (' + ANNEXE_SUPP + ' €)' : annexeLabel) : '';
+      var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (inclus)' : annexeLabel) : '';
       var price = '';
       if (REVEAL_ESTIMATION) {
         price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
@@ -446,7 +447,9 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
             value += MAISON_SUPP;
             if (form.querySelector('[name="copropriete"]:checked')) value += COPRO_SUPP;
           }
-          if (annexeState().on) value += ANNEXE_SUPP; // cave/parking ou garage/dépendance (supplément)
+          // Annexe RATTACHÉE au logement (cave/parking/box d'un appartement, garage/dépendance
+          // d'une maison) : INCLUSE dans le pack → aucun supplément. Seul le lot vendu SEUL
+          // (type de bien = cave/parking/box) garde son tarif unique LOT_ANNEXE_PRICE (autre parcours).
         }
       }
       // RÈGLE NON NÉGOCIABLE : on calcule TOUJOURS prix_estime (champ caché hEst),

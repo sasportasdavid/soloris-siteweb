@@ -4,7 +4,7 @@
  * Construit un brouillon de devis à partir d'un lead (objet, lignes, montant).
  */
 
-import { LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, isLotAnnexe, FIXED } from './pricing';
+import { LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, isLotAnnexe } from './pricing';
 
 export const DEMANDE_PACK: Record<string, string> = {
   vente: 'Pack diagnostics avant vente',
@@ -40,7 +40,9 @@ export interface DevisDraft {
 export function buildDevisDraftFromLead(l: any): DevisDraft {
   const d = l.type_demande;
   const est = Number(l.estimation) || 0;
-  const annexeAmt = l.annexe ? FIXED.caveParking : 0;
+  // Annexe RATTACHÉE (cave/parking/box d'un appartement, garage/dépendance d'une maison) :
+  // INCLUSE dans le pack → 0 €. (Le lot vendu SEUL garde LOT_ANNEXE_PRICE, branche ci-dessous.)
+  const annexeAmt = 0;
   const bienTxt = l.type_bien === 'maison' ? 'Maison' : l.type_bien === 'appartement' ? 'Appartement' : '';
   const surfTxt = l.surface ? `${l.surface} m²` : '';
   const ageTxt = l.age_bien ? AGE_TXT[l.age_bien] || '' : '';
@@ -62,7 +64,7 @@ export function buildDevisDraftFromLead(l: any): DevisDraft {
     const detail = [bienTxt, surfTxt, ageTxt].filter(Boolean).join(', ');
     objet = `${pack}${bienTxt ? ' — ' + bienTxt : ''}${surfTxt ? ' ' + surfTxt : ''}`;
     lignes.push({ libelle: `${pack}${detail ? ' — ' + detail : ''}`, montant: Math.max(est - annexeAmt, 0) });
-    if (l.annexe) lignes.push({ libelle: ANNEXE_TXT[l.annexe_type] || 'Diagnostic annexe', montant: FIXED.caveParking });
+    if (l.annexe) lignes.push({ libelle: (ANNEXE_TXT[l.annexe_type] || 'Diagnostic annexe') + ' — inclus', montant: 0 });
   } else if (d === 'dpe') {
     objet = `DPE${bienTxt ? ' — ' + bienTxt : ''}${surfTxt ? ' ' + surfTxt : ''}`;
     lignes.push({ libelle: `Diagnostic de performance énergétique (DPE)${bienTxt ? ' — ' + bienTxt : ''}${surfTxt ? ', ' + surfTxt : ''}`, montant: est });
