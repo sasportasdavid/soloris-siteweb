@@ -27,3 +27,36 @@ export const REVIEWS: Review[] = [
     sub: 'Avis Google',
   },
 ];
+
+export const REVIEWS_EXTRA: Review[] = [
+  {
+    txt: "Service très professionnel et échange chaleureux — j'ai obtenu mes documents de diagnostics très rapidement après le rendez-vous !",
+    who: 'Sofia G.',
+    sub: 'Avis Google',
+  },
+  {
+    txt: 'Société réactive et professionnelle. Diagnostics livrés rapidement. Je recommande +++',
+    who: 'Charles',
+    sub: 'Avis Google',
+  },
+  {
+    txt: 'Après un diagnostic complet, je suis pleinement satisfaite. Monsieur T. est très compétent, professionnel, sympathique, rapide, efficace, disponible par messages et mails. Je recommande à 100 % !',
+    who: 'Laure L.',
+    sub: 'Avis Google',
+  },
+  {
+    txt: 'Rapide, efficace et bien placé en termes de tarif, je recommande :)',
+    who: 'Arnaud C.',
+    sub: 'Avis Google',
+  },
+  {
+    txt: 'Merci pour votre intervention, très rapide, efficace, ponctuel et sympathique. Je recommande vivement !',
+    who: 'Anouk H.',
+    sub: 'Avis Google',
+  },
+  {
+    txt: 'Excellente société de diagnostic à tout point de vue. Je recommande à 100 % — Bravo !',
+    who: 'B. Soum',
+    sub: 'Avis Google',
+  },
+];

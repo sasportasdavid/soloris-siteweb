@@ -10,6 +10,7 @@ import OfferCard from '../components/OfferCard.astro';
 import ReportPreview from '../components/ReportPreview.astro';
 import EnergyScale from '../components/EnergyScale.astro';
 import Reviews from '../components/Reviews.astro';
+import ReviewWall from '../components/ReviewWall.astro';
 import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
 import { prixDes } from '../lib/pricing';
@@ -158,6 +159,9 @@ const description = 'Diagnostics immobiliers à Paris et Île-de-France : DPE, p
 
   <!-- 10 · Avis clients -->
   <Reviews limit={3} title="Ce que disent nos clients" eyebrow="Ils nous ont fait confiance" />
+
+  <!-- 10b · Wall of love — 2e bloc de preuve sociale (volume d'avis réels) -->
+  <ReviewWall />
 
   <!-- 11 · FAQ -->
   <Faq items={faq} title="Vos questions, nos réponses claires" />
