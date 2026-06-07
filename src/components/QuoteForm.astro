@@ -131,11 +131,11 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
 
       <label class="qcheck" id="annexe-appart-block" hidden>
         <input type="checkbox" name="annexe_appart" value="1" />
-        <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
+        <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien — inclus dans le pack.</span></span>
       </label>
       <label class="qcheck" id="annexe-maison-block" hidden>
         <input type="checkbox" name="annexe_maison" value="1" />
-        <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag">+ {FIXED.caveParking} €</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
+        <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance) — incluse dans le pack.</span></span>
       </label>
 
       <div class="qestim" id="estim" hidden>
@@ -224,6 +224,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
   .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
   .qopt-tag { font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); }
+  .qopt-tag-incl { font-weight: 600; color: #1a7f4b; text-transform: uppercase; letter-spacing: .03em; font-size: 11px; }
   .qfield { display: block; margin-top: 16px; }
   .qfield:first-of-type { margin-top: 0; }
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
@@ -265,7 +266,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -381,7 +382,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       var ax = annexeState();
       var annexeLabel = ax.type === 'garage_dependance' ? ' + garage/dépendance' : ' + cave/parking';
       // Le montant de l'annexe n'est affiché QUE si l'estimation est révélée (pas en LP-B).
-      var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (' + ANNEXE_SUPP + ' €)' : annexeLabel) : '';
+      var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (inclus)' : annexeLabel) : '';
       var price = '';
       if (REVEAL_ESTIMATION) {
         price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
@@ -446,7 +447,9 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
             value += MAISON_SUPP;
             if (form.querySelector('[name="copropriete"]:checked')) value += COPRO_SUPP;
           }
-          if (annexeState().on) value += ANNEXE_SUPP; // cave/parking ou garage/dépendance (supplément)
+          // Annexe RATTACHÉE au logement (cave/parking/box d'un appartement, garage/dépendance
+          // d'une maison) : INCLUSE dans le pack → aucun supplément. Seul le lot vendu SEUL
+          // (type de bien = cave/parking/box) garde son tarif unique LOT_ANNEXE_PRICE (autre parcours).
         }
       }
       // RÈGLE NON NÉGOCIABLE : on calcule TOUJOURS prix_estime (champ caché hEst),
@@ -496,11 +499,26 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
     }
+    // Le lead_uid identifie UN parcours de devis (session), PAS un visiteur. Il est stocké
+    // en sessionStorage (et non plus dans un cookie persistant 30 j) : un visiteur qui revient
+    // repart donc sur un lead NEUF. Sinon sa nouvelle soumission réutilisait l'ancien lead_uid
+    // → upsert_lead faisait un UPDATE de sa vieille ligne au lieu d'un INSERT (bug : 0 nouveau lead).
+    function purgeLegacyLeadCookie() {
+      try { document.cookie = 'soloris_lead_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'; } catch (e) {}
+    }
     function getLeadUid() {
-      var name = 'soloris_lead_id';
-      var v = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
-      if (!v) { v = uuid(); var d = new Date(); d.setTime(d.getTime() + 30 * 864e5); document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax'; }
+      purgeLegacyLeadCookie(); // nettoie l'ancien cookie persistant (cause du bug)
+      var v = '';
+      try { v = sessionStorage.getItem('soloris_lead_uid') || ''; } catch (e) {}
+      if (!/^[0-9a-f-]{36}$/i.test(v)) { v = uuid(); try { sessionStorage.setItem('soloris_lead_uid', v); } catch (e) {} }
       return v;
+    }
+    // Après un lead COMPLET confirmé : on retire le lead_uid pour qu'une soumission ultérieure
+    // (même navigateur/onglet) reparte sur une nouvelle ligne. Le lien partiel→complet ne vaut
+    // que DANS le parcours en cours.
+    function clearLeadUid() {
+      try { sessionStorage.removeItem('soloris_lead_uid'); } catch (e) {}
+      purgeLegacyLeadCookie();
     }
     function getAcq() {
       try { var raw = (document.cookie.split('; ').find(function (c) { return c.indexOf('soloris_acq=') === 0; }) || '').split('=')[1]; return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; }
@@ -618,7 +636,14 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
-          if (!res.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
+          var lead = res.j || {};
+          // ⚠️ On ne montre « Merci » QUE si l'écriture est confirmée : réponse OK + id présent
+          // + (si l'API le renvoie) lead_status='complet'. Sinon → erreur, pas de page de succès.
+          if (!res.ok || !lead.id || (lead.lead_status && lead.lead_status !== 'complet')) {
+            throw new Error(lead.error ? lead.error : 'Erreur');
+          }
+          // Lead complet confirmé : on retire le lead_uid → la prochaine soumission repart à neuf.
+          clearLeadUid();
           try {
             var v3 = Number(payload.estimation || 0);
             // ── Event de conversion CANONIQUE (Tâche 4) ─────────────────────────────

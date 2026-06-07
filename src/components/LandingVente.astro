@@ -18,7 +18,10 @@ import LandingLayout from '../layouts/LandingLayout.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
 import PricingTable from './PricingTable.astro';
 import ReportPreview from './ReportPreview.astro';
+import CallbackForm from './CallbackForm.astro';
 import Reviews from './Reviews.astro';
+import ReviewWall from './ReviewWall.astro';
+import Faq from './Faq.astro';
 import QuoteForm from './QuoteForm.astro';
 import { getOffer } from '../lib/offers';
 import { prixDes } from '../lib/pricing';
@@ -28,6 +31,10 @@ interface Props { variant: 'A' | 'B' }
 const { variant } = Astro.props;
 const withPrices = variant === 'A';
 const recallSla = '48 h';
+
+// Sous-titre LP vente (douleur + solution). Propre à la LP : on N'écrase PAS
+// offer.tagline (réutilisé tel quel sur la page offre /diagnostics-vente).
+const heroSub = 'Plus de délai qui bloque la signature : un seul rendez-vous, tous les diagnostics obligatoires, rapport opposable livré sous 48 h.';
 
 const offer = getOffer('diagnostics-vente')!;
 const hasReviews = Number(SITE.rating.count) > 0;
@@ -69,8 +76,8 @@ const piliers = [
           <svg width="14" height="14" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M 53 47 L 84 16" stroke="#F5A623" stroke-width="12" stroke-linecap="round" /><path d="M 79.9 36.1 A 33 33 0 1 1 63.9 20.1" stroke="#2E6FAE" stroke-width="12" stroke-linecap="round" /></svg>
           Certifié COFRAC · Rapport opposable
         </span>
-        <h1>Diagnostics avant vente — le dossier complet, prêt pour votre notaire</h1>
-        <p class="lp-sub">{offer.tagline}</p>
+        <h1>Vendez sans accroc : tous vos diagnostics réunis, prêts pour le notaire — sous 48 h.</h1>
+        <p class="lp-sub">{heroSub}</p>
         {hasReviews && (
           <div class="lp-rating" aria-label={`Note ${SITE.rating.value} sur 5, ${SITE.rating.count} avis Google`}>
             <span class="stars" aria-hidden="true">
@@ -81,19 +88,30 @@ const piliers = [
         )}
         <div class="lp-cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
         <div class="lp-trust">
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport sous 48 h</span>
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Tout compris</span>
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Diagnostiqueur certifié</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Devis gratuit, sans engagement</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Prix tout compris, zéro frais surprise</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport opposable sous 48 h</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Certifié COFRAC</span>
         </div>
       </div>
       <div class="lp-hero-visual">
-        <ReportPreview />
+        <CallbackForm defaultType="vente" title="Être rappelé en quelques minutes" sub="Laissez votre numéro et le code postal du bien : on vous rappelle pour confirmer vos diagnostics de vente et fixer le rendez-vous." />
       </div>
     </div>
   </section>
 
   <!-- Réassurance (4,9 ★ · 111 avis · COFRAC · Assuré) -->
   <ReassuranceBar />
+
+  <!-- Section douleur (PAS : Problem → Agitate → Solve) — juste après le hero -->
+  <section class="section-line">
+    <div class="wrap" style="max-width:820px">
+      <div class="eyebrow">Le problème</div>
+      <h2 class="sec-title">Votre vente ne doit pas attendre les diagnostics</h2>
+      <p class="sec-intro">Sans le dossier de diagnostics complet, la promesse de vente reste en attente : les délais s'allongent, l'acquéreur et le notaire patientent, et il faut souvent coordonner plusieurs prestataires différents.</p>
+      <p class="sec-intro mt-3">Soloris réunit <b>tous</b> les diagnostics obligatoires de votre bien en <b>un seul rendez-vous</b> et vous remet un rapport clair et opposable <b>sous 48 h</b> — prix tout compris annoncé d'avance, sans frais surprise.</p>
+    </div>
+  </section>
 
   <!-- Ce qui est inclus -->
   <section class="section-line">
@@ -190,12 +208,18 @@ const piliers = [
     </div>
   </section>
 
+  <!-- FAQ / objections (contenu réel partagé avec la page offre) — avant la fermeture -->
+  <Faq items={offer.faq} title="Vos questions sur les diagnostics de vente" eyebrow="FAQ" />
+
+  <!-- Wall of love — 2e bloc de preuve sociale (volume) avant la fermeture -->
+  <ReviewWall />
+
   <!-- CTA final — IDENTIQUE A/B -->
   <section class="cta-final">
     <div class="wrap">
       <h2>Votre dossier de diagnostics, en toute clarté</h2>
       <p>Devis en 2 minutes, rendez-vous sous 48 h, sans engagement.</p>
-      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis</a></div>
+      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
     </div>
   </section>
 </LandingLayout>

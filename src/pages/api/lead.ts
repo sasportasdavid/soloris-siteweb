@@ -13,7 +13,6 @@
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
 import { leadKeyboard } from '../../lib/telegram';
-import { FIXED } from '../../lib/pricing';
 
 export const prerender = false;
 
@@ -78,7 +77,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
   const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
     .filter(Boolean).join(' · ');
   const annexeLine = lead.annexe
-    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (+${FIXED.caveParking} €)`
+    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (inclus)`
     : '';
   const acqLine = (lead.gads_keyword || lead.campaign)
     ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
@@ -311,7 +310,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // uniquement quand le formulaire est validé à 100 %.
   // `id` = identifiant Supabase du lead → exposé au client pour servir de
   // transaction_id (dédup) dans l'event de conversion « lead_submitted » (Tâche 4).
-  return json({ ok: true, id: result?.id ?? null, lead_uid: result?.lead_uid || leadUid || null }, 201);
+  // On expose au client : id (transaction_id), lead_uid, le statut RÉELLEMENT écrit
+  // (le front n'affiche « Merci » que si lead_status='complet'), et — si la RPC le fournit —
+  // un indicateur `created` (true = nouvelle ligne, false = mise à jour d'une ligne existante).
+  const writtenStatus = (result && result.lead && result.lead.lead_status) || leadStatus;
+  const created = result && typeof result.created === 'boolean' ? result.created : null;
+  return json({ ok: true, id: result?.id ?? null, lead_uid: result?.lead_uid || leadUid || null, lead_status: writtenStatus, created }, 201);
 };
 
 export const GET: APIRoute = () => json({ error: 'Méthode non autorisée.' }, 405);
