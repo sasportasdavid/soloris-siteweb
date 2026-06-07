@@ -39,11 +39,6 @@ const {
   recallSla = '48 h',
 } = Astro.props;
 
-const GADS = import.meta.env.PUBLIC_GADS_ID;
-const GADS_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
-const PLACEHOLDER = '__A_REMPLACER__';
-const sendTo = GADS && GADS !== PLACEHOLDER && GADS_LABEL && GADS_LABEL !== PLACEHOLDER ? `${GADS}/${GADS_LABEL}` : '';
-
 const DEMANDE_DESC: Record<string, string> = {
   vente: 'Je vends un bien',
   location: 'Je mets en location',
@@ -270,7 +265,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -647,12 +642,8 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
                 currency: 'EUR',
               });
             }
-            // Tags hérités (Meta + ancien event/gtag). Conservés pour ne pas casser le
-            // tracking existant ; à retirer une fois « lead_submitted » mappé dans GTM
-            // (sinon double comptage côté Google Ads).
-            if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo, value: v3, currency: 'EUR' });
-            if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: v3 });
-            if (window.dataLayer) window.dataLayer.push({ event: 'soloris_lead', value: v3, currency: 'EUR', type_demande: payload.type_demande || '' });
+            // Meta (plateforme DISTINCTE de Google → aucun double-compte). Inactif
+            // aujourd'hui ; conservé pour quand le pixel Meta sera réactivé.
             if (window.fbq) window.fbq('track', 'Lead');
           } catch (err) {}
           form.hidden = true;
