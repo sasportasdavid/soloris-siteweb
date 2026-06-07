@@ -641,6 +641,11 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
                 prix_estime: v3,
                 currency: 'EUR',
               });
+              // FILET TEMPORAIRE — retirer dès que la balise GTM Ads-Conversion Devis (sur lead_submitted) est publiée et vérifiée, SINON double-comptage.
+              if (window.gtag) window.gtag('event', 'conversion', {
+                send_to: 'AW-18172720149/QppgCLuXrLgcEJXottlD',
+                value: v3, currency: 'EUR', transaction_id: leadId,
+              });
             }
             // Meta (plateforme DISTINCTE de Google → aucun double-compte). Inactif
             // aujourd'hui ; conservé pour quand le pixel Meta sera réactivé.
