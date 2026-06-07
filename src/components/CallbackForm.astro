@@ -1,0 +1,175 @@
+---
+/**
+ * Formulaire express « Être rappelé » : capture téléphone + code postal le plus tôt
+ * possible (trafic Ads froid, surtout mobile). Crée un lead PARTIEL via /api/lead
+ * (statut 'partiel') → notification équipe « 🟠 à rappeler ».
+ *
+ * Réutilise le MÊME lead_uid (sessionStorage, scope parcours) que le tunnel complet : si le
+ * visiteur remplit ensuite le devis, c'est la même fiche (pas de doublon). Porte aussi
+ * l'attribution (gclid / UTM / ValueTrack) via le cookie soloris_acq, comme le tunnel.
+ */
+interface Props {
+  defaultType?: 'vente' | 'location' | 'dpe' | 'audit' | '';
+  title?: string;
+  sub?: string;
+}
+const {
+  defaultType = '',
+  title = 'Être rappelé rapidement',
+  sub = 'Laissez votre numéro : on vous rappelle pour confirmer les diagnostics de votre bien et fixer un rendez-vous.',
+} = Astro.props;
+---
+<form class="cbform card" data-cbform data-default-type={defaultType} novalidate>
+  <div class="cbform-head">
+    <h3 class="cbform-title">{title}</h3>
+    <p class="cbform-sub">{sub}</p>
+  </div>
+  <div class="cbform-body">
+    <div class="cbform-row">
+      <label class="cbform-field">
+        <span>Téléphone</span>
+        <input type="tel" name="telephone" required inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" />
+      </label>
+      <label class="cbform-field">
+        <span>Code postal du bien</span>
+        <input type="text" name="secteur" required inputmode="numeric" maxlength="5" pattern="\d{5}" autocomplete="postal-code" placeholder="75011" />
+      </label>
+    </div>
+    {!defaultType && (
+      <label class="cbform-field">
+        <span>Votre projet</span>
+        <select name="type_demande">
+          <option value="vente">Je vends un bien</option>
+          <option value="location">Je mets en location</option>
+          <option value="dpe">DPE seul</option>
+          <option value="audit">Audit énergétique</option>
+        </select>
+      </label>
+    )}
+    <!-- Honeypot anti-bot (identique au tunnel) -->
+    <div class="cbform-hp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+    <button type="submit" class="btn-gold btn-block cbform-submit">Être rappelé</button>
+    <p class="cbform-trust">Sans engagement · Réponse rapide · Vos données restent confidentielles</p>
+    <p class="cbform-err" role="alert" hidden></p>
+  </div>
+  <div class="cbform-thanks" hidden>
+    <div class="cbform-thanks-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <strong>Merci, c'est noté&nbsp;!</strong>
+    <span>On vous rappelle très vite au sujet de vos diagnostics.</span>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
+
+    function uuid() {
+      try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+    }
+    function readCookie(name) {
+      return (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1] || '';
+    }
+    // lead_uid = scope PARCOURS (sessionStorage), pas un cookie persistant : un visiteur qui
+    // revient repart sur un lead neuf (évite l'écrasement via upsert). Même clé que le tunnel
+    // complet → le rappel et le devis d'un même parcours partagent la même fiche.
+    function getLeadUid() {
+      try { document.cookie = 'soloris_lead_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'; } catch (e) {}
+      var v = '';
+      try { v = sessionStorage.getItem('soloris_lead_uid') || ''; } catch (e) {}
+      if (!/^[0-9a-f-]{36}$/i.test(v)) { v = uuid(); try { sessionStorage.setItem('soloris_lead_uid', v); } catch (e) {} }
+      return v;
+    }
+    function getAcq() {
+      try { var raw = readCookie('soloris_acq'); return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; }
+    }
+
+    function bind(form) {
+      var defaultType = form.getAttribute('data-default-type') || '';
+      var thanks = form.querySelector('.cbform-thanks');
+      var body = form.querySelector('.cbform-body');
+      var head = form.querySelector('.cbform-head');
+      var errEl = form.querySelector('.cbform-err');
+      var btn = form.querySelector('.cbform-submit');
+      // Pré-sélection du projet via l'URL (?type=) si pas de type fixé par la page
+      if (!defaultType) {
+        var t = new URLSearchParams(window.location.search).get('type');
+        var sel = form.querySelector('[name="type_demande"]');
+        if (sel && t) { for (var i = 0; i < sel.options.length; i++) { if (sel.options[i].value === t) { sel.selectedIndex = i; break; } } }
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (errEl) errEl.hidden = true;
+        var tel = (form.querySelector('[name="telephone"]').value || '').trim();
+        var cpEl = form.querySelector('[name="secteur"]');
+        var cp = (cpEl.value || '').replace(/\D/g, '').slice(0, 5);
+        cpEl.value = cp;
+        if (form.querySelector('[name="website"]').value) return; // honeypot
+        if (tel.replace(/\D/g, '').length < 8) { showErr('Indiquez un numéro de téléphone valide.'); return; }
+        if (!/^\d{5}$/.test(cp) || IDF.indexOf(cp.slice(0, 2)) === -1) { showErr('Code postal en Île-de-France (75, 77, 78, 91, 92, 93, 94, 95).'); return; }
+
+        var selEl = form.querySelector('[name="type_demande"]');
+        var type_demande = defaultType || (selEl ? selEl.value : '') || 'vente';
+        btn.disabled = true; btn.textContent = 'Envoi…';
+
+        var a = getAcq();
+        var payload = {
+          lead_uid: getLeadUid(), lead_status: 'partiel', source: 'devis',
+          type_demande: type_demande, telephone: tel, secteur: cp,
+          message: 'Demande de rappel express',
+          session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
+          utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
+          term: a.utm_term || '', content: a.utm_content || '', gclid: a.gclid || '', fbclid: a.fbclid || '',
+          gads_keyword: a.keyword || '', gads_campaign_id: a.campaignid || '', gads_adgroup_id: a.adgroupid || '',
+          gads_creative_id: a.creative || '', match_type: a.matchtype || '', device: a.device || '', network: a.network || '',
+          landing_path: a.landing_path || window.location.pathname, referrer: a.referrer || ''
+        };
+
+        fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+          .then(function () {
+            // Micro-conversion « rappel demandé » (à mapper côté GTM si souhaité, distinct de lead_submitted)
+            try { if (window.dataLayer) window.dataLayer.push({ event: 'callback_request', projet: type_demande }); } catch (e) {}
+            if (head) head.hidden = true;
+            if (body) body.hidden = true;
+            if (thanks) thanks.hidden = false;
+          })
+          .catch(function () {
+            btn.disabled = false; btn.textContent = 'Être rappelé';
+            showErr('Une erreur est survenue. Réessayez ou appelez-nous directement.');
+          });
+      });
+
+      // Code postal : chiffres uniquement
+      var cpInput = form.querySelector('[name="secteur"]');
+      if (cpInput) cpInput.addEventListener('input', function () { cpInput.value = cpInput.value.replace(/\D/g, '').slice(0, 5); });
+
+      function showErr(msg) { if (errEl) { errEl.textContent = msg; errEl.hidden = false; } }
+    }
+
+    document.querySelectorAll('form[data-cbform]').forEach(bind);
+  })();
+</script>
+
+<style>
+  .cbform { padding: 22px 24px; max-width: 460px; }
+  .cbform-title { font-family: var(--sora); font-weight: 600; font-size: 19px; color: var(--blue); }
+  .cbform-sub { font-size: 13.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; }
+  .cbform-body { margin-top: 16px; }
+  .cbform-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .cbform-row { grid-template-columns: 1fr; } }
+  .cbform-field { display: block; margin-top: 12px; }
+  .cbform-row .cbform-field { margin-top: 0; }
+  .cbform-field span { display: block; font-family: var(--sora); font-size: 12.5px; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+  .cbform-field input, .cbform-field select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
+  .cbform-field input:focus, .cbform-field select:focus { outline: none; border-color: var(--blue-light); }
+  .cbform-submit { margin-top: 16px; }
+  .cbform-trust { margin-top: 12px; font-family: var(--sora); font-size: 11.5px; font-weight: 500; color: var(--blue-light); text-align: center; }
+  .cbform-err { margin-top: 12px; color: #b3261e; font-size: 13px; }
+  .cbform-hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .cbform-thanks { text-align: center; padding: 14px 6px; }
+  .cbform-thanks-ic { width: 54px; height: 54px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .cbform-thanks strong { display: block; font-family: var(--sora); font-weight: 600; font-size: 19px; color: var(--blue); }
+  .cbform-thanks span { display: block; color: var(--ink-soft); font-size: 14px; margin-top: 6px; }
+</style>
