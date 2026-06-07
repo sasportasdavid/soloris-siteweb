@@ -19,6 +19,7 @@ import ReassuranceBar from './ReassuranceBar.astro';
 import PricingTable from './PricingTable.astro';
 import ReportPreview from './ReportPreview.astro';
 import Reviews from './Reviews.astro';
+import ReviewWall from './ReviewWall.astro';
 import Faq from './Faq.astro';
 import QuoteForm from './QuoteForm.astro';
 import { getOffer } from '../lib/offers';
@@ -208,6 +209,9 @@ const piliers = [
 
   <!-- FAQ / objections (contenu réel partagé avec la page offre) — avant la fermeture -->
   <Faq items={offer.faq} title="Vos questions sur les diagnostics de vente" eyebrow="FAQ" />
+
+  <!-- Wall of love — 2e bloc de preuve sociale (volume) avant la fermeture -->
+  <ReviewWall />
 
   <!-- CTA final — IDENTIQUE A/B -->
   <section class="cta-final">
