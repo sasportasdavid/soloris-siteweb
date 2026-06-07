@@ -36,22 +36,25 @@ const faq = [
 ];
 
 const jsonLd = [localBusiness(), faqPage(faq)];
-const title = 'Diagnostics immobiliers à Paris & Île-de-France | Soloris';
-const description = 'Diagnostics immobiliers à Paris et Île-de-France : DPE, packs vente et location, audit énergétique. Tarif tout compris, rapport sous 48 h.';
+const title = 'Diagnostics immobiliers Paris & Île-de-France | Soloris';
+const description = 'DPE, vente, location et audit énergétique. Prix clair, diagnostiqueur certifié, rapport sous 48 h à Paris et en Île-de-France.';
 ---
 <Base title={title} description={description} path="/" jsonLd={jsonLd}>
   <!-- 2 · Hero dynamique -->
   <Hero
     dynamic={true}
-    h1='Vos diagnostics immobiliers, <span class="hl">en toute clarté</span>'
-    sub="Tarif tout compris, rapport lisible sous 48 h. À Paris et en Île-de-France."
+    h1='Diagnostics immobiliers à <span class="hl">Paris &amp; Île-de-France</span>'
+    sub="DPE, vente, location ou audit énergétique : obtenez un prix clair, un rendez-vous rapide et un rapport sous 48 h."
+    primaryLabel="Calculer mon prix"
+    secondaryHref="#rappel"
+    secondaryLabel="Être rappelé rapidement"
   />
 
   <!-- 3 · Barre de réassurance -->
   <ReassuranceBar />
 
   <!-- 3b · Capture express « Être rappelé » (téléphone + code postal, friction minimale) -->
-  <section class="section-line">
+  <section class="section-line" id="rappel">
     <div class="wrap">
       <div class="grid grid-2" style="align-items:center;gap:40px">
         <div>
