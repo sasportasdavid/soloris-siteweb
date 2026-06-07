@@ -7,7 +7,7 @@ import PricingTable from '../components/PricingTable.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
-import { ADDONS, APPART_GRID, MAISON_SUPP, DPE_FROM, AUDIT_FROM, LOT_ANNEXE_PRICE } from '../lib/pricing';
+import { ADDONS, APPART_GRID, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, DPE_FROM, DPE_TO, AUDIT_FROM, LOT_ANNEXE_PRICE } from '../lib/pricing';
 import { SITE } from '../lib/site';
 import { faqPage, breadcrumb } from '../lib/jsonld';
 
@@ -29,7 +29,7 @@ const aggregateOffer = {
 const faq = [
   { q: 'Pourquoi le prix dépend-il de l\'âge du bien ?', a: "Parce que les diagnostics obligatoires varient selon la date de construction : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un bien d'avant 1949 nécessite donc plus de diagnostics qu'un logement de moins de 15 ans." },
   { q: 'Le déplacement est-il inclus dans le prix ?', a: 'Oui. Tous nos tarifs sont tout compris, déplacement inclus à Paris et en Île-de-France. Aucun frais caché.' },
-  { q: 'Comment est calculé le prix d\'une maison ?', a: "Le prix d'une maison correspond à celui d'un appartement de même surface et même âge, majoré de 30 €. Pour une maison en copropriété, comptez 20 € de plus." },
+  { q: 'Comment est calculé le prix d\'une maison ?', a: `Le prix d'une maison correspond à celui d'un appartement de même surface et même âge, majoré de ${MAISON_SUPP} €. Pour une maison en copropriété, comptez ${MAISON_COPRO_SUPPLEMENT} € de plus.` },
   { q: 'Comment obtenir un prix ferme ?', a: 'Utilisez notre formulaire de devis : vous indiquez la surface et l\'âge du bien, vous obtenez une estimation immédiate, puis un devis confirmé sans engagement.' },
 ];
 
@@ -72,7 +72,7 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
         <div class="card" style="padding:26px 28px">
           <h3 style="font-family:var(--sora);font-weight:600;font-size:19px;color:var(--blue)">DPE seul</h3>
           <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">dès {DPE_FROM} €</p>
-          <p class="muted" style="font-size:14px">120 à 190 € selon la surface, tout compris, déplacement inclus.</p>
+          <p class="muted" style="font-size:14px">{DPE_FROM} à {DPE_TO} € selon la surface, tout compris, déplacement inclus.</p>
           <p class="mt-2"><a href="/dpe" class="btn-ghost btn-sm">L'offre DPE</a></p>
         </div>
         <div class="card" style="padding:26px 28px">

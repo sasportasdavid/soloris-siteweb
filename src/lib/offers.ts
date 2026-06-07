@@ -8,6 +8,7 @@
  * aucune obligation datée sans marqueur [À VÉRIFIER].
  */
 import type { Demande } from './pricing';
+import { prixDes, DPE_FROM, DPE_TO, AUDIT_FROM } from './pricing';
 
 export interface Offer {
   slug: string;
@@ -72,7 +73,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack vente ?',
-        a: 'À partir de 159 € tout compris, déplacement inclus. Le prix dépend de la surface et de l\'âge du bien (les diagnostics obligatoires varient) — estimation immédiate via notre formulaire de devis.',
+        a: `À partir de ${prixDes('vente')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient) — estimation immédiate via notre formulaire de devis.`,
       },
     ],
   },
@@ -122,7 +123,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack location ?',
-        a: 'À partir de 159 € tout compris, déplacement inclus. Le prix dépend de la surface et de l\'âge du bien — estimation immédiate via le formulaire de devis.',
+        a: `À partir de ${prixDes('location')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien — estimation immédiate via le formulaire de devis.`,
       },
     ],
   },
@@ -136,7 +137,7 @@ export const OFFERS: Offer[] = [
     h1: 'DPE à Paris et en Île-de-France, sous 48 h',
     title: 'DPE à Paris & Île-de-France sous 48 h | Soloris',
     metaDesc:
-      'DPE sous 48 h à Paris et en Île-de-France. Tarif tout compris dès 120 €, rapport clair, diagnostiqueur certifié COFRAC. Estimation immédiate.',
+      `DPE sous 48 h à Paris et en Île-de-France. Tarif tout compris dès ${DPE_FROM} €, rapport clair, diagnostiqueur certifié COFRAC. Estimation immédiate.`,
     tagline: "Votre étiquette énergétique, expliquée clairement.",
     intro:
       "Le DPE évalue la performance énergétique de votre logement et lui attribue une étiquette de A à G. Soloris le réalise rapidement et vous remet un rapport pédagogique : vous comprenez votre étiquette et les pistes d'amélioration, sans jargon.",
@@ -158,7 +159,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Quel est le prix d\'un DPE ?',
-        a: 'À partir de 120 € tout compris, déplacement inclus. Le prix varie selon la surface (120 à 190 €). Estimation immédiate via le formulaire.',
+        a: `À partir de ${DPE_FROM} € tout compris, déplacement inclus. Le prix varie selon la surface (${DPE_FROM} à ${DPE_TO} €). Estimation immédiate via le formulaire.`,
       },
       {
         q: 'Pouvez-vous me garantir une bonne étiquette ?',
@@ -205,7 +206,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: "Combien coûte un audit énergétique ?",
-        a: 'À partir d\'environ 590 € tout compris, déplacement inclus, selon le bien. Estimation indicative via le formulaire de devis.',
+        a: `À partir d'environ ${AUDIT_FROM} € tout compris, déplacement inclus, selon le bien. Estimation indicative via le formulaire de devis.`,
       },
       {
         q: 'Vendez-vous les travaux que vous préconisez ?',
