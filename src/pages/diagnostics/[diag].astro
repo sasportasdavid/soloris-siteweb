@@ -24,6 +24,15 @@ const url = `/diagnostics/${diag.slug}`;
 
 const packLinks = diag.inPack.map((p) => getOffer(p === 'vente' ? 'diagnostics-vente' : 'diagnostics-location')!);
 
+// Illustration métier générique (non contractuelle, PAS une preuve ; alt factuel, aucune légende-allégation).
+const diagImg: Record<string, { f: string; w: number; h: number; alt: string }> = {
+  electricite: { f: 'diag-tableau-electrique', w: 1264, h: 848, alt: "Inspection d'un tableau électrique" },
+  gaz: { f: 'diag-tableau-electrique', w: 1264, h: 848, alt: "Inspection d'un tableau électrique" },
+  carrez: { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
+  boutin: { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
+};
+const illus = diagImg[diag.slug];
+
 // Prix numérique pour le JSON-LD (omis si « sur devis »)
 const priceMatch = diag.priceLabel.match(/(\d+)/);
 const priceFrom = priceMatch ? Number(priceMatch[1]) : undefined;
@@ -75,6 +84,11 @@ const jsonLd = [
           <div class="eyebrow">En quoi consiste ce diagnostic</div>
           <h2 class="sec-title" style="font-size:30px">{diag.name}</h2>
           <p class="sec-intro" style="font-size:18px;color:var(--ink);max-width:none">{diag.intro}</p>
+          {illus && (
+            <figure style="margin:18px 0 0;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-card)">
+              <img src={`/images/lp/${illus.f}.webp`} width={illus.w} height={illus.h} loading="lazy" decoding="async" alt={illus.alt} style="width:100%;height:auto;display:block" />
+            </figure>
+          )}
         </div>
         <div class="card" style="padding:28px">
           <div class="eyebrow">Quand est-ce requis&nbsp;?</div>
