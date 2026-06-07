@@ -85,8 +85,8 @@ const jsonLd = [
           <h2 class="sec-title" style="font-size:30px">{diag.name}</h2>
           <p class="sec-intro" style="font-size:18px;color:var(--ink);max-width:none">{diag.intro}</p>
           {illus && (
-            <figure style="margin:18px 0 0;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-card)">
-              <img src={`/images/lp/${illus.f}.webp`} width={illus.w} height={illus.h} loading="lazy" decoding="async" alt={illus.alt} style="width:100%;height:auto;display:block" />
+            <figure class="section-illustration" style="margin-top:20px">
+              <img src={`/images/lp/${illus.f}.webp`} width={illus.w} height={illus.h} loading="lazy" decoding="async" alt={illus.alt} />
             </figure>
           )}
         </div>
