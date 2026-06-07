@@ -28,8 +28,8 @@ const packLinks = diag.inPack.map((p) => getOffer(p === 'vente' ? 'diagnostics-v
 const diagImg: Record<string, { f: string; w: number; h: number; alt: string }> = {
   electricite: { f: 'diag-tableau-electrique', w: 1264, h: 848, alt: "Inspection d'un tableau électrique" },
   gaz: { f: 'diag-tableau-electrique', w: 1264, h: 848, alt: "Inspection d'un tableau électrique" },
-  carrez: { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
-  boutin: { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
+  'loi-carrez': { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
+  'loi-boutin': { f: 'diag-telemetre-laser', w: 1200, h: 896, alt: "Mesure d'une pièce au télémètre laser" },
 };
 const illus = diagImg[diag.slug];
 
