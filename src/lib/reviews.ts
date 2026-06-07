@@ -3,9 +3,6 @@
  * Source unique — réutilisée sur l'accueil et les pages offres (pas de duplication).
  * ⚠️ N'ajouter ici que des avis authentiques. Orthographe/ponctuation peuvent être
  * normalisées, mais JAMAIS le sens ni les faits.
- *
- * REVIEWS        → trio mis en avant (hero/offres/LP), orienté résultat.
- * REVIEWS_EXTRA  → pool supplémentaire pour le « wall of love » (2e bloc de preuve).
  */
 export interface Review {
   txt: string;
