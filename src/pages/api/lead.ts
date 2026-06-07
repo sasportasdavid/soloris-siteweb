@@ -13,6 +13,7 @@
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
 import { leadKeyboard } from '../../lib/telegram';
+import { FIXED } from '../../lib/pricing';
 
 export const prerender = false;
 
@@ -77,7 +78,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
   const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
     .filter(Boolean).join(' · ');
   const annexeLine = lead.annexe
-    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (+99 €)`
+    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (+${FIXED.caveParking} €)`
     : '';
   const acqLine = (lead.gads_keyword || lead.campaign)
     ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
@@ -198,8 +199,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   } else if (isChat) {
     if (!nom || !telephone) return json({ error: 'Nom et téléphone sont requis.' }, 400);
   } else {
-    // devis complet
-    if (!nom || !telephone) return json({ error: 'Le nom et le téléphone sont requis.' }, 400);
+    // devis complet — email requis (envoi du devis + confirmation par email)
+    if (!nom || !telephone || !email) return json({ error: 'Le nom, le téléphone et l\'email sont requis.' }, 400);
   }
 
   const surfaceNum = Number(body.surface);
@@ -303,7 +304,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   // ⚠️ Aucune conversion ici : la conversion Google Ads est déclenchée côté client,
   // uniquement quand le formulaire est validé à 100 %.
-  return json({ ok: true, lead_uid: result?.lead_uid || leadUid || null }, 201);
+  // `id` = identifiant Supabase du lead → exposé au client pour servir de
+  // transaction_id (dédup) dans l'event de conversion « lead_submitted » (Tâche 4).
+  return json({ ok: true, id: result?.id ?? null, lead_uid: result?.lead_uid || leadUid || null }, 201);
 };
 
 export const GET: APIRoute = () => json({ error: 'Méthode non autorisée.' }, 405);

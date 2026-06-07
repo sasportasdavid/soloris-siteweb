@@ -82,12 +82,30 @@ export const APPART_GRID: (readonly [number, number, number] | null)[] = [
 export const MAISON_SUPP = 30; // maison = appartement + 30 €
 export const PACK_FLOOR = 159; // plancher d'accroche « dès 159 € » (appart récent ≤ 20 m²)
 export const AUDIT_FROM = 590; // audit énergétique dès 590 € (inchangé)
-export const DPE_FROM = 120; // DPE seul dès 120 € (inchangé, 120–190 €)
+export const DPE_FROM = 120; // DPE seul dès 120 € (plancher)
+export const DPE_TO = 190; // DPE seul plafond (120 → 190 € selon la surface)
 
 /** Mentions / suppléments fixes. */
 export const FIXED = {
   caveParking: 99, // diagnostic cave / parking EN OPTION (annexe d'un logement vendu/loué)
   coproSupp: 20, // maison en copropriété : + 20 €
+};
+
+/**
+ * Supplément « maison en copropriété » : + 20 € AU-DESSUS du prix maison
+ * (maison = appart + 30 ; maison copro = appart + 50). Décision produit confirmée.
+ */
+export const MAISON_COPRO_SUPPLEMENT = FIXED.coproSupp;
+
+/**
+ * Périmètre de « déplacement inclus ». Décision produit : toute l'Île-de-France
+ * est incluse (Paris + petite et grande couronne). Constante configurable : si le
+ * périmètre devait être réduit un jour, restreindre `departements` ici et la grille
+ * + le tunnel pourront afficher « au-delà, sur devis ».
+ */
+export const PERIMETRE_DEPLACEMENT_INCLUS = {
+  departements: ['75', '77', '78', '91', '92', '93', '94', '95'] as const,
+  label: 'Paris et Île-de-France',
 };
 
 /**
@@ -111,8 +129,13 @@ export const ADDONS = [
   { key: 'elec_gaz', label: 'Électricité + Gaz', price: 190, prefix: '' },
   { key: 'carrez_boutin', label: 'Mesurage Loi Carrez / Boutin', price: 70, prefix: 'dès ' },
   { key: 'erp', label: 'État des Risques et Pollutions (ERP)', price: 30, prefix: '', note: 'offert en pack' },
-  { key: 'cave', label: 'Cave / parking', price: 99, prefix: '' },
+  // Add-on : cave / parking AJOUTÉ au diagnostic d'un logement (à distinguer du
+  // lot annexe vendu seul → LOT_ANNEXE_PRICE = 179 €).
+  { key: 'cave', label: 'Cave / parking ajouté à un diagnostic de logement', price: 99, prefix: '' },
 ] as const;
+
+/** Prix d'un diagnostic à l'unité par clé (source unique pour /diagnostics). */
+export const ADDON_PRICE: Record<string, number> = Object.fromEntries(ADDONS.map((a) => [a.key, a.price]));
 
 const AGE_INDEX: Record<AgeBien, number> = { avant1949: 0, intermediaire: 1, recent: 2 };
 
@@ -152,9 +175,40 @@ export function estimerDpe(m2: number): number {
   return 190;
 }
 
-/** Prix « à partir de » par type de demande (accroches « dès X € »). */
+/** Prix « à partir de » par type de demande (accroches « dès X € »). MIN de la grille. */
 export function prixDes(demande: Demande): number {
   if (demande === 'dpe') return DPE_FROM;
   if (demande === 'audit') return AUDIT_FROM;
   return PACK_FLOOR; // vente / location
+}
+
+/** Alias sémantique : prix d'entrée d'une demande (jamais de « dès » écrit en dur). */
+export const prixEntree = prixDes;
+
+/**
+ * Calcul unique du prix d'une demande — SOURCE DE VÉRITÉ partagée
+ * (serveur, back-office). Le tunnel /devis reflète exactement cette logique côté
+ * client (via les mêmes constantes APPART_GRID/MAISON_SUPP/… passées en define:vars).
+ * Renvoie le prix TTC, et `surDevis: true` quand il n'y a pas de prix grille (> 239 m²).
+ */
+export interface ComputePrixArgs {
+  projet: Demande;
+  typeBien?: TypeBien | string | null;
+  surface?: number | null;
+  age?: AgeBien | null;
+  copro?: boolean;
+}
+export function computePrix(args: ComputePrixArgs): { prix: number | null; surDevis: boolean } {
+  const { projet, typeBien, surface, age, copro } = args;
+  // Lot annexe (cave / parking / box) vendu seul : tarif unique, pas de grille.
+  if (isLotAnnexe(typeBien)) return { prix: LOT_ANNEXE_PRICE, surDevis: false };
+  if (projet === 'audit') return { prix: AUDIT_FROM, surDevis: false };
+  if (projet === 'dpe') return { prix: estimerDpe(Number(surface) || 0), surDevis: false };
+  // vente / location — grille unique âge × surface
+  const tb: 'appartement' | 'maison' = typeBien === 'maison' ? 'maison' : 'appartement';
+  const base = estimerPack(tb, Number(surface) || 0, (age as AgeBien) || 'recent');
+  if (base == null) return { prix: null, surDevis: true }; // > 239 m²
+  // estimerPack applique déjà MAISON_SUPP ; la copropriété ajoute MAISON_COPRO_SUPPLEMENT.
+  const prix = tb === 'maison' && copro ? base + MAISON_COPRO_SUPPLEMENT : base;
+  return { prix, surDevis: false };
 }

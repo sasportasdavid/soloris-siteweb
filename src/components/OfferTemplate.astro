@@ -14,7 +14,7 @@ import Reviews from './Reviews.astro';
 import Faq from './Faq.astro';
 import QuoteForm from './QuoteForm.astro';
 import { getOffer, OFFERS } from '../lib/offers';
-import { prixDes } from '../lib/pricing';
+import { prixDes, DPE_FROM, DPE_TO, AUDIT_FROM } from '../lib/pricing';
 import { service, faqPage, breadcrumb } from '../lib/jsonld';
 
 interface Props { slug: string }
@@ -114,9 +114,9 @@ const jsonLd = [
           <div class="mt-5"><PricingTable caption={`Tarifs ${offer.nav}`} /></div>
         </>
       ) : offer.demande === 'dpe' ? (
-        <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès 120 €</strong>, tout compris, déplacement inclus (120 à 190 € selon la surface du logement).</p>
+        <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès {DPE_FROM} €</strong>, tout compris, déplacement inclus ({DPE_FROM} à {DPE_TO} € selon la surface du logement).</p>
       ) : (
-        <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès 590 €</strong>, tout compris, déplacement inclus, selon le bien.</p>
+        <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès {AUDIT_FROM} €</strong>, tout compris, déplacement inclus, selon le bien.</p>
       )}
       <p class="mt-3"><a href={`/devis?type=${offer.demande}`} class="btn-blue">Estimer mon prix en 2 min</a></p>
     </div>

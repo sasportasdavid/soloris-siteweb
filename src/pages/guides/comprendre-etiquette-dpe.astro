@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import EnergyScale from '../../components/EnergyScale.astro';
 import { getGuide } from '../../lib/guides';
+import { DPE_FROM } from '../../lib/pricing';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('comprendre-etiquette-dpe')!;
@@ -55,7 +56,7 @@ const jsonLd = [
     <section class="cta-final">
       <div class="wrap">
         <h2>Votre DPE, expliqué clairement</h2>
-        <p>Sous 48 h, tarif tout compris dès 120 €.</p>
+        <p>Sous 48 h, tarif tout compris dès {DPE_FROM} €.</p>
         <div class="cta">
           <a href="/devis?type=dpe" class="btn-gold">Estimer mon DPE</a>
           <a href="/dpe" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir l'offre DPE</a>

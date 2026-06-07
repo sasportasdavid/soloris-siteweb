@@ -11,7 +11,7 @@
  */
 import {
   DEMANDE_LABELS, AGE_LABELS, AGE_DESC, SURFACE_BANDS, APPART_GRID,
-  MAISON_SUPP, AUDIT_FROM, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS,
+  MAISON_SUPP, AUDIT_FROM, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, FIXED, estimerDpe,
 } from '../lib/pricing';
 import { SITE } from '../lib/site';
 
@@ -29,6 +29,8 @@ const DEMANDE_DESC: Record<string, string> = {
 
 const hasReviews = Number(SITE.rating.count) > 0;
 const surfaceBands = SURFACE_BANDS.map((b) => b.label);
+// Prix DPE par bande de surface, dérivé d'estimerDpe() → source unique (pas de barème en dur).
+const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 240 : b.maxIncl));
 ---
 <div class="qform card" id="qform">
   {hasReviews && (
@@ -107,16 +109,16 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
 
       <label class="qcheck" id="copro-block" hidden>
         <input type="checkbox" name="copropriete" value="1" />
-        <span>Maison en copropriété <span class="qopt-tag">+ 20 €</span></span>
+        <span>Maison en copropriété <span class="qopt-tag">+ {FIXED.coproSupp} €</span></span>
       </label>
 
       <label class="qcheck" id="annexe-appart-block" hidden>
         <input type="checkbox" name="annexe_appart" value="1" />
-        <span>Cave, parking ou box à diagnostiquer <span class="qopt-tag">+ 99 €</span><span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
+        <span>Cave, parking ou box à diagnostiquer <span class="qopt-tag">+ {FIXED.caveParking} €</span><span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien.</span></span>
       </label>
       <label class="qcheck" id="annexe-maison-block" hidden>
         <input type="checkbox" name="annexe_maison" value="1" />
-        <span>Garage ou dépendance à diagnostiquer <span class="qopt-tag">+ 99 €</span><span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
+        <span>Garage ou dépendance à diagnostiquer <span class="qopt-tag">+ {FIXED.caveParking} €</span><span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance).</span></span>
       </label>
 
       <div class="qestim" id="estim" hidden>
@@ -145,7 +147,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       <div class="qrecap" id="qrecap" hidden></div>
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
       <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
-      <label class="qfield"><span>Email <span class="qopt-tag">facultatif</span></span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
+      <label class="qfield"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre devis et votre confirmation par email.</small></label>
       <label class="qfield"><span>Message (optionnel)</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
 
       <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
@@ -201,6 +203,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
   .qfield input, .qfield textarea, .qfield select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
   .qfield input:focus, .qfield textarea:focus, .qfield select:focus { outline: none; border-color: var(--blue-light); }
+  .qfield-help { display: block; font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); margin-top: 6px; line-height: 1.45; }
   .qfield-group { margin-top: 18px; }
   .qgroup-label { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 9px; }
   .qcheck { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-family: var(--inter); font-size: 14px; color: var(--ink); cursor: pointer; }
@@ -236,7 +239,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: 20, ANNEXE_SUPP: 99, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, ANNEXE_SUPP: FIXED.caveParking, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, sendTo }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -244,6 +247,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
     var dots = Array.prototype.slice.call(form.querySelectorAll('.dot'));
     var current = 0;
     var submitted = false;
+    var leadEventSent = false; // garde anti-double-envoi de l'event de conversion (Tâche 4)
     var reachedEstimation = false;
     var maxReached = 0;
     var abStepsB = false; // variante B du test A/B (type de bien fusionné à l'étape surface)
@@ -335,8 +339,6 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       return ok;
     }
 
-    function dpeByBand(bi) { if (bi <= 1) return 120; if (bi <= 3) return 150; if (bi <= 5) return 170; return 190; }
-
     // Récap de la demande à la dernière étape (CRO #5)
     function buildRecap() {
       var el = document.getElementById('qrecap'); if (!el) return;
@@ -347,7 +349,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       if (bi != null && SURF_LABELS[bi]) parts.push(SURF_LABELS[bi]);
       if (age && AGE_LABELS[age]) parts.push(AGE_LABELS[age]);
       var ax = annexeState();
-      var annexeTxt = ax.on ? (ax.type === 'garage_dependance' ? ' + garage/dépendance (99 €)' : ' + cave/parking (99 €)') : '';
+      var annexeTxt = ax.on ? (ax.type === 'garage_dependance' ? ' + garage/dépendance (' + ANNEXE_SUPP + ' €)' : ' + cave/parking (' + ANNEXE_SUPP + ' €)') : '';
       var price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
         : ((d === 'vente' || d === 'location') ? ' — <span class="qrecap-price">sur devis</span>' : '');
       el.innerHTML = '<b>Votre demande :</b> ' + parts.join(' · ') + annexeTxt + price;
@@ -398,7 +400,7 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
       var value = null, surDevis = false;
       if (lot) { value = LOT_ANNEXE_PRICE; } // cave / parking / box — tarif unique
       else if (d === 'audit') { value = AUDIT_FROM; }
-      else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = dpeByBand(bi); }
+      else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = DPE_BY_BAND[bi]; }
       else { // vente / location
         if (bi == null || (ageNeeded() && !age)) { box.hidden = true; return; }
         var row = APPART_GRID[bi];
@@ -561,6 +563,30 @@ const surfaceBands = SURFACE_BANDS.map((b) => b.label);
           if (!res.ok) throw new Error(res.j && res.j.error ? res.j.error : 'Erreur');
           try {
             var v3 = Number(payload.estimation || 0);
+            // ── Event de conversion CANONIQUE (Tâche 4) ─────────────────────────────
+            // Poussé UNE seule fois, au succès RÉEL de l'enregistrement Supabase.
+            // À mapper côté GTM (déclencheur « lead_submitted ») — la déduplication des
+            // actions de conversion se règle dans Google Ads + GTM, PAS dans le code.
+            // Consent Mode v2 : on se contente de pousser l'event ; GTM, en respectant
+            // le consentement, décide de déclencher (ou non) le tag. Params disponibles :
+            //   lead_id     → identifiant Supabase = transaction_id (dédup, OBLIGATOIRE)
+            //   projet      → vente | location | dpe | audit
+            //   prix_estime → number (value pour le Smart Bidding)
+            //   currency    → 'EUR'
+            if (!leadEventSent && window.dataLayer) {
+              leadEventSent = true;
+              var leadId = (res.j && res.j.id) ? res.j.id : (payload.lead_uid || null);
+              window.dataLayer.push({
+                event: 'lead_submitted',
+                lead_id: leadId,
+                projet: payload.type_demande || '',
+                prix_estime: v3,
+                currency: 'EUR',
+              });
+            }
+            // Tags hérités (Meta + ancien event/gtag). Conservés pour ne pas casser le
+            // tracking existant ; à retirer une fois « lead_submitted » mappé dans GTM
+            // (sinon double comptage côté Google Ads).
             if (window.gtag && sendTo) window.gtag('event', 'conversion', { send_to: sendTo, value: v3, currency: 'EUR' });
             if (window.gtag) window.gtag('event', 'generate_lead', { currency: 'EUR', value: v3 });
             if (window.dataLayer) window.dataLayer.push({ event: 'soloris_lead', value: v3, currency: 'EUR', type_demande: payload.type_demande || '' });

@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import PricingTable from '../../components/PricingTable.astro';
 import { getGuide } from '../../lib/guides';
-import { prixDes } from '../../lib/pricing';
+import { prixDes, DPE_FROM, DPE_TO, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('prix-diagnostic-immobilier-paris')!;
@@ -10,7 +10,7 @@ const g = getGuide('prix-diagnostic-immobilier-paris')!;
 const faq = [
   {
     q: 'Combien coûte un DPE à Paris ?',
-    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (120 à 190 €). Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
+    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (${DPE_FROM} à ${DPE_TO} €). Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
   },
   {
     q: 'Quel est le prix d\'un pack de diagnostics pour vendre ?',
@@ -58,7 +58,7 @@ const jsonLd = [
         <ul>
           <li><strong>L'âge du bien</strong> — c'est le facteur clé. <em>Avant 1949</em> : amiante + plomb requis (prix le plus élevé). <em>De 1949 à moins de 15 ans</em> : amiante requis, plomb non. <em>Moins de 15 ans</em> : ni amiante ni plomb (le plus accessible).</li>
           <li><strong>La surface</strong> — plus le logement est grand, plus la visite et les relevés sont longs : le prix augmente par tranches de surface.</li>
-          <li><strong>Le type de bien</strong> — une maison correspond au tarif d'un appartement de même surface et même âge, majoré de 30 € (et 20 € de plus en copropriété).</li>
+          <li><strong>Le type de bien</strong> — une maison correspond au tarif d'un appartement de même surface et même âge, majoré de {MAISON_SUPP} € (et {MAISON_COPRO_SUPPLEMENT} € de plus en copropriété).</li>
           <li><strong>La localisation</strong> — en Île-de-France, les tarifs sont généralement <strong>15 à 20 % plus élevés</strong> que dans le reste de la France.</li>
         </ul>
 

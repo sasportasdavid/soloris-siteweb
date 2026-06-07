@@ -4,7 +4,7 @@
  * Source : src/lib/pricing.ts. Maison = appartement + 30 €. > 239 m² = sur devis.
  * Prix honnêtes et atteignables ; jamais de prix barré / promo.
  */
-import { SURFACE_BANDS, APPART_GRID, AGE_COLUMNS, MAISON_SUPP, FIXED } from '../lib/pricing';
+import { SURFACE_BANDS, APPART_GRID, AGE_COLUMNS, MAISON_SUPP, FIXED, LOT_ANNEXE_PRICE } from '../lib/pricing';
 
 interface Props { caption?: string; showMentions?: boolean }
 const { caption, showMentions = true } = Astro.props;
@@ -52,13 +52,13 @@ const rows = SURFACE_BANDS.map((band, i) => {
 
   {showMentions && (
     <ul class="pmentions">
-      <li><b>Diagnostic cave / parking</b> : {FIXED.caveParking} €</li>
+      <li><b>Cave / parking ajouté à un diagnostic de logement</b> : {FIXED.caveParking} € <small>(vendu seul : {LOT_ANNEXE_PRICE} €)</small></li>
       <li><b>Maison en copropriété</b> : + {FIXED.coproSupp} €</li>
       <li><b>ERP</b> (état des risques) : <b>offert dans les packs</b></li>
       <li>Rapport envoyé <b>sous 48 h</b> après réception du paiement</li>
     </ul>
   )}
-  <p class="price-note">Tarifs TTC, déplacement inclus, à Paris et en Île-de-France (93). Au-delà de 239 m² : sur devis. Le prix exact, tout compris, vous est confirmé au devis, sans engagement.</p>
+  <p class="price-note">Tarifs TTC, déplacement inclus, à Paris et en Île-de-France. Au-delà de 239 m² : sur devis. Le prix exact, tout compris, vous est confirmé au devis, sans engagement.</p>
 </div>
 
 <style>
