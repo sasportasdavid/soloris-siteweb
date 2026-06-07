@@ -205,6 +205,9 @@ section { padding: 92px 0; }
    panneau ouvert et empêcherait de le refermer au tactile). */
 @media (min-width: 921px) {
   .has-menu:hover .menu-panel, .has-menu:focus-within .menu-panel { display: flex; }
+  /* Pont de survol invisible : comble les 12px entre le bouton et le panneau pour
+     ne pas perdre le :hover en descendant vers le sous-menu (sinon il disparaît). */
+  .menu-panel::before { content: ''; position: absolute; top: -14px; left: 0; right: 0; height: 14px; }
 }
 .menu-item { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; }
 .menu-item:hover { background: var(--paper); text-decoration: none; }
