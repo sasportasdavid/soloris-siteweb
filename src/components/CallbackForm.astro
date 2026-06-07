@@ -4,7 +4,7 @@
  * possible (trafic Ads froid, surtout mobile). Crée un lead PARTIEL via /api/lead
  * (statut 'partiel') → notification équipe « 🟠 à rappeler ».
  *
- * Réutilise le MÊME lead_uid (cookie soloris_lead_id) que le tunnel complet : si le
+ * Réutilise le MÊME lead_uid (sessionStorage, scope parcours) que le tunnel complet : si le
  * visiteur remplit ensuite le devis, c'est la même fiche (pas de doublon). Porte aussi
  * l'attribution (gclid / UTM / ValueTrack) via le cookie soloris_acq, comme le tunnel.
  */
@@ -70,9 +70,14 @@ const {
     function readCookie(name) {
       return (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1] || '';
     }
+    // lead_uid = scope PARCOURS (sessionStorage), pas un cookie persistant : un visiteur qui
+    // revient repart sur un lead neuf (évite l'écrasement via upsert). Même clé que le tunnel
+    // complet → le rappel et le devis d'un même parcours partagent la même fiche.
     function getLeadUid() {
-      var v = readCookie('soloris_lead_id');
-      if (!v) { v = uuid(); var d = new Date(); d.setTime(d.getTime() + 30 * 864e5); document.cookie = 'soloris_lead_id=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax'; }
+      try { document.cookie = 'soloris_lead_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'; } catch (e) {}
+      var v = '';
+      try { v = sessionStorage.getItem('soloris_lead_uid') || ''; } catch (e) {}
+      if (!/^[0-9a-f-]{36}$/i.test(v)) { v = uuid(); try { sessionStorage.setItem('soloris_lead_uid', v); } catch (e) {} }
       return v;
     }
     function getAcq() {
