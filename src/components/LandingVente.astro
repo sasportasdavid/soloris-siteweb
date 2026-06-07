@@ -18,6 +18,7 @@ import LandingLayout from '../layouts/LandingLayout.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
 import PricingTable from './PricingTable.astro';
 import ReportPreview from './ReportPreview.astro';
+import CallbackForm from './CallbackForm.astro';
 import Reviews from './Reviews.astro';
 import ReviewWall from './ReviewWall.astro';
 import Faq from './Faq.astro';
@@ -94,7 +95,7 @@ const piliers = [
         </div>
       </div>
       <div class="lp-hero-visual">
-        <ReportPreview />
+        <CallbackForm defaultType="vente" title="Être rappelé en quelques minutes" sub="Laissez votre numéro et le code postal du bien : on vous rappelle pour confirmer vos diagnostics de vente et fixer le rendez-vous." />
       </div>
     </div>
   </section>
