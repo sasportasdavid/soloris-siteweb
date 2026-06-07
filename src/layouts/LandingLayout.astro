@@ -1,0 +1,98 @@
+---
+/**
+ * Layout des LANDING PAGES Ads (nav-strippées).
+ * - Même <head> que Base (SEO + Analytics/GTM + Consent Mode) pour conserver le
+ *   tracking (experiment_impression, lead_submitted, conversions).
+ * - PAS de header de navigation, PAS de menu, PAS de barre d'annonce / CTA mobile /
+ *   chat : un seul chemin = le tunnel de devis.
+ * - Logo NON cliquable. Footer légal minimal (mentions légales + confidentialité).
+ * - noindex par défaut (trafic payant, évite l'indexation/duplication SEO).
+ */
+import '../styles/global.css';
+import '@fontsource/sora/latin-300.css';
+import '@fontsource/sora/latin-400.css';
+import '@fontsource/sora/latin-500.css';
+import '@fontsource/sora/latin-600.css';
+import '@fontsource/sora/latin-700.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource-variable/fraunces/wght.css';
+import '@fontsource-variable/fraunces/wght-italic.css';
+import soraH1Url from '@fontsource/sora/files/sora-latin-600-normal.woff2?url';
+
+import Seo from '../components/Seo.astro';
+import Analytics from '../components/Analytics.astro';
+import ConsentBanner from '../components/ConsentBanner.astro';
+import BehaviorTracking from '../components/BehaviorTracking.astro';
+import Logo from '../components/Logo.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path?: string;
+  ogImage?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, any>[];
+}
+const { title, description, path, ogImage, noindex = true, jsonLd } = Astro.props;
+
+const GTM = import.meta.env.PUBLIC_GTM_ID;
+const hasGTM = !!GTM && GTM !== '__A_REMPLACER__';
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0B2A4A" />
+    <link rel="preload" href={soraH1Url} as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <Seo title={title} description={description} path={path} ogImage={ogImage} noindex={noindex} jsonLd={jsonLd} />
+    <Analytics />
+  </head>
+  <body>
+    {hasGTM && (
+      <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`} />
+    )}
+    <a href="#main" class="skip-link">Aller au contenu</a>
+
+    <!-- En-tête minimal : logo NON cliquable, aucune navigation -->
+    <header class="lp-head">
+      <div class="wrap"><Logo /></div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <!-- Footer légal minimal (seuls liens autorisés) -->
+    <footer class="lp-foot">
+      <div class="wrap">
+        <span>© {year} Soloris</span>
+        <span class="lp-foot-sep">·</span>
+        <a href="/mentions-legales">Mentions légales</a>
+        <span class="lp-foot-sep">·</span>
+        <a href="/confidentialite">Confidentialité</a>
+      </div>
+    </footer>
+
+    <ConsentBanner />
+    <BehaviorTracking />
+
+    <style>
+      .lp-head { border-bottom: 1px solid var(--line); background: #fff; }
+      .lp-head .wrap { display: flex; align-items: center; min-height: 64px; }
+      .lp-foot { border-top: 1px solid var(--line); background: var(--paper); margin-top: 40px; }
+      .lp-foot .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 20px 0; font-size: 13px; color: var(--ink-soft); }
+      .lp-foot a { color: var(--ink-soft); text-decoration: underline; }
+      .lp-foot a:hover { color: var(--blue); }
+      .lp-foot-sep { opacity: .5; }
+    </style>
+  </body>
+</html>

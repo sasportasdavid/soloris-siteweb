@@ -212,11 +212,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const annexeTypeRaw = clean(body.annexe_type, 30);
   const annexeType = annexeOn && annexeTypeRaw && ANNEXE_TYPES.includes(annexeTypeRaw) ? annexeTypeRaw : '';
 
+  // Test A/B « price_model » (landing pages vente A/B) — variante 'A' | 'B' uniquement.
+  const priceModelRaw = clean(body.price_model, 1);
+  const priceModel = priceModelRaw === 'A' || priceModelRaw === 'B' ? priceModelRaw : '';
+
   // Payload pour la fonction RPC (la fonction applique nullif/cast)
   const payload: Record<string, string> = {
     lead_uid: leadUid || '',
     lead_status: leadStatus,
     source,
+    ab_price_model: priceModel,
     type_demande: type_demande || '',
     type_bien: type_bien || '',
     age_bien: age_bien || '',
