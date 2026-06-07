@@ -130,12 +130,6 @@ section { padding: 92px 0; }
 .ff-serif { font-family: var(--serif); font-style: italic; }
 .ink-soft { color: var(--ink-soft); }
 
-/* ── Illustration de section (visuel d'ambiance, non contractuel) ──────────
-   Bandeau contenu, centré, ratio maîtrisé (jamais une photo plein cadre brute). */
-.section-illustration { margin: 30px auto 0; max-width: 760px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-card); }
-.section-illustration img { width: 100%; height: 100%; display: block; object-fit: cover; aspect-ratio: 16 / 10; }
-@media (max-width: 720px) { .section-illustration img { aspect-ratio: 4 / 3; } }
-
 /* ── Boutons ────────────────────────────────────────────── */
 .btn-gold, .btn-blue, .btn-ghost {
   font-family: var(--sora); font-weight: 600; font-size: 14px;
