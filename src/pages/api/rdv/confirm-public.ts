@@ -29,24 +29,29 @@ export const POST: APIRoute = async ({ request }) => {
   if (!rdvAt || Number.isNaN(Date.parse(rdvAt))) return json({ error: 'Date et heure du rendez-vous requises.' }, 400);
 
   const prix = Number(body.prix_total_ttc);
-  const result = await runRdvConfirm({
-    leadId: payload.lead_id,
-    traitePar: payload.tg_user,
-    resend: false, // le lien public ne peut pas re-confirmer
-    fields: {
-      rdv_at: new Date(rdvAt).toISOString(),
-      rdv_adresse: clean(body.rdv_adresse, 300),
-      prestation: clean(body.prestation, 300),
-      diagnostiqueur: clean(body.diagnostiqueur, 160),
-      prix_total_ttc: Number.isFinite(prix) && prix >= 0 ? prix : undefined,
-      duree_estimee: clean(body.duree_estimee, 80),
-      consignes: clean(body.consignes, 1000),
-    },
-  });
+  try {
+    const result = await runRdvConfirm({
+      leadId: payload.lead_id,
+      traitePar: payload.tg_user,
+      resend: false, // le lien public ne peut pas re-confirmer
+      fields: {
+        rdv_at: new Date(rdvAt).toISOString(),
+        rdv_adresse: clean(body.rdv_adresse, 300),
+        prestation: clean(body.prestation, 300),
+        diagnostiqueur: clean(body.diagnostiqueur, 160),
+        prix_total_ttc: Number.isFinite(prix) && prix >= 0 ? prix : undefined,
+        duree_estimee: clean(body.duree_estimee, 80),
+        consignes: clean(body.consignes, 1000),
+      },
+    });
 
-  if (result.needsConfirm) return json({ error: 'Ce rendez-vous a déjà été confirmé.' }, 409);
-  if (!result.ok) return json({ error: result.error || "L'enregistrement a échoué." }, 500);
-  return json(result);
+    if (result.needsConfirm) return json({ error: 'Ce rendez-vous a déjà été confirmé.' }, 409);
+    if (!result.ok) return json({ error: result.error || "L'enregistrement a échoué." }, 500);
+    return json(result);
+  } catch (e: any) {
+    console.error('[rdv/confirm-public] exception non gérée', e);
+    return json({ error: String(e?.message || e).slice(0, 300) }, 500);
+  }
 };
 
 export const GET: APIRoute = () => json({ error: 'Méthode non autorisée.' }, 405);
