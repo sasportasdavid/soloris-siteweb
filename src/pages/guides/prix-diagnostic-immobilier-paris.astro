@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PricingTable from '../../components/PricingTable.astro';
+import PriceSimulator from '../../components/PriceSimulator.astro';
 import { getGuide } from '../../lib/guides';
 import { prixDes, DPE_FROM, DPE_TO, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
@@ -49,9 +49,9 @@ const jsonLd = [
 
         <h2>Combien coûte un diagnostic immobilier à Paris ?</h2>
         <p>Chez Soloris, le prix d'un pack de diagnostics dépend de deux choses : la <strong>surface</strong> du logement et son <strong>âge</strong>. Pourquoi l'âge ? Parce que les diagnostics obligatoires changent : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un pack vente démarre ainsi à <strong>{prixDes('vente')} €</strong> (petit logement de moins de 15 ans) et augmente avec la surface et l'ancienneté.</p>
-        <p>Voici la grille Soloris, <strong>tout compris, déplacement inclus</strong> (appartements et maisons) :</p>
+        <p>Estimez votre devis Soloris, <strong>tout compris, déplacement inclus</strong> (appartements et maisons) — vous recevez votre tarif par email, sans engagement :</p>
         <div style="margin:8px 0 10px">
-          <PricingTable caption="Grille tarifaire Soloris" />
+          <PriceSimulator />
         </div>
 
         <h2>Ce qui fait varier le prix</h2>
@@ -77,7 +77,7 @@ const jsonLd = [
         <p>Dès {prixDes('audit')} € tout compris. Requis à la vente de certains logements énergivores. Voir <a href="/audit-energetique">l'audit énergétique</a> et le guide <a href="/guides/reforme-dpe">réforme DPE</a>.</p>
 
         <h2>Comment obtenir un prix ferme</h2>
-        <p>La grille ci-dessus donne des montants « à partir de ». Pour connaître <strong>votre</strong> prix exact, le plus simple est notre <a href="/devis">formulaire de devis</a> : quelques questions, une estimation immédiate à l'écran, puis un devis confirmé sans engagement. Vous pouvez aussi consulter le détail sur la page <a href="/tarifs">tarifs</a>.</p>
+        <p>Pour connaître <strong>votre</strong> prix exact, le plus simple est le simulateur ci-dessus (ou notre <a href="/devis">formulaire de devis</a>) : quelques questions, puis vous recevez votre estimation tout compris par email, et un devis confirmé sans engagement. Vous pouvez aussi passer par la page <a href="/tarifs">tarifs</a>.</p>
       </div>
     </section>
 

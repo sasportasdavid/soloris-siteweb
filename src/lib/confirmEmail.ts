@@ -29,6 +29,15 @@ export async function sendLeadConfirmation(lead: Record<string, any>): Promise<v
   const contact = [lead.telephone, lead.email].filter(Boolean).join(' · ');
   const recap = [bien, adresse, contact].filter(Boolean).join(' · ') || '—';
 
+  // ── Montant estimé (grille) — RÈGLE : le tarif n'est dévoilé QUE dans cet email,
+  // jamais à l'écran pendant le parcours. `estimation` provient du simulateur / tunnel.
+  const estimNum = Number(lead.estimation);
+  const hasEstim = Number.isFinite(estimNum) && estimNum > 0;
+  const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  const estimText = hasEstim
+    ? `Votre estimation : à partir de ${fmtEUR(estimNum)} tout compris, déplacement inclus. Devis exact confirmé lors du rappel.`
+    : `Votre devis personnalisé tout compris vous est confirmé lors du rappel, déplacement inclus.`;
+
   const logoUrl = `${SITE_URL}/soloris-logo-google.png`;
 
   // ── Version texte ──
@@ -37,6 +46,8 @@ export async function sendLeadConfirmation(lead: Record<string, any>): Promise<v
 Un diagnostiqueur certifié vous rappelle très rapidement pour convenir d'un rendez-vous et finaliser votre devis tout compris.
 
 Voici ce que nous avons reçu : ${recap}.
+
+${estimText}
 
 Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 48 h après le passage. À très vite.
 
@@ -64,8 +75,15 @@ Cet email est automatique, merci de ne pas y répondre directement.`;
         <p style="margin:0 0 14px;font-size:15px;line-height:1.6">${esc(greeting)}</p>
         <p style="margin:0 0 16px;font-size:15px;line-height:1.6">Un diagnostiqueur certifié vous rappelle très rapidement pour convenir d'un rendez-vous et finaliser votre devis tout compris.</p>
         <p style="margin:0 0 8px;font-size:14px;color:#5B6B7C">Voici ce que nous avons reçu :</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr>
           <td style="background:#FBFAF6;border-left:3px solid #F5A623;border-radius:8px;padding:12px 16px;font-size:14px;color:#0B1F33">${esc(recap)}</td>
+        </tr></table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr>
+          <td style="background:#0B2A4A;border-radius:10px;padding:16px 18px">
+            ${hasEstim
+              ? `<div style="font-size:13px;color:#C3D2E2;margin-bottom:4px">Votre estimation tout compris</div><div style="font-size:24px;font-weight:bold;color:#fff;line-height:1.1">à partir de ${esc(fmtEUR(estimNum))}</div><div style="font-size:12.5px;color:#C3D2E2;margin-top:6px;line-height:1.5">Déplacement inclus. Devis exact confirmé lors du rappel, sans engagement.</div>`
+              : `<div style="font-size:15px;font-weight:bold;color:#fff;line-height:1.3">Votre devis personnalisé tout compris</div><div style="font-size:12.5px;color:#C3D2E2;margin-top:6px;line-height:1.5">Confirmé lors du rappel, déplacement inclus, sans engagement.</div>`}
+          </td>
         </tr></table>
         <p style="margin:0 0 20px;font-size:15px;line-height:1.6">Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 48 h après le passage. À très vite.</p>
         <p style="margin:0 0 4px;font-size:15px;color:#0B2A4A"><strong>L'équipe Soloris</strong> — <span style="color:#5B6B7C">Le diagnostic, en toute clarté.</span></p>

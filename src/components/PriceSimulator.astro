@@ -14,7 +14,7 @@
 import { SURFACE_BANDS, APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_FROM, LOT_ANNEXE_PRICE, estimerDpe } from '../lib/pricing';
 
 interface Props { defaultDemande?: 'vente' | 'location' | 'dpe' | 'audit'; title?: string; sub?: string; }
-const { defaultDemande = 'vente', title = 'Estimez votre devis tout compris', sub = "Quelques clics : votre estimation s'affiche immédiatement, déplacement inclus, sans engagement." } = Astro.props;
+const { defaultDemande = 'vente', title = 'Estimez votre devis tout compris', sub = "Quelques clics et vous recevez votre estimation tout compris par email, déplacement inclus, sans engagement." } = Astro.props;
 
 const BANDS_MAX = SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 99999 : b.maxIncl));
 const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 240 : b.maxIncl));
@@ -72,14 +72,15 @@ const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ?
     </div>
   </div>
 
-  <!-- Résultat -->
+  <!-- Résultat — RÈGLE : le montant n'est JAMAIS affiché ici, il est envoyé par email
+       en fin de parcours. On débloque seulement un appel à l'action une fois le bien renseigné. -->
   <div class="sim-result" id="sim-result" aria-live="polite">
-    <div class="sim-result-price">
-      <span class="sim-result-label" id="sim-prefix">À partir de</span>
-      <strong id="sim-amount">—</strong>
-      <span class="sim-result-tc">tout compris, sous 48 h</span>
+    <div class="sim-result-locked" id="sim-locked" hidden>
+      <span class="sim-lock-ic" aria-hidden="true">🔒</span>
+      <strong>Votre estimation est prête</strong>
+      <span class="sim-lock-sub">Réservez votre RDV ou demandez un rappel : vous recevez votre tarif tout compris par email, déplacement inclus, sans engagement.</span>
     </div>
-    <p class="sim-result-note" id="sim-note">Renseignez votre bien pour afficher l'estimation. Déplacement inclus. Devis exact confirmé avant intervention, sans engagement.</p>
+    <p class="sim-result-note" id="sim-note">Renseignez votre bien pour obtenir votre estimation tout compris, déplacement inclus, sans engagement.</p>
     <div class="sim-cta">
       <button type="button" class="btn-gold sim-cta-rdv" data-open="rdv">Réserver mon RDV</button>
       <button type="button" class="btn-blue sim-cta-rappel" data-open="rappel">Être rappelé en quelques minutes</button>
@@ -168,12 +169,13 @@ const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ?
       return { state: 'price', val: base, from: true };
     }
 
-    var amountEl = document.getElementById('sim-amount');
-    var prefixEl = document.getElementById('sim-prefix');
     var noteEl = document.getElementById('sim-note');
+    var lockedEl = document.getElementById('sim-locked');
     var annexesBlock = document.getElementById('sim-annexes');
     var surfaceField = document.getElementById('sim-surface-field');
 
+    // RÈGLE : aucun montant affiché. On calcule toujours l'estimation (envoyée au lead
+    // + à l'email), mais on ne révèle ici qu'un état « estimation prête » + le CTA.
     function refresh() {
       var b = bien(), d = demande();
       // Annexes visibles pour appartement / maison ; surface masquée pour lot/local
@@ -181,18 +183,12 @@ const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ?
       if (surfaceField) surfaceField.style.display = (b === 'lot' || b === 'local' || d === 'audit') ? 'none' : '';
 
       var e = estimate();
-      if (e.state === 'incomplete') {
-        amountEl.textContent = '—'; prefixEl.style.visibility = 'hidden';
-        noteEl.textContent = "Renseignez votre bien pour afficher l'estimation. Déplacement inclus, sans engagement.";
-      } else if (e.state === 'surdevis') {
-        amountEl.textContent = 'Sur devis'; prefixEl.style.visibility = 'hidden';
-        noteEl.textContent = "Ce bien sort de la grille standard : laissez vos coordonnées, on vous confirme un prix tout compris rapidement.";
-      } else {
-        prefixEl.style.visibility = e.from ? 'visible' : 'hidden';
-        amountEl.textContent = fmtEUR(e.val);
-        var ann = annexesOn();
-        var annTxt = ((b === 'appartement' || b === 'maison') && (ann.cave || ann.parking)) ? ' Cave/parking inclus.' : '';
-        noteEl.textContent = 'Estimation tout compris, déplacement inclus.' + annTxt + ' Devis exact confirmé avant intervention, sans engagement.';
+      var ready = (e.state === 'price' || e.state === 'surdevis');
+      if (lockedEl) lockedEl.hidden = !ready;
+      if (noteEl) {
+        noteEl.textContent = ready
+          ? 'Votre estimation tout compris est prête : laissez vos coordonnées, vous la recevez par email. Déplacement inclus, devis exact confirmé avant intervention, sans engagement.'
+          : 'Renseignez votre bien pour obtenir votre estimation tout compris, déplacement inclus, sans engagement.';
       }
     }
 
@@ -340,10 +336,10 @@ const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ?
   .sim-incl { font-style: normal; font-family: var(--sora); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #1a7f4b; }
 
   .sim-result { margin-top: 22px; border-top: 1px dashed var(--line); padding-top: 20px; }
-  .sim-result-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
-  .sim-result-label { font-family: var(--sora); font-size: 14px; color: var(--ink-soft); }
-  .sim-result-price strong { font-family: var(--sora); font-weight: 700; font-size: 38px; color: var(--blue); line-height: 1; }
-  .sim-result-tc { font-family: var(--sora); font-weight: 500; font-size: 14px; color: var(--gold-deep, #C8841B); }
+  .sim-result-locked { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 14px 16px; }
+  .sim-result-locked .sim-lock-ic { font-size: 18px; line-height: 1; }
+  .sim-result-locked strong { font-family: var(--sora); font-weight: 600; font-size: 18px; color: var(--blue); }
+  .sim-result-locked .sim-lock-sub { flex: 1 1 100%; font-family: var(--inter); font-size: 13px; color: var(--ink-soft); margin-top: 4px; line-height: 1.5; }
   .sim-result-note { font-size: 13px; color: var(--ink-soft); margin-top: 10px; line-height: 1.5; }
   .sim-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
   .sim-cta .btn-gold, .sim-cta .btn-blue { flex: 1 1 220px; text-align: center; }

@@ -8,7 +8,7 @@
 import Base from '../layouts/Base.astro';
 import Hero from './Hero.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
-import PricingTable from './PricingTable.astro';
+import PriceSimulator from './PriceSimulator.astro';
 import EnergyScale from './EnergyScale.astro';
 import Reviews from './Reviews.astro';
 import Faq from './Faq.astro';
@@ -116,8 +116,8 @@ const jsonLd = [
       <h2 class="sec-title">Combien ça coûte&nbsp;?</h2>
       {(offer.demande === 'vente' || offer.demande === 'location') ? (
         <>
-          <p class="sec-intro">Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient). Dès {prixDes(offer.demande)} € tout compris, déplacement inclus.</p>
-          <div class="mt-5"><PricingTable caption={`Tarifs ${offer.nav}`} /></div>
+          <p class="sec-intro">Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient). Dès {prixDes(offer.demande)} € tout compris, déplacement inclus. Estimez le vôtre&nbsp;: vous recevez le tarif par email, sans engagement.</p>
+          <div class="mt-5"><PriceSimulator defaultDemande={offer.demande} /></div>
         </>
       ) : offer.demande === 'dpe' ? (
         <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès {DPE_FROM} €</strong>, tout compris, déplacement inclus ({DPE_FROM} à {DPE_TO} € selon la surface du logement).</p>
