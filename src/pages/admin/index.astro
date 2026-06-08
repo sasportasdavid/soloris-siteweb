@@ -21,13 +21,13 @@ const STATUT_LABELS: Record<string, string> = {
     <h1 class="adm-h1">Leads</h1>
     <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
-    <!-- Mini stats -->
+    <!-- Mini stats (cartes cliquables = filtres) -->
     <div class="adm-stats">
-      <div class="adm-stat"><div class="lbl">Leads ce mois</div><div class="val" id="stat-month">—</div></div>
-      <div class="adm-stat"><div class="lbl">Dont publicité</div><div class="val" id="stat-ads">—</div><div class="sub" id="stat-ads-sub"></div></div>
-      <div class="adm-stat"><div class="lbl">À rappeler</div><div class="val" id="stat-rappel">—</div><div class="sub">partiels avec tél.</div></div>
-      <div class="adm-stat"><div class="lbl">Lead → facturé</div><div class="val" id="stat-conv">—</div></div>
-      <div class="adm-stat"><div class="lbl">CA facturé</div><div class="val" id="stat-ca">—</div></div>
+      <div class="adm-stat adm-stat--click" data-card="reset" title="Voir tous les leads"><div class="lbl">Leads ce mois</div><div class="val" id="stat-month">—</div></div>
+      <div class="adm-stat adm-stat--click" data-card="ads" title="Filtrer : publicité"><div class="lbl">Dont publicité</div><div class="val" id="stat-ads">—</div><div class="sub" id="stat-ads-sub"></div></div>
+      <div class="adm-stat adm-stat--click" data-card="rappel" title="Filtrer : à rappeler"><div class="lbl">À rappeler</div><div class="val" id="stat-rappel">—</div><div class="sub">partiels avec tél.</div></div>
+      <div class="adm-stat adm-stat--click" data-card="facture" title="Filtrer : facturés"><div class="lbl">Lead → facturé</div><div class="val" id="stat-conv">—</div></div>
+      <div class="adm-stat adm-stat--click" data-card="facture" title="Filtrer : facturés"><div class="lbl">CA facturé</div><div class="val" id="stat-ca">—</div></div>
       <div class="adm-stat"><div class="lbl">Devis signés</div><div class="val" id="stat-devis">—</div><div class="sub" id="stat-devis-sub"></div></div>
     </div>
 
@@ -57,6 +57,9 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="parking">Parking</option>
         <option value="box">Box</option>
       </select>
+      <label class="adm-toggle" title="Regrouper les visites d'un même contact (téléphone / email)">
+        <input type="checkbox" id="group-dupes" /> Regrouper les doublons
+      </label>
       <span class="adm-count" id="adm-count"></span>
     </div>
 
@@ -65,7 +68,15 @@ const STATUT_LABELS: Record<string, string> = {
       <table class="adm-table">
         <thead>
           <tr>
-            <th>Date</th><th>Lead</th><th>Contact</th><th>CP</th><th>Estim.</th><th>Acquisition</th><th>Devis</th><th>Statut</th><th aria-label="Détails"></th>
+            <th class="adm-sortable" data-sort="date">Date <span class="adm-caret"></span></th>
+            <th>Lead</th>
+            <th>Contact</th>
+            <th>CP</th>
+            <th class="adm-sortable" data-sort="estimation">Estim. <span class="adm-caret"></span></th>
+            <th>Acquisition</th>
+            <th>Devis</th>
+            <th class="adm-sortable" data-sort="statut">Statut <span class="adm-caret"></span></th>
+            <th aria-label="Détails"></th>
           </tr>
         </thead>
         <tbody id="leads-body"></tbody>
@@ -122,6 +133,54 @@ const STATUT_LABELS: Record<string, string> = {
     .pill-chan { background:var(--paper); color:var(--ink-soft); border:1px solid var(--line); }
 
     .adm-statut { border:1px solid var(--line); border-radius:8px; padding:5px 8px; font-size:13px; font-family:var(--sora); background:#fff; cursor:pointer; }
+    /* Statuts colorés (teinte de fond + bordure selon l'état) */
+    .adm-st-nouveau  { border-color:#d7c089; background:rgba(245,166,35,.10); color:#8a5a00; }
+    .adm-st-contacte { border-color:#a9c2dd; background:rgba(46,111,174,.08); color:#1f4e7a; }
+    .adm-st-rdv_pris { border-color:#8fb6df; background:rgba(46,111,174,.14); color:#174a78; }
+    .adm-st-realise  { border-color:#9bd0b3; background:rgba(34,160,90,.10); color:#1d7a48; }
+    .adm-st-facture  { border-color:#6fc294; background:rgba(34,160,90,.18); color:#13633a; font-weight:700; }
+    .adm-st-perdu    { border-color:#e3a99e; background:rgba(216,80,58,.10); color:#9a3322; }
+
+    /* Cartes KPI cliquables = filtres */
+    .adm-stat--click { cursor:pointer; transition:border-color .12s, box-shadow .12s, transform .12s; }
+    .adm-stat--click:hover { border-color:var(--blue-light); transform:translateY(-1px); }
+    .adm-stat--active { border-color:var(--gold); box-shadow:0 0 0 2px rgba(245,166,35,.25); }
+
+    /* Lignes « lead qui dort » (partiel à rappeler, non traité depuis > 2 h) */
+    .adm-row--stale { box-shadow: inset 3px 0 0 #d8503a; }
+    .adm-row--stale .adm-aging { color:#b3261e; font-weight:600; }
+    .adm-aging { font-size:11px; color:var(--ink-soft); }
+    .adm-dupes { display:inline-block; margin-left:6px; font-family:var(--sora); font-size:10px; font-weight:600; color:var(--ink-soft); background:var(--paper); border:1px solid var(--line); border-radius:100px; padding:1px 7px; vertical-align:middle; }
+
+    /* Actions rapides sur la ligne contact */
+    .adm-iact { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+    .adm-iact button, .adm-iact a { font-family:var(--sora); font-size:11px; font-weight:600; border:1px solid var(--line); background:#fff; color:var(--blue-light); border-radius:7px; padding:3px 8px; cursor:pointer; text-decoration:none; line-height:1.4; }
+    .adm-iact button:hover, .adm-iact a:hover { border-color:var(--blue-light); background:var(--paper); text-decoration:none; }
+    .adm-iact .ia-rappel { color:#8a5a00; border-color:#e3cf9a; background:rgba(245,166,35,.10); }
+    .adm-iact .ia-wa { color:#1d7a48; border-color:#9bd0b3; }
+
+    /* Toggle regroupement */
+    .adm-toggle { display:inline-flex; align-items:center; gap:7px; font-family:var(--sora); font-size:13px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+    .adm-toggle input { width:16px; height:16px; accent-color:var(--blue-light); cursor:pointer; }
+
+    /* En-têtes triables */
+    .adm-sortable { cursor:pointer; user-select:none; }
+    .adm-sortable:hover { color:var(--blue); }
+    .adm-caret::after { content:'⇅'; opacity:.4; font-size:10px; margin-left:2px; }
+    .adm-sortable.sort-asc .adm-caret::after { content:'▲'; opacity:1; }
+    .adm-sortable.sort-desc .adm-caret::after { content:'▼'; opacity:1; }
+
+    /* Vue mobile : tableau en cartes empilées */
+    @media (max-width:760px) {
+      .adm-tablewrap { border:none; background:transparent; overflow:visible; }
+      .adm-table thead { display:none; }
+      .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display:block; width:100%; }
+      .adm-table tr.adm-row { background:#fff; border:1px solid var(--line); border-radius:14px; margin-bottom:12px; padding:6px 4px; position:relative; }
+      .adm-table td { border:none; padding:6px 14px; }
+      .adm-table td.adm-chev { display:none; }
+      .adm-table td::before { content:attr(data-th); display:block; font-family:var(--sora); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px; }
+      .adm-table td:first-child::before { content:''; margin:0; }
+    }
 
     /* Drawer */
     .adm-drawer { position:fixed; inset:0; z-index:200; }
@@ -236,6 +295,61 @@ const STATUT_LABELS: Record<string, string> = {
       return false;
     }
 
+    // ── Triage / temps relatif / regroupement (UX CRM) ──────────────────
+    function hoursSince(s: any): number { return s ? (Date.now() - new Date(s).getTime()) / 3600000 : 0; }
+    function relTime(s: any): string {
+      if (!s) return '';
+      const min = Math.floor((Date.now() - new Date(s).getTime()) / 60000);
+      if (min < 1) return "à l'instant";
+      if (min < 60) return `il y a ${min} min`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `il y a ${h} h`;
+      const d = Math.floor(h / 24);
+      return `il y a ${d} j`;
+    }
+    function isRappel(l: any): boolean { return l.lead_status === 'partiel' && !!l.telephone; }
+    // « Lead qui dort » : à rappeler, encore Nouveau, et capté il y a plus de 2 h.
+    function isStale(l: any): boolean { return isRappel(l) && l.statut === 'nouveau' && hoursSince(l.created_at) >= 2; }
+    function normTel(t: any): string { return String(t || '').replace(/\D/g, ''); }
+    function waNumber(t: any): string { const d = normTel(t); return d.startsWith('0') ? '33' + d.slice(1) : d; }
+    // Clé d'identité d'un contact : téléphone > email > session > id.
+    function groupKey(l: any): string {
+      const t = normTel(l.telephone); if (t.length >= 9) return 't:' + t.slice(-9);
+      const e = String(l.email || '').trim().toLowerCase(); if (e) return 'e:' + e;
+      if (l.lead_uid) return 'u:' + l.lead_uid;
+      return 'i:' + l.id;
+    }
+    // Le « représentant » d'un groupe : complet d'abord, puis le plus récent.
+    function leadScore(l: any): number { return (l.lead_status === 'complet' ? 1e15 : 0) + new Date(l.created_at || 0).getTime(); }
+
+    // État de tri / regroupement (persistés en localStorage)
+    let sortKey = 'default'; // 'date' | 'estimation' | 'statut' | 'default'
+    let sortDir = -1;        // 1 = asc, -1 = desc
+    let groupDupes = false;
+    const PREFS_KEY = 'soloris_admin_prefs_v1';
+    function savePrefs() {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+          q: (document.getElementById('search') as HTMLInputElement).value,
+          st: (document.getElementById('filter-statut') as HTMLSelectElement).value,
+          so: (document.getElementById('filter-source') as HTMLSelectElement).value,
+          ld: (document.getElementById('filter-lead') as HTMLSelectElement).value,
+          bn: (document.getElementById('filter-bien') as HTMLSelectElement).value,
+          sortKey, sortDir, groupDupes,
+        }));
+      } catch { /* quota / mode privé : ignoré */ }
+    }
+    function restorePrefs() {
+      let p: any = {};
+      try { p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { p = {}; }
+      const set = (id: string, v: any) => { const el = document.getElementById(id) as HTMLInputElement | null; if (el && v != null) el.value = v; };
+      set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn);
+      if (p.sortKey) sortKey = p.sortKey;
+      if (p.sortDir === 1 || p.sortDir === -1) sortDir = p.sortDir;
+      groupDupes = !!p.groupDupes;
+      (document.getElementById('group-dupes') as HTMLInputElement).checked = groupDupes;
+    }
+
     function bienLine(l: any): string {
       const bits = [];
       if (l.type_bien) bits.push(BIEN_LBL[l.type_bien] || l.type_bien);
@@ -273,7 +387,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     function statutSelect(lead: any): string {
       const opts = STATUTS.map((s: string) => `<option value="${s}" ${lead.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
-      return `<select class="adm-statut" data-id="${lead.id}" data-field="statut">${opts}</select>`;
+      return `<select class="adm-statut adm-st-${lead.statut || 'nouveau'}" data-id="${lead.id}" data-field="statut">${opts}</select>`;
     }
 
     function getFiltered(): any[] {
@@ -293,25 +407,45 @@ const STATUT_LABELS: Record<string, string> = {
       else if (fLead === 'complet') rows = rows.filter((l) => l.lead_status === 'complet');
       if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword, l.message].some((v) => String(v ?? '').toLowerCase().includes(q)));
 
-      rows.sort((a, b) => {
-        const ra = a.lead_status === 'partiel' && a.telephone ? 1 : 0;
-        const rb = b.lead_status === 'partiel' && b.telephone ? 1 : 0;
+      // Regroupement des doublons : une ligne par contact (le « représentant »),
+      // avec le nombre de visites. Sinon, une vue par lead.
+      let views: any[];
+      if (groupDupes) {
+        const map = new Map<string, { p: any; n: number }>();
+        for (const l of rows) {
+          const k = groupKey(l); const g = map.get(k);
+          if (!g) map.set(k, { p: l, n: 1 });
+          else { g.n++; if (leadScore(l) > leadScore(g.p)) g.p = l; }
+        }
+        views = Array.from(map.values()).map((g) => Object.assign({}, g.p, { _dupes: g.n }));
+      } else {
+        views = rows.map((l) => Object.assign({}, l, { _dupes: 1 }));
+      }
+
+      views.sort((a, b) => {
+        if (sortKey === 'estimation') return sortDir * ((Number(a.estimation) || 0) - (Number(b.estimation) || 0));
+        if (sortKey === 'statut') return sortDir * (STATUTS.indexOf(a.statut) - STATUTS.indexOf(b.statut));
+        if (sortKey === 'date') return sortDir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        // défaut : les « à rappeler » en tête, puis du plus récent au plus ancien
+        const ra = isRappel(a) ? 1 : 0, rb = isRappel(b) ? 1 : 0;
         if (ra !== rb) return rb - ra;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-      return rows;
+      return views;
     }
 
     function render() {
       const rows = getFiltered();
       const body = document.getElementById('leads-body') as HTMLElement;
       (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
-      (document.getElementById('adm-count') as HTMLElement).textContent = `${rows.length} lead${rows.length > 1 ? 's' : ''} affiché${rows.length > 1 ? 's' : ''}`;
+      const noun = groupDupes ? 'contact' : 'lead';
+      (document.getElementById('adm-count') as HTMLElement).textContent = `${rows.length} ${noun}${rows.length > 1 ? 's' : ''} affiché${rows.length > 1 ? 's' : ''}`;
 
       body.innerHTML = rows.map((l) => {
         const leadBadge = l.lead_status === 'partiel'
           ? `<span class="adm-pill pill-partiel">🟠 partiel</span> `
           : l.lead_status === 'complet' ? `<span class="adm-pill pill-complet">🟢 complet</span> ` : '';
+        const dupesBadge = l._dupes > 1 ? `<span class="adm-dupes" title="${l._dupes} visites du même contact, regroupées">${l._dupes} visites</span>` : '';
         const sourceTag = isAds(l) ? `<span class="adm-pill pill-pub">Pub</span>` : `<span class="adm-pill pill-orga">Organique</span>`;
         const annexeTag = l.annexe
           ? `<div style="margin-top:4px"><span class="adm-pill pill-annexe">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span></div>`
@@ -325,15 +459,24 @@ const STATUT_LABELS: Record<string, string> = {
           ? `<a class="adm-devis-link" href="/api/devis/${dv.sign_token}.pdf" target="_blank" rel="noopener" title="Télécharger le PDF du devis ${esc(dv.numero)}">${statutDevisBadge(dv.statut)} 📄</a>`
           : `<button type="button" class="adm-btn-sm" data-quick-devis="${l.id}">+ Devis</button>`;
 
-        return `<tr class="adm-row" data-open="${l.id}">
-          <td>${fmtDate(l.created_at)}<div class="adm-cell-sub">${fmtTime(l.created_at)}</div></td>
-          <td>${leadBadge}<b class="adm-name">${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b><div class="adm-cell-sub">${esc(bienLine(l))}</div>${annexeTag}</td>
-          <td><b>${esc(l.nom || '—')}</b>${l.telephone ? `<div><a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a></div>` : ''}${l.email ? `<div class="adm-cell-sub"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></div>` : ''}</td>
-          <td>${esc(l.secteur || '—')}</td>
-          <td class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
-          <td>${sourceTag}${acq}</td>
-          <td>${devisCell}</td>
-          <td>${statutSelect(l)}</td>
+        // Actions rapides (n'ouvrent pas le drawer : le clic ignore boutons/liens)
+        const wa = l.telephone ? `<a class="ia-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener" title="WhatsApp">WhatsApp</a>` : '';
+        const cpEmail = l.email ? `<button type="button" data-copy-email="${esc(l.email)}" title="Copier l'email">Copier l'email</button>` : '';
+        const mkRappel = isRappel(l) && l.statut === 'nouveau' ? `<button type="button" class="ia-rappel" data-mark-rappel="${l.id}" title="Marquer comme rappelé (passe en Contacté)">✓ Rappelé</button>` : '';
+        const iact = (wa || cpEmail || mkRappel) ? `<div class="adm-iact">${wa}${cpEmail}${mkRappel}</div>` : '';
+
+        const stale = isStale(l);
+        const aging = `<div class="adm-cell-sub adm-aging">${fmtTime(l.created_at)} · ${relTime(l.created_at)}${stale ? ' ⏱' : ''}</div>`;
+
+        return `<tr class="adm-row${stale ? ' adm-row--stale' : ''}" data-open="${l.id}">
+          <td data-th="Date">${fmtDate(l.created_at)}${aging}</td>
+          <td data-th="Lead">${leadBadge}<b class="adm-name">${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b>${dupesBadge}<div class="adm-cell-sub">${esc(bienLine(l))}</div>${annexeTag}</td>
+          <td data-th="Contact"><b>${esc(l.nom || '—')}</b>${l.telephone ? `<div><a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a></div>` : ''}${l.email ? `<div class="adm-cell-sub"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></div>` : ''}${iact}</td>
+          <td data-th="CP">${esc(l.secteur || '—')}</td>
+          <td data-th="Estim." class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
+          <td data-th="Acquisition">${sourceTag}${acq}</td>
+          <td data-th="Devis">${devisCell}</td>
+          <td data-th="Statut">${statutSelect(l)}</td>
           <td class="adm-chev">›</td>
         </tr>`;
       }).join('');
@@ -702,16 +845,71 @@ const STATUT_LABELS: Record<string, string> = {
       if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
     }
 
+    // Reflète l'état (filtres actifs sur les cartes, sens de tri sur les en-têtes)
+    function syncControls() {
+      const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
+      const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
+      const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
+      const activeCard = fLead === 'rappel' ? 'rappel' : fSource === 'ads' ? 'ads' : fStatut === 'facture' ? 'facture' : '';
+      document.querySelectorAll('.adm-stat--click').forEach((c) => {
+        c.classList.toggle('adm-stat--active', !!activeCard && (c as HTMLElement).dataset.card === activeCard);
+      });
+      document.querySelectorAll('.adm-sortable').forEach((th) => {
+        const k = (th as HTMLElement).dataset.sort;
+        th.classList.toggle('sort-asc', sortKey === k && sortDir === 1);
+        th.classList.toggle('sort-desc', sortKey === k && sortDir === -1);
+      });
+    }
+    function rerender() { render(); syncControls(); savePrefs(); }
+
     function wireEvents() {
       ['search', 'filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
-        document.getElementById(id)!.addEventListener('input', render);
+        document.getElementById(id)!.addEventListener('input', rerender);
       });
 
-      // Clic sur une ligne → ouvre le détail (sauf sur les contrôles interactifs)
+      // Cartes KPI cliquables → applique le filtre correspondant
+      document.querySelectorAll('.adm-stat--click').forEach((card) => {
+        card.addEventListener('click', () => {
+          const k = (card as HTMLElement).dataset.card;
+          const set = (id: string, v: string) => { (document.getElementById(id) as HTMLSelectElement).value = v; };
+          // On repart d'un filtrage propre puis on applique le filtre de la carte
+          set('filter-source', ''); set('filter-lead', ''); set('filter-statut', '');
+          if (k === 'ads') set('filter-source', 'ads');
+          else if (k === 'rappel') set('filter-lead', 'rappel');
+          else if (k === 'facture') set('filter-statut', 'facture');
+          rerender();
+        });
+      });
+
+      // Tri par colonne (Date, Estim., Statut)
+      document.querySelectorAll('.adm-sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+          const k = (th as HTMLElement).dataset.sort as string;
+          if (sortKey === k) sortDir = -sortDir;
+          else { sortKey = k; sortDir = k === 'date' ? -1 : 1; }
+          rerender();
+        });
+      });
+
+      // Regroupement des doublons
+      document.getElementById('group-dupes')!.addEventListener('change', (e) => {
+        groupDupes = (e.target as HTMLInputElement).checked;
+        rerender();
+      });
+
+      // Clic sur une ligne → actions rapides, sinon ouvre le détail
       document.getElementById('leads-body')!.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
         const qd = t.closest('[data-quick-devis]') as HTMLElement | null;
         if (qd) { createDevis(qd.getAttribute('data-quick-devis') as string); return; }
+        const cp = t.closest('[data-copy-email]') as HTMLElement | null;
+        if (cp) {
+          const em = cp.getAttribute('data-copy-email') || '';
+          navigator.clipboard?.writeText(em).then(() => { cp.textContent = 'Copié ✓'; setTimeout(() => { cp.textContent = "Copier l'email"; }, 1200); }).catch(() => {});
+          return;
+        }
+        const mr = t.closest('[data-mark-rappel]') as HTMLElement | null;
+        if (mr) { update(mr.getAttribute('data-mark-rappel') as string, 'statut', 'contacte'); return; }
         if (t.closest('select, input, a, button, textarea')) return;
         const tr = t.closest('.adm-row') as HTMLElement | null;
         if (tr && tr.dataset.open) openDrawer(tr.dataset.open);
@@ -793,8 +991,10 @@ const STATUT_LABELS: Record<string, string> = {
       if (!document.getElementById('rdv-form-css')) {
         const s = document.createElement('style'); s.id = 'rdv-form-css'; s.textContent = RDV_FORM_CSS; document.head.appendChild(s);
       }
+      restorePrefs();
       renderStats(allLeads);
       render();
+      syncControls();
       wireEvents();
     }
 
