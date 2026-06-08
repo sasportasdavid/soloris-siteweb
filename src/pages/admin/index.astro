@@ -183,17 +183,25 @@ const STATUT_LABELS: Record<string, string> = {
     }
 
     /* Drawer */
-    .adm-drawer { position:fixed; inset:0; z-index:200; }
+    /* Overlay = conteneur de centrage de la modal */
+    .adm-drawer { position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; }
     .adm-drawer[hidden] { display:none; }
-    .adm-drawer-backdrop { position:absolute; inset:0; background:rgba(11,42,74,.45); animation:admfade .15s ease; }
+    .adm-drawer-backdrop { position:absolute; inset:0; background:rgba(11,42,74,.5); backdrop-filter:blur(2px); animation:admfade .15s ease; }
     @keyframes admfade { from{opacity:0} to{opacity:1} }
-    .adm-drawer-panel { position:absolute; top:0; right:0; height:100%; width:500px; max-width:100vw; background:#fff; box-shadow:-12px 0 44px -14px rgba(0,0,0,.35); overflow-y:auto; padding:22px 26px 40px; animation:admslide .2s ease; }
-    @keyframes admslide { from{transform:translateX(24px);opacity:.6} to{transform:translateX(0);opacity:1} }
-    @media (max-width:560px){ .adm-drawer-panel{ width:100vw; padding:20px 18px 40px; } }
+    /* Modal centrale large */
+    .adm-drawer-panel { position:relative; width:min(980px,100%); max-height:90vh; background:#fff; border-radius:18px; box-shadow:0 40px 120px -30px rgba(11,42,74,.6); overflow-y:auto; animation:admpop .18s ease; }
+    @keyframes admpop { from{transform:translateY(10px) scale(.985);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+    @media (max-width:760px){ .adm-drawer{ padding:0; } .adm-drawer-panel{ width:100%; height:100vh; max-height:100vh; border-radius:0; } }
 
-    .adm-dhead { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .adm-dhead h2 { font-family:var(--sora); font-weight:600; font-size:20px; color:var(--blue); }
-    .adm-dhead .badges { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+    /* En-tête collant */
+    .adm-mhead { position:sticky; top:0; z-index:3; background:#fff; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:22px 30px 16px; border-bottom:1px solid var(--line); }
+    .adm-mhead h2 { font-family:var(--sora); font-weight:600; font-size:22px; color:var(--blue); }
+    .adm-mhead .badges { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+    /* Corps 2 colonnes : infos (gauche) · actions (droite) */
+    .adm-mbody { display:grid; grid-template-columns:1fr 1fr; gap:0 36px; padding:6px 30px 34px; align-items:start; }
+    .adm-mbody .adm-col { min-width:0; }
+    .adm-mbody .adm-col > .adm-sec:first-child { margin-top:18px; }
+    @media (max-width:760px){ .adm-mbody{ grid-template-columns:1fr; gap:0; padding:6px 18px 30px; } .adm-mbody .adm-col:last-child{ order:-1; } }
     .adm-x { background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:26px; line-height:1; padding:0 4px; }
     .adm-x:hover { color:var(--blue); }
 
@@ -777,7 +785,7 @@ const STATUT_LABELS: Record<string, string> = {
       ].filter(Boolean).join('');
 
       panel.innerHTML = `
-        <div class="adm-dhead">
+        <div class="adm-mhead">
           <div>
             <h2>${esc(l.nom || 'Lead sans nom')}</h2>
             <div class="badges">${badges.join('')}</div>
@@ -785,38 +793,44 @@ const STATUT_LABELS: Record<string, string> = {
           <button type="button" class="adm-x" data-close aria-label="Fermer">×</button>
         </div>
 
-        <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
+        <div class="adm-mbody">
+          <div class="adm-col">
+            <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
 
-        <div class="adm-sec"><h3>Contact</h3>
-          <dl class="adm-dl">${contactRows}</dl>
-          ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
-        </div>
+            <div class="adm-sec"><h3>Contact</h3>
+              <dl class="adm-dl">${contactRows}</dl>
+              ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
+            </div>
 
-        <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
-          <div style="position:relative">
-            <input type="text" id="lead-adresse" class="adm-adresse-input" data-id="${l.id}" data-field="adresse" value="${esc(l.adresse || '')}" placeholder="Commencez à taper l'adresse…" autocomplete="off">
-            <div id="adresse-suggest" class="adm-suggest" hidden></div>
+            <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
+              <div style="position:relative">
+                <input type="text" id="lead-adresse" class="adm-adresse-input" data-id="${l.id}" data-field="adresse" value="${esc(l.adresse || '')}" placeholder="Commencez à taper l'adresse…" autocomplete="off">
+                <div id="adresse-suggest" class="adm-suggest" hidden></div>
+              </div>
+              <p class="muted" style="font-size:12px;margin-top:6px">Autocomplétion (Base Adresse Nationale). Le formulaire public ne demande que le code postal ; l'adresse saisie ici figure sur le devis PDF.</p>
+            </div>
+
+            <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
+
+            <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
-          <p class="muted" style="font-size:12px;margin-top:6px">Autocomplétion (Base Adresse Nationale). Le formulaire public ne demande que le code postal ; l'adresse saisie ici figure sur le devis PDF.</p>
-        </div>
 
-        <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
-          <div class="adm-edit">
-            <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
-            <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
-            <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
-            <div></div>
-            <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
+          <div class="adm-col">
+            <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
+              <div class="adm-edit">
+                <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
+                <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
+                <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
+                <div></div>
+                <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
+              </div>
+            </div>
+
+            ${buildRdvSection(l)}
+
+            ${buildDevisSection(l)}
           </div>
         </div>
-
-        ${buildRdvSection(l)}
-
-        ${buildDevisSection(l)}
-
-        <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
-
-        <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
       `;
       (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
     }
