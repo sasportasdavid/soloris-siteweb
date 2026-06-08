@@ -48,6 +48,8 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
     primaryLabel="Calculer mon prix"
     secondaryHref="#rappel"
     secondaryLabel="Être rappelé rapidement"
+    image="/images/diagnostiqueur-soloris.jpg"
+    imageAlt="Diagnostiqueur Soloris en intervention dans un appartement parisien"
   />
 
   <!-- 3 · Barre de réassurance -->
@@ -87,9 +89,27 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
       <div class="eyebrow">Comment ça marche</div>
       <h2 class="sec-title">Trois étapes, zéro corvée</h2>
       <div class="grid grid-3 mt-5 steps">
-        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Renseignez votre bien en 2 minutes et obtenez une estimation tout compris à l'écran.</p></div>
-        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement, à la date qui vous arrange.</p></div>
-        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Vous recevez un rapport clair, opposable, qui vous dit où vous en êtes — sans jargon.</p></div>
+        <div class="step">
+          <div class="step-media step-media--price">
+            <span class="step-n">Étape 1</span>
+            <div class="step-price"><strong>Dès {prixDes('vente')} €</strong><span>tout compris</span></div>
+          </div>
+          <div class="step-body"><h3>Devis immédiat</h3><p>Renseignez votre bien en 2 minutes et obtenez une estimation tout compris à l'écran.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-media">
+            <span class="step-n">Étape 2</span>
+            <img src="/images/mesure-tablette.jpg" alt="Rendez-vous avec un diagnostiqueur certifié" loading="lazy" decoding="async" width="520" height="358" />
+          </div>
+          <div class="step-body"><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement, à la date qui vous arrange.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-media">
+            <span class="step-n">Étape 3</span>
+            <img src="/images/rapport-famille.jpg" alt="Remise d'un rapport de diagnostic clair" loading="lazy" decoding="async" width="520" height="358" />
+          </div>
+          <div class="step-body"><h3>Rapport pédagogique</h3><p>Vous recevez un rapport clair, opposable, qui vous dit où vous en êtes — sans jargon.</p></div>
+        </div>
       </div>
     </div>
   </section>
@@ -132,8 +152,11 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <!-- 8 · Expertise énergie / réforme DPE -->
   <section class="section-line">
     <div class="wrap">
-      <div class="grid grid-2" style="align-items:center;gap:40px">
-        <div>
+      <div class="split-media">
+        <div class="split-media-img">
+          <img src="/images/camera-thermique.jpg" alt="Diagnostiqueuse réalisant un relevé à la caméra thermique" loading="lazy" decoding="async" width="620" height="720" />
+        </div>
+        <div class="split-media-body">
           <div class="eyebrow">Expertise énergie</div>
           <h2 class="sec-title">Comprendre votre étiquette, anticiper la réforme</h2>
           <p class="sec-intro">
@@ -147,15 +170,13 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
             des logements F, G et E. Au 1ᵉʳ janvier 2026, le calcul du DPE évolue aussi (coefficient de
             l'électricité). Nous faisons le point sur votre situation au moment du devis.
           </p>
+          <div class="escale-compact mt-3">
+            <EnergyScale highlight="C" />
+          </div>
           <div class="flex-cta mt-3">
             <a href="/audit-energetique" class="btn-blue">L'audit énergétique</a>
             <a href="/guides/reforme-dpe" class="btn-ghost">Réforme DPE : ce qui change</a>
           </div>
-        </div>
-        <div class="card" style="padding:30px">
-          <div class="eyebrow">Étiquette énergie</div>
-          <p class="muted" style="font-size:14px;margin-bottom:18px">Exemple d'échelle A→G. Votre classe reflète l'état réel du logement — nous ne promettons jamais de résultat.</p>
-          <EnergyScale highlight="C" />
         </div>
       </div>
     </div>
@@ -181,17 +202,32 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <!-- 10b · Wall of love — 2e bloc de preuve sociale (volume d'avis réels) -->
   <ReviewWall />
 
+  <!-- 10c · Bandeau terrain Paris & Île-de-France -->
+  <section class="geo-band">
+    <div class="wrap">
+      <div class="eyebrow center">Notre terrain</div>
+      <h2>À Paris et dans toute l'Île-de-France</h2>
+      <p>Nos diagnostiqueurs certifiés COFRAC interviennent à Paris et dans toute l'Île-de-France, avec un rendez-vous et un rapport sous 48 h dans la plupart des cas.</p>
+      <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+    </div>
+  </section>
+
   <!-- 11 · FAQ -->
   <Faq items={faq} title="Vos questions, nos réponses claires" />
 
   <!-- 12 · CTA final -->
-  <section class="cta-final">
-    <div class="wrap">
-      <h2>Prêt à y voir clair&nbsp;?</h2>
-      <p>Obtenez votre estimation tout compris en 2 minutes. Sans engagement.</p>
-      <div class="cta">
-        <a href="/devis" class="btn-gold">Obtenir mon devis en 2 min</a>
-        <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+  <section class="cta-final cta-final--split">
+    <div class="wrap cta-final-grid">
+      <div class="cta-final-copy">
+        <h2>Prêt à y voir clair&nbsp;?</h2>
+        <p>Obtenez votre estimation tout compris en 2 minutes. Sans engagement.</p>
+        <div class="cta">
+          <a href="/devis" class="btn-gold">Obtenir mon devis en 2 min</a>
+          <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+        </div>
+      </div>
+      <div class="cta-final-media">
+        <img src="/images/remise-cles.jpg" alt="Remise des clés d'un appartement" loading="lazy" decoding="async" width="640" height="520" />
       </div>
     </div>
   </section>

@@ -28,6 +28,9 @@ export interface Diagnostic {
   inPack: ('vente' | 'location')[]; // packs qui l'incluent
   faq: { q: string; a: string }[];
   ready: boolean; // page dédiée générée ?
+  image?: string; // photo d'en-tête (fiche 2 colonnes)
+  imageAlt?: string;
+  diptych?: boolean; // affiche le diptyque mesurage (mesurage-laser + plan-tablette)
 }
 
 export const DIAGNOSTICS: Diagnostic[] = [
@@ -101,6 +104,8 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte-t-il ?', a: `Électricité et gaz sont réalisés ensemble : ${ADDON_PRICE.elec_gaz} € tout compris pour le combo, déplacement inclus.` },
     ],
     ready: true,
+    image: '/images/diagnostic-electricite.jpg',
+    imageAlt: "Contrôle d'un tableau électrique",
   },
   {
     slug: 'gaz',
@@ -123,6 +128,8 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte-t-il ?', a: `Gaz et électricité sont réalisés ensemble : ${ADDON_PRICE.elec_gaz} € tout compris pour le combo, déplacement inclus.` },
     ],
     ready: true,
+    image: '/images/diagnostic-electricite.jpg',
+    imageAlt: "Contrôle d'une installation de gaz",
   },
   {
     slug: 'termites',
@@ -167,6 +174,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte le mesurage ?', a: `Dès ${ADDON_PRICE.carrez_boutin} € tout compris, déplacement inclus.` },
     ],
     ready: true,
+    diptych: true,
   },
   {
     slug: 'loi-boutin',
@@ -189,6 +197,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte le mesurage ?', a: `Dès ${ADDON_PRICE.carrez_boutin} € tout compris, déplacement inclus.` },
     ],
     ready: true,
+    diptych: true,
   },
   {
     slug: 'erp',

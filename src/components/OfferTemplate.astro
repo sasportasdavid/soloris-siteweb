@@ -56,8 +56,8 @@ const jsonLd = [
   <!-- Intro — 2 colonnes (texte + CTA à gauche, visuel à droite) -->
   <section class="section-line">
     <div class="wrap">
-      <div class="grid grid-2" style="align-items:center;gap:44px">
-        <div>
+      <div class:list={['offer-intro', offer.introDark && 'offer-intro--dark', offer.heroImageSide === 'left' && 'offer-intro--img-left']}>
+        <div class="offer-intro-copy">
           <div class="eyebrow">En bref</div>
           <p class="sec-intro" style="font-size:18.5px;color:var(--ink);max-width:none">{offer.intro}</p>
           <ul class="incl mt-4" style="gap:10px">
@@ -73,15 +73,21 @@ const jsonLd = [
             <a href="#tarifs" class="btn-ghost">Voir les tarifs</a>
           </div>
         </div>
-        <div class="card" style="padding:30px">
-          <div class="eyebrow">Rapport opposable</div>
-          <p class="muted" style="font-size:14px;margin-bottom:18px">Vous recevez un rapport clair et opposable, certifié COFRAC. (Étiquette énergie illustrative — votre classe reflète l'état réel du bien.)</p>
-          <EnergyScale highlight="C" />
-          <p class="mt-3" style="font-family:var(--sora);font-size:12.5px;font-weight:600;color:var(--blue-light);display:flex;align-items:center;gap:8px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Diagnostiqueur certifié COFRAC · rapport opposable
-          </p>
-        </div>
+        {offer.heroImage ? (
+          <div class="offer-intro-media">
+            <img src={offer.heroImage} alt={offer.heroImageAlt ?? ''} loading="lazy" decoding="async" width="620" height="560" />
+          </div>
+        ) : (
+          <div class="card" style="padding:30px">
+            <div class="eyebrow">Rapport opposable</div>
+            <p class="muted" style="font-size:14px;margin-bottom:18px">Vous recevez un rapport clair et opposable, certifié COFRAC. (Étiquette énergie illustrative — votre classe reflète l'état réel du bien.)</p>
+            <EnergyScale highlight="C" />
+            <p class="mt-3" style="font-family:var(--sora);font-size:12.5px;font-weight:600;color:var(--blue-light);display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Diagnostiqueur certifié COFRAC · rapport opposable
+            </p>
+          </div>
+        )}
       </div>
     </div>
   </section>

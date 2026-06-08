@@ -16,7 +16,7 @@
  */
 import LandingLayout from '../layouts/LandingLayout.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
-import PricingTable from './PricingTable.astro';
+import PriceSimulator from './PriceSimulator.astro';
 import ReportPreview from './ReportPreview.astro';
 import CallbackForm from './CallbackForm.astro';
 import Reviews from './Reviews.astro';
@@ -134,10 +134,12 @@ const piliers = [
   {withPrices ? (
     <section class="section-line" id="tarifs">
       <div class="wrap">
-        <div class="eyebrow">Tarif tout compris</div>
-        <h2 class="sec-title">Le prix selon la surface et l'âge du bien</h2>
-        <p class="sec-intro">Dès {prixDes('vente')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient).</p>
-        <div class="mt-5"><PricingTable caption="Tarifs diagnostics vente" /></div>
+        <div class="sec-head center">
+          <div class="eyebrow center">Tarif tout compris</div>
+          <h2 class="sec-title">Estimez votre prix, tout de suite</h2>
+          <p class="sec-intro">Dès {prixDes('vente')} € tout compris, déplacement inclus. Renseignez votre bien : l'estimation s'affiche immédiatement — le prix n'est jamais caché derrière le formulaire.</p>
+        </div>
+        <div class="mt-5"><PriceSimulator defaultDemande="vente" /></div>
       </div>
     </section>
   ) : (

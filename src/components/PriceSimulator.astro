@@ -1,0 +1,365 @@
+---
+/**
+ * Simulateur de devis interactif (remplace les tableaux statiques sur /tarifs et la LP prix).
+ * - Estimation « tout compris » live, calculée depuis la MÊME grille que le tunnel
+ *   (constantes pricing.ts passées en define:vars — zéro prix en dur, zéro duplication).
+ * - Annexes cave/parking : INCLUSES (0 €) pour appartement/maison ; le lot vendu SEUL
+ *   (Cave-Box-Parking) garde son tarif unique (cf. PR #27).
+ * - 2 CTA : « Réserver mon RDV » (nom+tel+email → /api/lead source=contact, 📨) et
+ *   « Être rappelé » (nom+tel → lead PARTIEL, 🟠 à rappeler). MÊME pipeline lead que le
+ *   formulaire de contact (table leads + Telegram), avec les valeurs du simulateur + GCLID.
+ * - Conformité : « tout compris », jamais de promesse de résultat ni « pas cher / promo ».
+ * - Charte bleu/or, mobile-first.
+ */
+import { SURFACE_BANDS, APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_FROM, LOT_ANNEXE_PRICE, estimerDpe } from '../lib/pricing';
+
+interface Props { defaultDemande?: 'vente' | 'location' | 'dpe' | 'audit'; title?: string; sub?: string; }
+const { defaultDemande = 'vente', title = 'Estimez votre devis tout compris', sub = "Quelques clics : votre estimation s'affiche immédiatement, déplacement inclus, sans engagement." } = Astro.props;
+
+const BANDS_MAX = SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 99999 : b.maxIncl));
+const DPE_BY_BAND = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 240 : b.maxIncl));
+---
+<div class="sim card" id="sim" data-default-demande={defaultDemande}>
+  <div class="sim-head">
+    <div class="eyebrow">Simulateur</div>
+    <h3 class="sim-title">{title}</h3>
+    <p class="sim-sub">{sub}</p>
+  </div>
+
+  <div class="sim-body">
+    <!-- Prestation -->
+    <fieldset class="sim-group">
+      <legend>Votre besoin</legend>
+      <div class="sim-seg" role="radiogroup" aria-label="Prestation">
+        <label><input type="radio" name="sim_demande" value="vente" /><span>Vente</span></label>
+        <label><input type="radio" name="sim_demande" value="location" /><span>Location</span></label>
+        <label><input type="radio" name="sim_demande" value="dpe" /><span>DPE seul</span></label>
+        <label><input type="radio" name="sim_demande" value="audit" /><span>Audit énergétique</span></label>
+      </div>
+    </fieldset>
+
+    <!-- Type de bien -->
+    <fieldset class="sim-group">
+      <legend>Type de bien</legend>
+      <div class="sim-seg" role="radiogroup" aria-label="Type de bien">
+        <label><input type="radio" name="sim_bien" value="appartement" /><span>Appartement</span></label>
+        <label><input type="radio" name="sim_bien" value="maison" /><span>Maison</span></label>
+        <label><input type="radio" name="sim_bien" value="lot" /><span>Cave / Box / Parking</span></label>
+        <label><input type="radio" name="sim_bien" value="local" /><span>Local</span></label>
+      </div>
+    </fieldset>
+
+    <div class="sim-row">
+      <!-- Surface -->
+      <label class="sim-field" id="sim-surface-field">
+        <span>Surface (m²)</span>
+        <input type="number" name="sim_surface" inputmode="numeric" min="1" max="2000" step="1" placeholder="ex : 75" autocomplete="off" />
+      </label>
+      <!-- Ville / CP -->
+      <label class="sim-field">
+        <span>Ville ou code postal</span>
+        <input type="text" name="sim_cp" inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="75011" autocomplete="postal-code" />
+      </label>
+    </div>
+
+    <!-- Annexes (appartement / maison) -->
+    <div class="sim-annexes" id="sim-annexes" hidden>
+      <span class="sim-annexes-label">Annexes à diagnostiquer</span>
+      <div class="sim-checks">
+        <label class="sim-check"><input type="checkbox" name="sim_cave" /><span>Cave <em class="sim-incl">incluse</em></span></label>
+        <label class="sim-check"><input type="checkbox" name="sim_parking" /><span>Parking <em class="sim-incl">inclus</em></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Résultat -->
+  <div class="sim-result" id="sim-result" aria-live="polite">
+    <div class="sim-result-price">
+      <span class="sim-result-label" id="sim-prefix">À partir de</span>
+      <strong id="sim-amount">—</strong>
+      <span class="sim-result-tc">tout compris, sous 48 h</span>
+    </div>
+    <p class="sim-result-note" id="sim-note">Renseignez votre bien pour afficher l'estimation. Déplacement inclus. Devis exact confirmé avant intervention, sans engagement.</p>
+    <div class="sim-cta">
+      <button type="button" class="btn-gold sim-cta-rdv" data-open="rdv">Réserver mon RDV</button>
+      <button type="button" class="btn-blue sim-cta-rappel" data-open="rappel">Être rappelé en quelques minutes</button>
+    </div>
+  </div>
+
+  <!-- Capture RDV (nom + tel + email) -->
+  <form class="sim-capture" id="sim-form-rdv" novalidate hidden>
+    <h4>Réserver mon rendez-vous</h4>
+    <p class="sim-capture-sub">On confirme votre créneau et le prix tout compris avant l'intervention.</p>
+    <div class="sim-row">
+      <label class="sim-field"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
+      <label class="sim-field"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
+    </div>
+    <label class="sim-field"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /></label>
+    <div class="sim-hp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+    <button type="submit" class="btn-gold btn-block">Confirmer ma demande de RDV</button>
+    <p class="sim-trust">Sans engagement · Prix confirmé avant intervention · Données confidentielles</p>
+    <p class="sim-err" role="alert" hidden></p>
+  </form>
+
+  <!-- Capture rappel (nom + tel) -->
+  <form class="sim-capture" id="sim-form-rappel" novalidate hidden>
+    <h4>Être rappelé en quelques minutes</h4>
+    <p class="sim-capture-sub">Laissez votre numéro : on vous rappelle pour confirmer vos diagnostics et le prix.</p>
+    <div class="sim-row">
+      <label class="sim-field"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
+      <label class="sim-field"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
+    </div>
+    <div class="sim-hp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+    <button type="submit" class="btn-blue btn-block">Me faire rappeler</button>
+    <p class="sim-trust">Sans engagement · Réponse rapide · Données confidentielles</p>
+    <p class="sim-err" role="alert" hidden></p>
+  </form>
+
+  <!-- Merci -->
+  <div class="sim-thanks" id="sim-thanks" hidden>
+    <div class="sim-thanks-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <strong>C'est noté, merci&nbsp;!</strong>
+    <span id="sim-thanks-msg">L'équipe Soloris vous recontacte très vite.</span>
+  </div>
+</div>
+
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_FROM, LOT_ANNEXE_PRICE, BANDS_MAX, DPE_BY_BAND }}>
+  (function () {
+    var root = document.getElementById('sim');
+    if (!root) return;
+    var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
+
+    function uuid() {
+      try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+    }
+    function readCookie(name) { return (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1] || ''; }
+    function getLeadUid() {
+      try { document.cookie = 'soloris_lead_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax'; } catch (e) {}
+      var v = ''; try { v = sessionStorage.getItem('soloris_lead_uid') || ''; } catch (e) {}
+      if (!/^[0-9a-f-]{36}$/i.test(v)) { v = uuid(); try { sessionStorage.setItem('soloris_lead_uid', v); } catch (e) {} }
+      return v;
+    }
+    function getAcq() { try { var raw = readCookie('soloris_acq'); return raw ? JSON.parse(decodeURIComponent(raw)) : {}; } catch (e) { return {}; } }
+    function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
+
+    function checkedVal(name) { var el = root.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
+    function demande() { return checkedVal('sim_demande'); }
+    function bien() { return checkedVal('sim_bien'); }
+    function surfaceM2() { var el = root.querySelector('[name="sim_surface"]'); var v = el ? parseInt(el.value, 10) : NaN; return (isNaN(v) || v <= 0) ? null : v; }
+    function cpVal() { var el = root.querySelector('[name="sim_cp"]'); return (el && el.value || '').replace(/\D/g, '').slice(0, 5); }
+    function bandIndex(m2) { for (var i = 0; i < BANDS_MAX.length; i++) { if (m2 <= BANDS_MAX[i]) return i; } return BANDS_MAX.length - 1; }
+    function annexesOn() { var c = root.querySelector('[name="sim_cave"]'); var p = root.querySelector('[name="sim_parking"]'); return { cave: !!(c && c.checked), parking: !!(p && p.checked) }; }
+
+    // Estimation « tout compris » — même grille que le tunnel. { state, val, from }
+    function estimate() {
+      var d = demande(), b = bien(), m2 = surfaceM2();
+      if (!d || !b) return { state: 'incomplete' };
+      if (b === 'local') return { state: 'surdevis' };                 // local commercial : hors grille
+      if (b === 'lot') return { state: 'price', val: LOT_ANNEXE_PRICE, from: false }; // lot vendu seul
+      if (d === 'audit') return { state: 'price', val: AUDIT_FROM, from: true };       // forfait audit
+      if (m2 == null) return { state: 'incomplete' };
+      var bi = bandIndex(m2);
+      var row = APPART_GRID[bi];
+      if (d === 'dpe') return { state: 'price', val: DPE_BY_BAND[bi], from: true };
+      if (!row) return { state: 'surdevis' };                          // > 239 m²
+      var base = Math.min(row[0], row[1], row[2]);                     // « à partir de » = âge le moins cher
+      if (b === 'maison') base += MAISON_SUPP;                         // annexes cave/parking INCLUSES (0 €)
+      return { state: 'price', val: base, from: true };
+    }
+
+    var amountEl = document.getElementById('sim-amount');
+    var prefixEl = document.getElementById('sim-prefix');
+    var noteEl = document.getElementById('sim-note');
+    var annexesBlock = document.getElementById('sim-annexes');
+    var surfaceField = document.getElementById('sim-surface-field');
+
+    function refresh() {
+      var b = bien(), d = demande();
+      // Annexes visibles pour appartement / maison ; surface masquée pour lot/local
+      if (annexesBlock) annexesBlock.hidden = !(b === 'appartement' || b === 'maison');
+      if (surfaceField) surfaceField.style.display = (b === 'lot' || b === 'local' || d === 'audit') ? 'none' : '';
+
+      var e = estimate();
+      if (e.state === 'incomplete') {
+        amountEl.textContent = '—'; prefixEl.style.visibility = 'hidden';
+        noteEl.textContent = "Renseignez votre bien pour afficher l'estimation. Déplacement inclus, sans engagement.";
+      } else if (e.state === 'surdevis') {
+        amountEl.textContent = 'Sur devis'; prefixEl.style.visibility = 'hidden';
+        noteEl.textContent = "Ce bien sort de la grille standard : laissez vos coordonnées, on vous confirme un prix tout compris rapidement.";
+      } else {
+        prefixEl.style.visibility = e.from ? 'visible' : 'hidden';
+        amountEl.textContent = fmtEUR(e.val);
+        var ann = annexesOn();
+        var annTxt = ((b === 'appartement' || b === 'maison') && (ann.cave || ann.parking)) ? ' Cave/parking inclus.' : '';
+        noteEl.textContent = 'Estimation tout compris, déplacement inclus.' + annTxt + ' Devis exact confirmé avant intervention, sans engagement.';
+      }
+    }
+
+    // Résumé lisible pour l'équipe (joint au lead via `message`)
+    function summary() {
+      var d = demande(), b = bien(), m2 = surfaceM2(), cp = cpVal(), e = estimate();
+      var bienLbl = { appartement: 'Appartement', maison: 'Maison', lot: 'Cave/Box/Parking (lot seul)', local: 'Local' }[b] || '—';
+      var dLbl = { vente: 'Vente', location: 'Location', dpe: 'DPE seul', audit: 'Audit énergétique' }[d] || '—';
+      var ann = annexesOn(); var annTxt = (ann.cave || ann.parking) ? ' · annexes : ' + [ann.cave ? 'cave' : '', ann.parking ? 'parking' : ''].filter(Boolean).join('+') + ' (incluses)' : '';
+      var prix = e.state === 'price' ? (e.from ? 'à partir de ' : '') + fmtEUR(e.val) + ' tout compris' : (e.state === 'surdevis' ? 'sur devis' : '—');
+      return 'Simulateur — ' + dLbl + ', ' + bienLbl + (m2 ? ' ' + m2 + ' m²' : '') + (cp ? ', ' + cp : '') + annTxt + ' · estimation : ' + prix;
+    }
+
+    // Type de bien envoyé au lead (liste blanche serveur : appartement/maison/cave/parking/box)
+    function leadTypeBien() { var b = bien(); if (b === 'appartement' || b === 'maison') return b; if (b === 'lot') return 'cave'; return ''; }
+
+    function buildLeadPayload(extra) {
+      var a = getAcq(); var e = estimate(); var ann = annexesOn();
+      var annexeOn = (bien() === 'appartement' || bien() === 'maison') && (ann.cave || ann.parking);
+      var p = {
+        lead_uid: getLeadUid(),
+        type_demande: demande() || '', type_bien: leadTypeBien(),
+        surface: surfaceM2() ? String(surfaceM2()) : '', secteur: cpVal(),
+        estimation: e.state === 'price' ? String(e.val) : '',
+        annexe: annexeOn ? '1' : '0', annexe_type: annexeOn ? 'cave_parking' : '',
+        message: summary(),
+        session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
+        utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
+        term: a.utm_term || '', content: a.utm_content || '', gclid: a.gclid || '', fbclid: a.fbclid || '',
+        gads_keyword: a.keyword || '', gads_campaign_id: a.campaignid || '', gads_adgroup_id: a.adgroupid || '',
+        gads_creative_id: a.creative || '', match_type: a.matchtype || '', device: a.device || '', network: a.network || '',
+        landing_path: a.landing_path || window.location.pathname, referrer: a.referrer || ''
+      };
+      for (var k in extra) p[k] = extra[k];
+      return p;
+    }
+
+    function send(payload, btn, onOk, onErr) {
+      btn.disabled = true; var label = btn.textContent; btn.textContent = 'Envoi…';
+      fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) { if (!res.ok) throw new Error('err'); onOk(res.j); })
+        .catch(function () { btn.disabled = false; btn.textContent = label; onErr(); });
+    }
+
+    var resultBox = document.getElementById('sim-result');
+    var formRdv = document.getElementById('sim-form-rdv');
+    var formRappel = document.getElementById('sim-form-rappel');
+    var thanks = document.getElementById('sim-thanks');
+    var thanksMsg = document.getElementById('sim-thanks-msg');
+
+    function openCapture(which) {
+      formRdv.hidden = which !== 'rdv';
+      formRappel.hidden = which !== 'rappel';
+      var open = which === 'rdv' ? formRdv : formRappel;
+      open.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      var first = open.querySelector('input[name="nom"]'); if (first) setTimeout(function () { first.focus(); }, 250);
+    }
+
+    // CP : chiffres uniquement
+    var cpInput = root.querySelector('[name="sim_cp"]');
+    if (cpInput) cpInput.addEventListener('input', function () { cpInput.value = cpInput.value.replace(/\D/g, '').slice(0, 5); });
+
+    root.addEventListener('change', refresh);
+    root.addEventListener('input', function (ev) { if (ev.target && ev.target.name === 'sim_surface') refresh(); });
+    root.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { openCapture(b.getAttribute('data-open')); }); });
+
+    function validCP(cp) { return /^\d{5}$/.test(cp) && IDF.indexOf(cp.slice(0, 2)) > -1; }
+
+    // RDV → lead COMPLET source=contact (📨), comme le formulaire de contact classique
+    formRdv.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var err = formRdv.querySelector('.sim-err'); err.hidden = true;
+      if (formRdv.querySelector('[name="website"]').value) return;
+      var nom = formRdv.querySelector('[name="nom"]').value.trim();
+      var tel = formRdv.querySelector('[name="telephone"]').value.trim();
+      var email = formRdv.querySelector('[name="email"]').value.trim();
+      if (!nom || tel.replace(/\D/g, '').length < 8 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Indiquez votre nom, un téléphone et un email valides.'; err.hidden = false; return; }
+      if (!validCP(cpVal())) { err.textContent = 'Indiquez le code postal du bien (Île-de-France).'; err.hidden = false; return; }
+      var payload = buildLeadPayload({ source: 'contact', lead_status: 'complet', nom: nom, telephone: tel, email: email, message: 'RÉSERVATION RDV — ' + summary() });
+      send(payload, formRdv.querySelector('button[type="submit"]'), function () {
+        try { if (window.dataLayer) window.dataLayer.push({ event: 'soloris_contact', sim: 'rdv' }); } catch (e) {}
+        finish('Votre demande de rendez-vous est bien reçue. L\'équipe Soloris vous confirme le créneau et le prix tout compris très vite.');
+      }, function () { err.textContent = 'Une erreur est survenue. Réessayez ou appelez-nous.'; err.hidden = false; });
+    });
+
+    // Rappel → lead PARTIEL (🟠 à rappeler) — nom + tel
+    formRappel.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var err = formRappel.querySelector('.sim-err'); err.hidden = true;
+      if (formRappel.querySelector('[name="website"]').value) return;
+      var nom = formRappel.querySelector('[name="nom"]').value.trim();
+      var tel = formRappel.querySelector('[name="telephone"]').value.trim();
+      if (!nom || tel.replace(/\D/g, '').length < 8) { err.textContent = 'Indiquez votre nom et un téléphone valide.'; err.hidden = false; return; }
+      var cp = cpVal(); if (cp && !validCP(cp)) { err.textContent = 'Code postal en Île-de-France.'; err.hidden = false; return; }
+      var payload = buildLeadPayload({ source: 'devis', lead_status: 'partiel', nom: nom, telephone: tel });
+      send(payload, formRappel.querySelector('button[type="submit"]'), function () {
+        try { if (window.dataLayer) window.dataLayer.push({ event: 'callback_request', sim: 'rappel' }); } catch (e) {}
+        finish('On vous rappelle très vite pour confirmer vos diagnostics et le prix tout compris.');
+      }, function () { err.textContent = 'Une erreur est survenue. Réessayez ou appelez-nous.'; err.hidden = false; });
+    });
+
+    function finish(msg) {
+      if (resultBox) resultBox.hidden = true;
+      formRdv.hidden = true; formRappel.hidden = true;
+      var body = root.querySelector('.sim-body'); if (body) body.hidden = true;
+      var head = root.querySelector('.sim-head'); if (head) head.hidden = true;
+      if (thanksMsg) thanksMsg.textContent = msg;
+      if (thanks) { thanks.hidden = false; thanks.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+
+    // Init
+    var dd = root.getAttribute('data-default-demande');
+    if (dd) { var pre = root.querySelector('input[name="sim_demande"][value="' + dd + '"]'); if (pre) pre.checked = true; }
+    refresh();
+  })();
+</script>
+
+<style>
+  .sim { padding: 26px 26px 24px; max-width: 720px; margin: 0 auto; }
+  .sim-head .eyebrow { margin-bottom: 6px; }
+  .sim-title { font-family: var(--sora); font-weight: 600; font-size: 23px; color: var(--blue); line-height: 1.2; }
+  .sim-sub { font-size: 14px; color: var(--ink-soft); margin-top: 7px; line-height: 1.5; }
+  .sim-body { margin-top: 20px; display: grid; gap: 18px; }
+  .sim-group { border: 0; padding: 0; margin: 0; }
+  .sim-group legend { font-family: var(--sora); font-weight: 500; font-size: 13px; color: var(--ink); padding: 0; margin-bottom: 9px; }
+  .sim-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 560px) { .sim-seg { grid-template-columns: repeat(2, 1fr); } }
+  .sim-seg label { position: relative; display: block; }
+  .sim-seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .sim-seg span { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 46px; padding: 8px 6px; border: 1.5px solid var(--line); border-radius: 11px; font-family: var(--sora); font-weight: 500; font-size: 13.5px; color: var(--ink); background: #fff; transition: border-color .12s, background .12s, color .12s; cursor: pointer; }
+  .sim-seg input:hover + span { border-color: var(--blue-light); }
+  .sim-seg input:checked + span { border-color: var(--blue); background: var(--blue); color: #fff; }
+  .sim-seg input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .sim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px) { .sim-row { grid-template-columns: 1fr; } }
+  .sim-field { display: block; }
+  .sim-field > span { display: block; font-family: var(--sora); font-weight: 500; font-size: 13px; color: var(--ink); margin-bottom: 7px; }
+  .sim-field input { width: 100%; border: 1.5px solid var(--line); border-radius: 11px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
+  .sim-field input:focus { outline: none; border-color: var(--blue-light); }
+  .sim-annexes-label { display: block; font-family: var(--sora); font-weight: 500; font-size: 13px; color: var(--ink); margin-bottom: 9px; }
+  .sim-checks { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+  .sim-check { display: inline-flex; align-items: center; gap: 9px; font-size: 14.5px; color: var(--ink); cursor: pointer; }
+  .sim-check input { width: 18px; height: 18px; accent-color: var(--blue); }
+  .sim-incl { font-style: normal; font-family: var(--sora); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #1a7f4b; }
+
+  .sim-result { margin-top: 22px; border-top: 1px dashed var(--line); padding-top: 20px; }
+  .sim-result-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
+  .sim-result-label { font-family: var(--sora); font-size: 14px; color: var(--ink-soft); }
+  .sim-result-price strong { font-family: var(--sora); font-weight: 700; font-size: 38px; color: var(--blue); line-height: 1; }
+  .sim-result-tc { font-family: var(--sora); font-weight: 500; font-size: 14px; color: var(--gold-deep, #C8841B); }
+  .sim-result-note { font-size: 13px; color: var(--ink-soft); margin-top: 10px; line-height: 1.5; }
+  .sim-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  .sim-cta .btn-gold, .sim-cta .btn-blue { flex: 1 1 220px; text-align: center; }
+
+  .sim-capture { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .sim-capture h4 { font-family: var(--sora); font-weight: 600; font-size: 18px; color: var(--blue); }
+  .sim-capture-sub { font-size: 13.5px; color: var(--ink-soft); margin: 5px 0 16px; }
+  .sim-capture .sim-field { margin-top: 13px; }
+  .sim-capture .sim-row .sim-field { margin-top: 0; }
+  .sim-capture .btn-block { margin-top: 16px; }
+  .sim-trust { margin-top: 11px; font-family: var(--sora); font-size: 11.5px; font-weight: 500; color: var(--blue-light); text-align: center; }
+  .sim-err { margin-top: 11px; color: #b3261e; font-size: 13px; }
+  .sim-hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+
+  .sim-thanks { text-align: center; padding: 24px 6px 10px; }
+  .sim-thanks-ic { width: 54px; height: 54px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .sim-thanks strong { display: block; font-family: var(--sora); font-weight: 600; font-size: 20px; color: var(--blue); }
+  .sim-thanks span { display: block; color: var(--ink-soft); font-size: 14px; margin-top: 6px; }
+</style>

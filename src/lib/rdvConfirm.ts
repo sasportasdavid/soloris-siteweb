@@ -25,8 +25,13 @@ async function rpc(fn: string, body: unknown): Promise<any> {
     headers: { apikey: SUPABASE_ANON as string, Authorization: `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) { console.error(`[rdv] RPC ${fn}`, res.status, await res.text().catch(() => '')); return null; }
-  return res.json();
+  const txt = await res.text().catch(() => '');
+  if (!res.ok) { console.error(`[rdv] RPC ${fn}`, res.status, txt); return null; }
+  // Les fonctions `RETURNS void` (ex. rdv_mark_sent) renvoient un corps vide (204) :
+  // ne pas appeler res.json() dessus, sinon ça lève « Unexpected end of JSON input »
+  // et fait planter toute la confirmation APRÈS l'envoi de l'email (faux négatif côté UI).
+  if (!txt) return null;
+  try { return JSON.parse(txt); } catch (e) { console.error(`[rdv] RPC ${fn} réponse non-JSON`, e); return null; }
 }
 
 /** Réécrit (ou poste en repli) la carte Telegram du lead avec le RDV confirmé. */
