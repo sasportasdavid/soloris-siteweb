@@ -10,7 +10,7 @@ import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import OfferCard from '../components/OfferCard.astro';
-import PricingTable from '../components/PricingTable.astro';
+import PriceSimulator from '../components/PriceSimulator.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
@@ -104,8 +104,8 @@ const jsonLd = [
     <div class="wrap">
       <div class="eyebrow">Tarif tout compris</div>
       <h2 class="sec-title">Combien ça coûte {where}&nbsp;?</h2>
-      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente.</p>
-      <div class="mt-5"><PricingTable caption={`Tarifs Soloris ${where}`} /></div>
+      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente. Estimez le vôtre&nbsp;: vous recevez le tarif par email, sans engagement.</p>
+      <div class="mt-5"><PriceSimulator /></div>
     </div>
   </section>
 

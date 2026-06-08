@@ -50,6 +50,18 @@ const hasReviews = Number(SITE.rating.count) > 0;
 const surfaceBands = SURFACE_BANDS.map((b) => b.label);
 // Prix DPE par bande de surface, dérivé d'estimerDpe() → source unique (pas de barème en dur).
 const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 240 : b.maxIncl));
+
+// Conversion Google Ads « formulaire devis » — déclenchée DIRECTEMENT côté code au succès
+// réel de l'enregistrement (même schéma que la conversion « appel » dans Analytics.astro),
+// SANS dépendre d'un tag GTM (qui n'était pas configuré → 0 conversion remontée à Google).
+// send_to = AW-XXXX/LABEL ; vide si non configuré → aucun envoi.
+const _GADS_ID = import.meta.env.PUBLIC_GADS_ID;
+const _GADS_FORM_LABEL = import.meta.env.PUBLIC_GADS_CONVERSION_LABEL;
+const _GADS_PH = '__A_REMPLACER__';
+const FORM_SEND_TO =
+  _GADS_ID && _GADS_ID !== _GADS_PH && _GADS_FORM_LABEL && _GADS_FORM_LABEL !== _GADS_PH
+    ? `${_GADS_ID}/${_GADS_FORM_LABEL}`
+    : '';
 ---
 <div class="qform card" id="qform">
   {hasReviews && (
@@ -141,8 +153,8 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       <div class="qestim" id="estim" hidden>
         {revealEstimation ? (
           <>
-            <div class="qestim-amount">À partir de <strong id="estim-amount">—</strong></div>
-            <p class="qestim-note">Estimation indicative tout compris, déplacement inclus. Devis exact confirmé immédiatement, sans engagement.</p>
+            <div class="qestim-amount">🔒 Votre estimation est prête</div>
+            <p class="qestim-note">Laissez vos coordonnées à l'étape suivante pour découvrir votre tarif tout compris — déplacement inclus, sans engagement.</p>
           </>
         ) : (
           <>
@@ -198,6 +210,7 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
     <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h3>Merci, c'est noté&nbsp;!</h3>
     <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous recontacte très vite pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
+    <div class="qthanks-estim" id="qthanks-estim" hidden></div>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
 </div>
@@ -264,9 +277,11 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
   .qthanks-ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
   .qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+  .qthanks-estim { margin: 18px auto 4px; max-width: 440px; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+  .qthanks-estim strong { font-family: var(--sora); font-size: 19px; color: var(--blue); }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, FORM_SEND_TO }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -383,11 +398,9 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
       var annexeLabel = ax.type === 'garage_dependance' ? ' + garage/dépendance' : ' + cave/parking';
       // Le montant de l'annexe n'est affiché QUE si l'estimation est révélée (pas en LP-B).
       var annexeTxt = ax.on ? (REVEAL_ESTIMATION ? annexeLabel + ' (inclus)' : annexeLabel) : '';
-      var price = '';
-      if (REVEAL_ESTIMATION) {
-        price = est ? ' — <span class="qrecap-price">à partir de ' + fmtEUR(Number(est)) + '</span>'
-          : ((d === 'vente' || d === 'location') ? ' — <span class="qrecap-price">sur devis</span>' : '');
-      }
+      // Estimation conditionnée au contact : on ne dévoile PAS le montant dans le récap
+      // (il s'affiche sur l'écran de confirmation, une fois les coordonnées envoyées).
+      var price = REVEAL_ESTIMATION ? ' — <span class="qrecap-price">🔒 dévoilée à l\'envoi</span>' : '';
       el.innerHTML = '<b>Votre demande :</b> ' + parts.join(' · ') + annexeTxt + price;
       el.hidden = parts.length === 0;
     }
@@ -656,21 +669,45 @@ const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 2
             //   projet      → vente | location | dpe | audit
             //   prix_estime → number (value pour le Smart Bidding)
             //   currency    → 'EUR'
-            if (!leadEventSent && window.dataLayer) {
+            if (!leadEventSent) {
               leadEventSent = true;
               var leadId = (res.j && res.j.id) ? res.j.id : (payload.lead_uid || null);
-              window.dataLayer.push({
+              // Event analytics (GA4 / GTM). ⚠️ NE PAS mapper AUSSI cet event vers la conversion
+              // Ads ci-dessous dans GTM : la conversion est déjà envoyée en direct → double-compte.
+              if (window.dataLayer) window.dataLayer.push({
                 event: 'lead_submitted',
                 lead_id: leadId,
                 projet: payload.type_demande || '',
                 prix_estime: v3,
                 currency: 'EUR',
               });
+              // ── Conversion Google Ads « formulaire devis » — DIRECTE ──────────────────
+              // Tirée ici (et nulle part ailleurs) au succès confirmé de l'enregistrement.
+              // Consent Mode v2 gère le consentement / la modélisation cookieless ; identique
+              // à la conversion « appel ». transaction_id = clé de déduplication côté Google.
+              if (window.gtag && FORM_SEND_TO) {
+                window.gtag('event', 'conversion', {
+                  send_to: FORM_SEND_TO,
+                  value: v3 || 1.0,
+                  currency: 'EUR',
+                  transaction_id: leadId || undefined,
+                });
+              }
             }
             // Meta (plateforme DISTINCTE de Google → aucun double-compte). Inactif
             // aujourd'hui ; conservé pour quand le pixel Meta sera réactivé.
             if (window.fbq) window.fbq('track', 'Lead');
           } catch (err) {}
+          // Estimation CONDITIONNÉE AU CONTACT : on ne dévoile le montant qu'ICI, une fois
+          // les coordonnées envoyées (évite que le trafic froid prenne le prix puis reparte).
+          var estEl = document.getElementById('qthanks-estim');
+          if (estEl && REVEAL_ESTIMATION) {
+            var estv = Number(payload.estimation || 0);
+            estEl.innerHTML = estv > 0
+              ? 'Votre estimation : <strong>à partir de ' + fmtEUR(estv) + '</strong> tout compris, déplacement inclus. Devis exact confirmé lors du rappel.'
+              : 'Votre devis personnalisé vous est confirmé lors du rappel, tout compris et sans engagement.';
+            estEl.hidden = false;
+          }
           form.hidden = true;
           document.getElementById('qthanks').hidden = false;
           document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'start' });
