@@ -686,6 +686,19 @@ const FORM_SEND_TO =
               // Consent Mode v2 gère le consentement / la modélisation cookieless ; identique
               // à la conversion « appel ». transaction_id = clé de déduplication côté Google.
               if (window.gtag && FORM_SEND_TO) {
+                // Enhanced Conversions : données fournies par l'utilisateur, posées AVANT
+                // l'event de conversion (Google les hache côté client ; l'envoi reste soumis
+                // au Consent Mode). Nécessite le toggle « Conversions améliorées » activé sur
+                // l'action « Soloris - Devis (formulaire) » dans Google Ads. Tél normalisé E.164.
+                try {
+                  var ecEmail = (val('email') || '').trim().toLowerCase();
+                  var ecPhone = (val('telephone') || '').replace(/[^\d+]/g, '');
+                  if (ecPhone && ecPhone.charAt(0) === '0') ecPhone = '+33' + ecPhone.slice(1);
+                  var ecData = {};
+                  if (ecEmail) ecData.email = ecEmail;
+                  if (ecPhone) ecData.phone_number = ecPhone;
+                  if (ecEmail || ecPhone) window.gtag('set', 'user_data', ecData);
+                } catch (e2) {}
                 window.gtag('event', 'conversion', {
                   send_to: FORM_SEND_TO,
                   value: v3 || 1.0,
