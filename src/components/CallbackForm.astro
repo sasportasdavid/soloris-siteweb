@@ -18,8 +18,15 @@ const {
   title = 'Être rappelé rapidement',
   sub = 'Laissez votre numéro : on vous rappelle pour confirmer les diagnostics de votre bien et fixer un rendez-vous.',
 } = Astro.props;
+
+// Conversion Google Ads « Soloris - Rappel demandé » (action SECONDAIRE — observation,
+// ne pilote PAS les enchères). Tirée au succès de l'enregistrement du rappel, en direct
+// (même schéma que la conversion devis / appel). send_to vide si non configuré → aucun envoi.
+const _GADS_ID = import.meta.env.PUBLIC_GADS_ID;
+const CALLBACK_SEND_TO =
+  _GADS_ID && _GADS_ID !== '__A_REMPLACER__' ? `${_GADS_ID}/exP8CNSE7L8cEJXottlD` : '';
 ---
-<form class="cbform card" data-cbform data-default-type={defaultType} novalidate>
+<form class="cbform card" data-cbform data-default-type={defaultType} data-conv-send-to={CALLBACK_SEND_TO} novalidate>
   <div class="cbform-head">
     <h3 class="cbform-title">{title}</h3>
     <p class="cbform-sub">{sub}</p>
@@ -129,8 +136,19 @@ const {
         fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
           .then(function () {
-            // Micro-conversion « rappel demandé » (à mapper côté GTM si souhaité, distinct de lead_submitted)
+            // Micro-conversion « rappel demandé » (event analytics GA4/GTM, distinct de lead_submitted)
             try { if (window.dataLayer) window.dataLayer.push({ event: 'callback_request', projet: type_demande }); } catch (e) {}
+            // Conversion Google Ads « Rappel demandé » (SECONDAIRE) — tirée en direct au succès,
+            // comme le tunnel devis. Enhanced Conversions : tél normalisé E.164 en user_data.
+            try {
+              var sendTo = form.getAttribute('data-conv-send-to');
+              if (window.gtag && sendTo) {
+                var ecPhone = tel.replace(/[^\d+]/g, '');
+                if (ecPhone && ecPhone.charAt(0) === '0') ecPhone = '+33' + ecPhone.slice(1);
+                if (ecPhone) window.gtag('set', 'user_data', { phone_number: ecPhone });
+                window.gtag('event', 'conversion', { send_to: sendTo, value: 1.0, currency: 'EUR' });
+              }
+            } catch (e) {}
             if (head) head.hidden = true;
             if (body) body.hidden = true;
             if (thanks) thanks.hidden = false;
