@@ -13,6 +13,7 @@
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
 import { leadKeyboard } from '../../lib/telegram';
+import { computePrix, prixDes } from '../../lib/pricing';
 
 export const prerender = false;
 
@@ -84,6 +85,15 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
     : '';
   const prenom = (lead.nom || '').trim().split(/\s+/)[0] || '—';
 
+  // 💶 Toujours montrer un montant : estimation exacte si connue, sinon prix
+  // d'entrée de la prestation (« à partir de ») tant que les infos sont incomplètes.
+  const demandeOk = lead.type_demande && DEMANDES.includes(lead.type_demande) ? lead.type_demande : null;
+  const estimLine = lead.estimation
+    ? `💶 estimation ${lead.estimation} €`
+    : demandeOk
+      ? `💶 à partir de ${prixDes(demandeOk)} € (estimation à préciser)`
+      : '';
+
   let lines: string[];
   if (kind === 'partiel') {
     lines = [
@@ -93,7 +103,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
       lead.email ? `✉️ ${lead.email}` : '',
       `📋 ${bienLine}`,
       annexeLine,
-      lead.estimation ? `💶 estimation ${lead.estimation} €` : '',
+      estimLine,
       lead.secteur ? `📍 CP ${lead.secteur}` : '',
       acqLine,
       `🔗 ${lead.landing_path || '/'}`,
@@ -107,6 +117,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
       `📞 ${lead.telephone || '—'}`,
       lead.email ? `✉️ ${lead.email}` : '',
       lead.message ? `💬 ${lead.message}` : '',
+      estimLine,
       `🔗 ${lead.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
     ];
@@ -119,7 +130,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
       `📞 ${lead.telephone || '—'}`,
       lead.email ? `✉️ ${lead.email}` : '',
       lead.secteur ? `📍 CP ${lead.secteur}` : '',
-      lead.estimation ? `💶 estimation ${lead.estimation} €` : '',
+      estimLine,
       lead.message ? `💬 ${lead.message}` : '',
       acqLine,
       `🔗 ${lead.landing_path || '/'}`,
@@ -254,6 +265,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     session_id: uuidOrEmpty(body.session_id),
     visitor_id: uuidOrEmpty(body.visitor_id),
   };
+
+  // 💶 Estimation SERVEUR (repli) : si le client n'a pas transmis d'estimation mais
+  // que projet + surface sont connus, on calcule via la grille partagée
+  // (src/lib/pricing.ts, même source de vérité que le tunnel /devis ; annexe incluse
+  // dans le pack, pas de supplément). Persistée → visible partout (Telegram, admin).
+  if (!payload.estimation && type_demande && Number.isFinite(surfaceNum) && surfaceNum > 0) {
+    try {
+      const { prix } = computePrix({
+        projet: type_demande as 'vente' | 'location' | 'dpe' | 'audit',
+        typeBien: type_bien,
+        surface: surfaceNum,
+        age: (age_bien as 'avant1949' | 'intermediaire' | 'recent' | null) || null,
+      });
+      if (prix != null) payload.estimation = String(prix);
+    } catch { /* estimation indisponible : la notif affichera le prix d'entrée */ }
+  }
 
   const url = envVar(P.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_URL);
   const key = envVar(P.PUBLIC_SUPABASE_ANON_KEY, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);

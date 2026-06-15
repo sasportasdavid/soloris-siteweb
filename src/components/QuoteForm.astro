@@ -29,6 +29,9 @@ interface Props {
   priceModelVariant?: 'A' | 'B' | null;
   revealEstimation?: boolean;
   recallSla?: string;
+  /** Projet pré-sélectionné à l'étape 1 si l'URL ne porte pas ?type= (ex. landing DPE
+   *  dédiée → 'dpe'). Défaut '' = comportement historique (rien de pré-coché). */
+  defaultDemande?: string;
 }
 const {
   lockExperiments = false,
@@ -37,6 +40,7 @@ const {
   priceModelVariant = null,
   revealEstimation = true,
   recallSla = '48 h',
+  defaultDemande = '',
 } = Astro.props;
 
 const DEMANDE_DESC: Record<string, string> = {
@@ -281,7 +285,7 @@ const FORM_SEND_TO =
   .qthanks-estim strong { font-family: var(--sora); font-size: 19px; color: var(--blue); }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, FORM_SEND_TO }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -572,7 +576,7 @@ const FORM_SEND_TO =
     });
 
     (function preselect() {
-      var t = new URLSearchParams(window.location.search).get('type');
+      var t = new URLSearchParams(window.location.search).get('type') || DEFAULT_DEMANDE;
       if (!t) return;
       var radio = form.querySelector('input[name="type_demande"][value="' + t + '"]');
       if (radio) radio.checked = true;
@@ -686,6 +690,19 @@ const FORM_SEND_TO =
               // Consent Mode v2 gère le consentement / la modélisation cookieless ; identique
               // à la conversion « appel ». transaction_id = clé de déduplication côté Google.
               if (window.gtag && FORM_SEND_TO) {
+                // Enhanced Conversions : données fournies par l'utilisateur, posées AVANT
+                // l'event de conversion (Google les hache côté client ; l'envoi reste soumis
+                // au Consent Mode). Nécessite le toggle « Conversions améliorées » activé sur
+                // l'action « Soloris - Devis (formulaire) » dans Google Ads. Tél normalisé E.164.
+                try {
+                  var ecEmail = (val('email') || '').trim().toLowerCase();
+                  var ecPhone = (val('telephone') || '').replace(/[^\d+]/g, '');
+                  if (ecPhone && ecPhone.charAt(0) === '0') ecPhone = '+33' + ecPhone.slice(1);
+                  var ecData = {};
+                  if (ecEmail) ecData.email = ecEmail;
+                  if (ecPhone) ecData.phone_number = ecPhone;
+                  if (ecEmail || ecPhone) window.gtag('set', 'user_data', ecData);
+                } catch (e2) {}
                 window.gtag('event', 'conversion', {
                   send_to: FORM_SEND_TO,
                   value: v3 || 1.0,
