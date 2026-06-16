@@ -9,6 +9,7 @@ import Base from '../../layouts/Base.astro';
 import Hero from '../../components/Hero.astro';
 import ReassuranceBar from '../../components/ReassuranceBar.astro';
 import Faq from '../../components/Faq.astro';
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
 import { DIAGNOSTICS, type Diagnostic } from '../../lib/diagnostics';
 import { getOffer } from '../../lib/offers';
 import { service, faqPage, breadcrumb } from '../../lib/jsonld';
@@ -73,7 +74,7 @@ const jsonLd = [
       {diag.image ? (
         <div class:list={['split-media', diag.slug === 'electricite' && 'split-media--reverse']}>
           <div class="split-media-img">
-            <img src={diag.image} alt={diag.imageAlt ?? ''} loading="lazy" decoding="async" width="620" height="640" />
+            <ResponsiveImage src={diag.image} alt={diag.imageAlt ?? ''} width={620} height={640} sizes="(max-width: 760px) 92vw, 620px" />
           </div>
           <div class="split-media-body">
             <div class="eyebrow">En quoi consiste ce diagnostic</div>
@@ -118,11 +119,11 @@ const jsonLd = [
   {diag.diptych && (
     <section class="diptych">
       <figure class="diptych-fig">
-        <img src="/images/mesurage-laser.webp" alt="Mesurage au laser d'une pièce" loading="lazy" decoding="async" width="800" height="600" />
+        <ResponsiveImage src="/images/mesurage-laser.webp" alt="Mesurage au laser d'une pièce" width={800} height={600} sizes="(max-width: 760px) 92vw, 800px" />
         <figcaption><span class="eyebrow">Sur le terrain</span><span class="diptych-cap">Prise de cote au télémètre</span></figcaption>
       </figure>
       <figure class="diptych-fig">
-        <img src="/images/plan-tablette.webp" alt="Saisie d'un plan sur tablette" loading="lazy" decoding="async" width="800" height="600" />
+        <ResponsiveImage src="/images/plan-tablette.webp" alt="Saisie d'un plan sur tablette" width={800} height={600} sizes="(max-width: 760px) 92vw, 800px" />
         <figcaption><span class="eyebrow">Au bureau</span><span class="diptych-cap">Plan numérique sur tablette</span></figcaption>
       </figure>
     </section>

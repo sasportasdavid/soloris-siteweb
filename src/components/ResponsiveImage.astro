@@ -1,0 +1,38 @@
+---
+/**
+ * Image responsive AVIF + WebP, à partir d'un chemin /images/<nom>.webp.
+ * Rend un <picture> avec srcset multi-largeurs (variantes pré-générées dans
+ * public/images/ + manifeste src/lib/imageVariants.json). Le navigateur choisit
+ * le format (AVIF si supporté) et la taille adaptés à l'écran → gros gain mobile.
+ * `picture { display: contents }` (global.css) garde le layout identique à un <img>.
+ * Repli : si le nom n'a pas de variantes, on rend un <img> simple.
+ */
+import variants from '../lib/imageVariants.json';
+
+interface Props {
+  src: string; // ex: '/images/mesure-tablette.webp'
+  alt: string;
+  width: number;
+  height: number;
+  sizes?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  class?: string;
+}
+const { src, alt, width, height, sizes, loading = 'lazy', fetchpriority, class: cls } = Astro.props;
+
+const file = src.split('/').pop() || '';
+const name = file.replace(/\.[a-z0-9]+$/i, '');
+const ws: number[] | undefined = (variants as Record<string, number[]>)[name];
+const finalSizes = sizes ?? `(max-width: 760px) 92vw, ${width}px`;
+const srcset = (ext: string) => (ws || []).map((w) => `/images/${name}-${w}.${ext} ${w}w`).join(', ');
+---
+{ws ? (
+  <picture>
+    <source type="image/avif" srcset={srcset('avif')} sizes={finalSizes} />
+    <source type="image/webp" srcset={srcset('webp')} sizes={finalSizes} />
+    <img src={src} alt={alt} width={width} height={height} loading={loading} fetchpriority={fetchpriority} decoding="async" class={cls} />
+  </picture>
+) : (
+  <img src={src} alt={alt} width={width} height={height} loading={loading} fetchpriority={fetchpriority} decoding="async" class={cls} />
+)}
