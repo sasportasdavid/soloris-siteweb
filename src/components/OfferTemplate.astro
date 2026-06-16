@@ -164,7 +164,10 @@ const jsonLd = [
         <h2 class="sec-title">Obtenez votre estimation</h2>
       </div>
       <div class="mt-5">
-        <QuoteForm />
+        {/* DPE & audit : prix d'accroche « Dès X € » déjà affiché plus haut → le tunnel
+            adopte le cadrage « devis confirmé au rappel » (pas de teaser d'estimation),
+            cohérent avec la doctrine « tarif par email ». Vente/location gardent le teaser. */}
+        <QuoteForm revealEstimation={offer.demande !== 'dpe' && offer.demande !== 'audit'} defaultDemande={offer.demande} />
       </div>
     </div>
   </section>

@@ -71,8 +71,9 @@
     background: #fff; color: var(--blue-light); cursor: pointer; box-shadow: var(--shadow-soft);
     display: flex; align-items: center; justify-content: center;
   }
-  /* Le bouton flottant ne doit pas chevaucher la barre CTA mobile */
-  @media (max-width: 920px) { .consent-reopen { bottom: 84px; } }
+  /* Sur mobile, on ne flotte pas le bouton au-dessus de la barre CTA (zone de conversion) :
+     l'accès « Gérer les cookies » passe par le lien du footer (data-consent-open). */
+  @media (max-width: 920px) { .consent-reopen { display: none; } }
   @media (max-width: 620px) {
     .consent-inner { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
     .consent-text p { font-size: 12.5px; }
@@ -122,13 +123,19 @@
     btnSave.addEventListener('click', function () {
       apply({ analytics: optAnalytics.checked, ads: optAds.checked, behavior: optBehavior.checked });
     });
-    reopen.addEventListener('click', function () {
+    function openPrefs() {
       var s = stored();
       optAnalytics.checked = !!(s && s.analytics);
       optAds.checked = !!(s && s.ads);
       optBehavior.checked = !!(s && s.behavior);
       options.hidden = false; btnSave.hidden = false; btnCustom.hidden = true;
       show();
+    }
+    reopen.addEventListener('click', openPrefs);
+    // Lien « Gérer les cookies » du footer (ou tout élément [data-consent-open])
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest ? e.target.closest('[data-consent-open]') : null;
+      if (t) { e.preventDefault(); openPrefs(); }
     });
   })();
 </script>
