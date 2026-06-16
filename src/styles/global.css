@@ -66,6 +66,9 @@ body {
 
 img, svg, video { display: block; max-width: 100%; }
 img { height: auto; }
+/* <picture> transparent au layout : les sélecteurs `.conteneur img` continuent
+   d'agir comme si l'<img> était enfant direct (object-fit/cover préservés). */
+picture { display: contents; }
 
 a { color: var(--blue-light); text-decoration: none; }
 a:hover { text-decoration: underline; }

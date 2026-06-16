@@ -8,6 +8,7 @@
  * issue d'une LISTE BLANCHE selon ?kw= ou utm_term. Jamais d'injection brute.
  */
 import { HERO_VARIANTS } from '../lib/heroVariants';
+import ResponsiveImage from './ResponsiveImage.astro';
 import { SITE } from '../lib/site';
 const hasReviews = Number(SITE.rating.count) > 0;
 
@@ -89,7 +90,7 @@ const split = Boolean(image);
     </div>
     {split && (
       <div class="hero-media">
-        <img src={image} alt={imageAlt} width="760" height="820" fetchpriority="high" decoding="async" />
+        <ResponsiveImage src={image} alt={imageAlt} width={760} height={820} loading="eager" fetchpriority="high" sizes="(max-width: 920px) 92vw, 760px" />
         <div class="hero-float">
           <span class="hero-float-pill">48h</span>
           <span class="hero-float-txt">Rapport remis sous 48&nbsp;heures</span>

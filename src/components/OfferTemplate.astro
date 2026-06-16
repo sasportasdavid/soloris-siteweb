@@ -13,6 +13,7 @@ import EnergyScale from './EnergyScale.astro';
 import Reviews from './Reviews.astro';
 import Faq from './Faq.astro';
 import QuoteForm from './QuoteForm.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
 import { getOffer, OFFERS } from '../lib/offers';
 import { prixDes, DPE_FROM, DPE_TO, AUDIT_FROM } from '../lib/pricing';
 import { service, faqPage, breadcrumb } from '../lib/jsonld';
@@ -75,7 +76,7 @@ const jsonLd = [
         </div>
         {offer.heroImage ? (
           <div class="offer-intro-media">
-            <img src={offer.heroImage} alt={offer.heroImageAlt ?? ''} loading="lazy" decoding="async" width="620" height="560" />
+            <ResponsiveImage src={offer.heroImage} alt={offer.heroImageAlt ?? ''} width={620} height={560} sizes="(max-width: 760px) 92vw, 620px" />
           </div>
         ) : (
           <div class="card" style="padding:30px">
