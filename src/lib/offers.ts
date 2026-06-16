@@ -54,7 +54,7 @@ export const OFFERS: Offer[] = [
     heroCtaHref: '#qform',
     intro:
       "Pour vendre, l'acquéreur reçoit un dossier de diagnostic technique (DDT) annexé à la promesse de vente. Soloris réunit l'ensemble des diagnostics requis selon votre bien, en un seul rendez-vous, avec un rapport clair et opposable.",
-    heroImage: '/images/vendeur-salon-vide.jpg',
+    heroImage: '/images/vendeur-salon-vide.webp',
     heroImageAlt: 'Propriétaire dans son appartement parisien, clés en main',
     inclus: [
       { label: 'DPE — Performance énergétique', detail: 'Étiquette A→G, méthode 3CL, opposable.' },
@@ -103,7 +103,7 @@ export const OFFERS: Offer[] = [
     tagline: "Préparez votre mise en location avec les diagnostics obligatoires : tarif clair, intervention rapide et rapport sous 48 h.",
     intro:
       "Avant de louer, certains diagnostics doivent être annexés au bail. Soloris réunit le pack bailleur applicable à votre logement, avec un rapport lisible que vous pouvez transmettre directement à votre locataire ou à votre agence.",
-    heroImage: '/images/salon-meuble.jpg',
+    heroImage: '/images/salon-meuble.webp',
     heroImageAlt: "Salon meublé d'un appartement à louer",
     heroImageSide: 'left',
     introDark: true,

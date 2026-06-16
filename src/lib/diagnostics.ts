@@ -104,7 +104,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte-t-il ?', a: `Électricité et gaz sont réalisés ensemble : ${ADDON_PRICE.elec_gaz} € tout compris pour le combo, déplacement inclus.` },
     ],
     ready: true,
-    image: '/images/diagnostic-electricite.jpg',
+    image: '/images/diagnostic-electricite.webp',
     imageAlt: "Contrôle d'un tableau électrique",
   },
   {
@@ -128,7 +128,7 @@ export const DIAGNOSTICS: Diagnostic[] = [
       { q: 'Combien coûte-t-il ?', a: `Gaz et électricité sont réalisés ensemble : ${ADDON_PRICE.elec_gaz} € tout compris pour le combo, déplacement inclus.` },
     ],
     ready: true,
-    image: '/images/diagnostic-electricite.jpg',
+    image: '/images/diagnostic-electricite.webp',
     imageAlt: "Contrôle d'une installation de gaz",
   },
   {

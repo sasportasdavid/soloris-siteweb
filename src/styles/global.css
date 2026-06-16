@@ -433,7 +433,7 @@ body.nav-open { overflow: hidden; }
 .block-blue .kicker { font-family: var(--sora); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--ray); margin-bottom: 16px; }
 
 /* ── Bandeau terrain (full-bleed photo + voile navy) ──────── */
-.geo-band { position: relative; padding: 0; background: var(--blue) center / cover no-repeat; background-image: url('/images/facade-haussmann.jpg'); overflow: hidden; }
+.geo-band { position: relative; padding: 0; background: var(--blue) center / cover no-repeat; background-image: url('/images/facade-haussmann.webp'); overflow: hidden; }
 .geo-band::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 32, 58, .62), rgba(8, 32, 58, .78)); }
 .geo-band .wrap { position: relative; z-index: 1; min-height: 320px; padding-top: 80px; padding-bottom: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .geo-band .eyebrow { color: var(--ray); margin-bottom: 18px; }
@@ -541,6 +541,8 @@ body.nav-open { overflow: hidden; }
 .site-footer a:hover { color: #fff; }
 .site-footer .legal { border-top: 1px solid rgba(255,255,255,.1); margin-top: 40px; padding-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: #7FA3C6; }
 .site-footer .legal a { color: #9FB8D2; font-size: 12.5px; }
+.site-footer .legal .footer-cookies { background: none; border: none; padding: 0; font: inherit; color: #9FB8D2; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+.site-footer .legal .footer-cookies:hover { color: #C3D2E2; }
 @media (max-width: 860px) { .site-footer .cols { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .site-footer .cols { grid-template-columns: 1fr; } }
 
