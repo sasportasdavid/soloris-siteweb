@@ -594,26 +594,25 @@ const FORM_SEND_TO_DPE =
       if (radio) radio.checked = true;
     })();
 
-    // ── Code postal : chiffres uniquement + auto-complétion ville + auto-avance ──
+    // ── Code postal : chiffres uniquement + auto-complétion ville ──
+    // ⚠️ Pas d'auto-avance ici : le visiteur clique « Continuer » comme aux autres
+    // étapes (laisse le temps de vérifier/choisir la ville quand le CP en couvre plusieurs).
     (function setupCodePostal() {
       var input = form.querySelector('#cp-input');
       if (!input) return;
       var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
       var villeSel = form.querySelector('#ville-select');
       var villeField = form.querySelector('#ville-field');
-      var timer, reqId = 0;
+      var reqId = 0;
       function validCp(v) { return /^\d{5}$/.test(v) && IDF.indexOf(v.slice(0, 2)) > -1; }
-      function advance(idx) { timer = setTimeout(function () { if (current === idx && idx < steps.length - 1) showStep(idx + 1, true); }, 700); }
       input.addEventListener('input', function () {
         input.value = input.value.replace(/\D/g, '').slice(0, 5); // chiffres uniquement
         input.style.borderColor = '';
-        clearTimeout(timer);
         if (villeField) villeField.hidden = true;
         if (villeSel) villeSel.innerHTML = '';
         if (!validCp(input.value)) return;
-        var idx = current, cp = input.value, myReq = ++reqId;
-        // Commune(s) du code postal (API officielle geo.api.gouv.fr, sans clé). Auto-avance
-        // vers les coordonnées si une seule ville (rien à choisir) ; sinon on laisse choisir.
+        var cp = input.value, myReq = ++reqId;
+        // Commune(s) du code postal (API officielle geo.api.gouv.fr, sans clé).
         fetch('https://geo.api.gouv.fr/communes?codePostal=' + cp + '&fields=nom&format=json')
           .then(function (r) { return r.ok ? r.json() : []; })
           .then(function (list) {
@@ -623,9 +622,8 @@ const FORM_SEND_TO_DPE =
               villeSel.selectedIndex = 0;
               if (villeField) villeField.hidden = false;
             }
-            if (!Array.isArray(list) || list.length <= 1) advance(idx); // 0 ou 1 ville → on avance
           })
-          .catch(function () { if (myReq === reqId) advance(idx); }); // API indisponible → comportement historique
+          .catch(function () { /* API indisponible : ville facultative */ });
       });
     })();
 
