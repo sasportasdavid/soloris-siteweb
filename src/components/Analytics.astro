@@ -38,7 +38,16 @@ const PHONE_SEND_TO =
   function gtag() { window.dataLayer.push(arguments); }
   window.gtag = gtag;
 
-  // État de consentement par défaut : TOUT refusé (RGPD)
+  // Consent Mode v2 — défaut PAR RÉGION.
+  // EEE + UK + Suisse : tout refusé tant que le bandeau n'a pas été validé (RGPD/CNIL/nLPD).
+  // Reste du monde : accordé par défaut (pas d'obligation de consentement) — sinon Google
+  // mesure un taux de consentement de 0 % hors EEE et la mesure des conversions est cassée.
+  var EEA_AND_UK = [
+    'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
+    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE', // UE-27
+    'IS','LI','NO', // EEE hors UE
+    'GB','CH',      // Royaume-Uni + Suisse
+  ];
   gtag('consent', 'default', {
     ad_storage: 'denied',
     analytics_storage: 'denied',
@@ -47,6 +56,16 @@ const PHONE_SEND_TO =
     functionality_storage: 'granted',
     security_storage: 'granted',
     wait_for_update: 500,
+    region: EEA_AND_UK,
+  });
+  // Défaut global (régions non listées ci-dessus) : accordé.
+  gtag('consent', 'default', {
+    ad_storage: 'granted',
+    analytics_storage: 'granted',
+    ad_user_data: 'granted',
+    ad_personalization: 'granted',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
   });
   gtag('js', new Date());
   if (GA4 && GA4 !== '__A_REMPLACER__') gtag('config', GA4, { anonymize_ip: true });

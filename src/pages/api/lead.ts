@@ -85,6 +85,11 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
     : '';
   const prenom = (lead.nom || '').trim().split(/\s+/)[0] || '—';
 
+  // 📍 Lieu : code postal + ville (« 75011 Paris »). Tolère l'absence de l'un ou l'autre.
+  const lieuLine = (lead.secteur || lead.ville)
+    ? `📍 ${[lead.secteur, lead.ville].filter(Boolean).join(' ')}`
+    : '';
+
   // 💶 Toujours montrer un montant : estimation exacte si connue, sinon prix
   // d'entrée de la prestation (« à partir de ») tant que les infos sont incomplètes.
   const demandeOk = lead.type_demande && DEMANDES.includes(lead.type_demande) ? lead.type_demande : null;
@@ -104,7 +109,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
       `📋 ${bienLine}`,
       annexeLine,
       estimLine,
-      lead.secteur ? `📍 CP ${lead.secteur}` : '',
+      lieuLine,
       acqLine,
       `🔗 ${lead.landing_path || '/'}`,
       `🕒 ${dateHeure}`,
@@ -129,7 +134,7 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
       `👤 ${lead.nom || '—'} (${prenom})`,
       `📞 ${lead.telephone || '—'}`,
       lead.email ? `✉️ ${lead.email}` : '',
-      lead.secteur ? `📍 CP ${lead.secteur}` : '',
+      lieuLine,
       estimLine,
       lead.message ? `💬 ${lead.message}` : '',
       acqLine,
@@ -199,6 +204,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const telephone = clean(body.telephone, 40);
   const email = clean(body.email, 160);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Email invalide.' }, 400);
+  // Ville auto-déduite du code postal côté client (API geo.api.gouv.fr) — best-effort, jamais requise.
+  const ville = clean(body.ville, 120);
 
   // Exigences selon le contexte (lenientes pour un lead partiel : on capture TOUT,
   // même sans nom — c'est l'intérêt de la capture progressive).
@@ -237,6 +244,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     age_bien: age_bien || '',
     surface: Number.isFinite(surfaceNum) && surfaceNum > 0 ? String(Math.round(surfaceNum)) : '',
     secteur: clean(body.secteur, 120) || '',
+    ville: ville || '',
     estimation: Number.isFinite(estimationNum) && estimationNum > 0 ? String(Math.round(estimationNum)) : '',
     annexe: annexeOn ? '1' : '0',
     annexe_type: annexeType,
@@ -307,6 +315,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // Notifications (selon décision atomique de la fonction) — non bloquantes
   try {
     const lead = (result && result.lead) || {};
+    // Repli ville : si la fonction RPC ne renvoie pas encore `ville` (migration non appliquée),
+    // on utilise la valeur transmise par le client → la carte Telegram affiche la ville tout de suite.
+    if (ville && !lead.ville) lead.ville = ville;
     let messageId: number | null = null;
     if (result && result.notify_complete) {
       // Édite la carte partielle existante (si présente) → une seule carte par lead.

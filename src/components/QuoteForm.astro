@@ -66,6 +66,14 @@ const FORM_SEND_TO =
   _GADS_ID && _GADS_ID !== _GADS_PH && _GADS_FORM_LABEL && _GADS_FORM_LABEL !== _GADS_PH
     ? `${_GADS_ID}/${_GADS_FORM_LABEL}`
     : '';
+// Conversion DÉDIÉE aux leads « DPE seul » (low-ticket) → action Google Ads « Soloris - Devis DPE »
+// (id 7652003036). Séparée de la Vente pour que le Smart Bidding distingue le CA réel : un devis
+// Vente vaut bien plus qu'un DPE seul. Label public (non secret) codé en dur comme la conversion
+// « rappel » de CallbackForm ; seul l'ID Ads vient de l'env. Les leads vente/location/audit gardent
+// FORM_SEND_TO (action « Soloris - Devis Vente », ex-« Devis (formulaire) », historique conservé).
+const _GADS_DPE_LABEL = 'jvpdCNyZ4cAcEJXottlD';
+const FORM_SEND_TO_DPE =
+  _GADS_ID && _GADS_ID !== _GADS_PH ? `${_GADS_ID}/${_GADS_DPE_LABEL}` : '';
 ---
 <div class="qform card" id="qform">
   {hasReviews && (
@@ -179,6 +187,10 @@ const FORM_SEND_TO =
         <span>Code postal</span>
         <input type="text" name="secteur" id="cp-input" required inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="ex : 75011" autocomplete="postal-code" />
       </label>
+      <label class="qfield" id="ville-field" hidden>
+        <span>Ville</span>
+        <select name="ville" id="ville-select" autocomplete="address-level2"></select>
+      </label>
       <p class="qhint">Nous intervenons à Paris et en Île-de-France (codes postaux 75, 77, 78, 91, 92, 93, 94, 95).</p>
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
@@ -285,7 +297,7 @@ const FORM_SEND_TO =
   .qthanks-estim strong { font-family: var(--sora); font-size: 19px; color: var(--blue); }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
   (function () {
     var form = document.getElementById('quote-form');
     if (!form) return;
@@ -553,7 +565,7 @@ const FORM_SEND_TO =
         // Lien lead ↔ comportement (cookies posés par le tracker si consentement « Analyse de navigation »)
         session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
         type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
-        surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'),
+        surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'), ville: val('ville'),
         annexe: ax.on ? '1' : '0', annexe_type: ax.on ? ax.type : '',
         nom: val('nom'), telephone: val('telephone'), email: val('email'), message: val('message'),
         utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
@@ -582,21 +594,38 @@ const FORM_SEND_TO =
       if (radio) radio.checked = true;
     })();
 
-    // ── Code postal : restreint aux chiffres + auto-avance quand un CP IDF valide est saisi ──
+    // ── Code postal : chiffres uniquement + auto-complétion ville + auto-avance ──
     (function setupCodePostal() {
       var input = form.querySelector('#cp-input');
       if (!input) return;
       var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
-      var timer;
+      var villeSel = form.querySelector('#ville-select');
+      var villeField = form.querySelector('#ville-field');
+      var timer, reqId = 0;
       function validCp(v) { return /^\d{5}$/.test(v) && IDF.indexOf(v.slice(0, 2)) > -1; }
+      function advance(idx) { timer = setTimeout(function () { if (current === idx && idx < steps.length - 1) showStep(idx + 1, true); }, 700); }
       input.addEventListener('input', function () {
         input.value = input.value.replace(/\D/g, '').slice(0, 5); // chiffres uniquement
         input.style.borderColor = '';
         clearTimeout(timer);
-        if (validCp(input.value)) {
-          var idx = current;
-          timer = setTimeout(function () { if (current === idx && idx < steps.length - 1) showStep(idx + 1, true); }, 700);
-        }
+        if (villeField) villeField.hidden = true;
+        if (villeSel) villeSel.innerHTML = '';
+        if (!validCp(input.value)) return;
+        var idx = current, cp = input.value, myReq = ++reqId;
+        // Commune(s) du code postal (API officielle geo.api.gouv.fr, sans clé). Auto-avance
+        // vers les coordonnées si une seule ville (rien à choisir) ; sinon on laisse choisir.
+        fetch('https://geo.api.gouv.fr/communes?codePostal=' + cp + '&fields=nom&format=json')
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            if (myReq !== reqId) return; // le CP a changé entre-temps
+            if (Array.isArray(list) && list.length && villeSel) {
+              list.forEach(function (c) { var o = document.createElement('option'); o.value = c.nom; o.textContent = c.nom; villeSel.appendChild(o); });
+              villeSel.selectedIndex = 0;
+              if (villeField) villeField.hidden = false;
+            }
+            if (!Array.isArray(list) || list.length <= 1) advance(idx); // 0 ou 1 ville → on avance
+          })
+          .catch(function () { if (myReq === reqId) advance(idx); }); // API indisponible → comportement historique
       });
     })();
 
@@ -689,11 +718,19 @@ const FORM_SEND_TO =
               // Tirée ici (et nulle part ailleurs) au succès confirmé de l'enregistrement.
               // Consent Mode v2 gère le consentement / la modélisation cookieless ; identique
               // à la conversion « appel ». transaction_id = clé de déduplication côté Google.
-              if (window.gtag && FORM_SEND_TO) {
+              // Routage de la conversion selon le type de demande : « DPE seul » (low-ticket)
+              // → action « Soloris - Devis DPE » ; tout le reste (vente/location/audit) →
+              // « Soloris - Devis Vente ». Le Smart Bidding distingue ainsi le CA réel.
+              var isDpe = (payload.type_demande === 'dpe');
+              var convSendTo = isDpe ? FORM_SEND_TO_DPE : FORM_SEND_TO;
+              // Valeur = prix estimé réel (déjà bien plus élevé pour la Vente que pour un DPE) ;
+              // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 150 €).
+              var convValue = v3 > 0 ? v3 : (isDpe ? 150 : 300);
+              if (window.gtag && convSendTo) {
                 // Enhanced Conversions : données fournies par l'utilisateur, posées AVANT
                 // l'event de conversion (Google les hache côté client ; l'envoi reste soumis
-                // au Consent Mode). Nécessite le toggle « Conversions améliorées » activé sur
-                // l'action « Soloris - Devis (formulaire) » dans Google Ads. Tél normalisé E.164.
+                // au Consent Mode). Conversions améliorées pour les leads activées au niveau
+                // compte (s'applique aux 2 actions Devis). Tél normalisé E.164.
                 try {
                   var ecEmail = (val('email') || '').trim().toLowerCase();
                   var ecPhone = (val('telephone') || '').replace(/[^\d+]/g, '');
@@ -704,8 +741,8 @@ const FORM_SEND_TO =
                   if (ecEmail || ecPhone) window.gtag('set', 'user_data', ecData);
                 } catch (e2) {}
                 window.gtag('event', 'conversion', {
-                  send_to: FORM_SEND_TO,
-                  value: v3 || 1.0,
+                  send_to: convSendTo,
+                  value: convValue,
                   currency: 'EUR',
                   transaction_id: leadId || undefined,
                 });

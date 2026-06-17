@@ -42,6 +42,10 @@ const CALLBACK_SEND_TO =
         <input type="text" name="secteur" required inputmode="numeric" maxlength="5" pattern="\d{5}" autocomplete="postal-code" placeholder="75011" />
       </label>
     </div>
+    <label class="cbform-field cbform-ville" data-ville-field hidden>
+      <span>Ville</span>
+      <select name="ville" autocomplete="address-level2"></select>
+    </label>
     {!defaultType && (
       <label class="cbform-field">
         <span>Votre projet</span>
@@ -69,6 +73,24 @@ const CALLBACK_SEND_TO =
 <script>
   (function () {
     var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
+
+    // Auto-complétion ville : à partir d'un code postal à 5 chiffres, on récupère la/les
+    // commune(s) via l'API officielle geo.api.gouv.fr (sans clé). Best-effort : un échec
+    // réseau n'empêche jamais l'envoi du lead. selEl = <select name="ville">.
+    function lookupVille(cp, selEl, wrap) {
+      if (!selEl) return;
+      if (!/^\d{5}$/.test(cp)) { selEl.innerHTML = ''; if (wrap) wrap.hidden = true; return; }
+      fetch('https://geo.api.gouv.fr/communes?codePostal=' + cp + '&fields=nom&format=json')
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (list) {
+          if (!Array.isArray(list) || !list.length) { selEl.innerHTML = ''; if (wrap) wrap.hidden = true; return; }
+          selEl.innerHTML = '';
+          list.forEach(function (c) { var o = document.createElement('option'); o.value = c.nom; o.textContent = c.nom; selEl.appendChild(o); });
+          selEl.selectedIndex = 0;
+          if (wrap) wrap.hidden = false;
+        })
+        .catch(function () { /* lookup indisponible : ville facultative, on n'affiche rien */ });
+    }
 
     function uuid() {
       try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
@@ -120,10 +142,13 @@ const CALLBACK_SEND_TO =
         var type_demande = defaultType || (selEl ? selEl.value : '') || 'vente';
         btn.disabled = true; btn.textContent = 'Envoi…';
 
+        var villeEl = form.querySelector('[name="ville"]');
+        var ville = (villeEl && !villeEl.closest('[data-ville-field]').hidden) ? villeEl.value : '';
+
         var a = getAcq();
         var payload = {
           lead_uid: getLeadUid(), lead_status: 'partiel', source: 'devis',
-          type_demande: type_demande, telephone: tel, secteur: cp,
+          type_demande: type_demande, telephone: tel, secteur: cp, ville: ville,
           message: 'Demande de rappel express',
           session_id: readCookie('soloris_sid'), visitor_id: readCookie('soloris_vid'),
           utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
@@ -159,9 +184,14 @@ const CALLBACK_SEND_TO =
           });
       });
 
-      // Code postal : chiffres uniquement
+      // Code postal : chiffres uniquement + auto-complétion ville
       var cpInput = form.querySelector('[name="secteur"]');
-      if (cpInput) cpInput.addEventListener('input', function () { cpInput.value = cpInput.value.replace(/\D/g, '').slice(0, 5); });
+      var villeSel = form.querySelector('[name="ville"]');
+      var villeWrap = form.querySelector('[data-ville-field]');
+      if (cpInput) cpInput.addEventListener('input', function () {
+        cpInput.value = cpInput.value.replace(/\D/g, '').slice(0, 5);
+        lookupVille(cpInput.value, villeSel, villeWrap);
+      });
 
       function showErr(msg) { if (errEl) { errEl.textContent = msg; errEl.hidden = false; } }
     }
