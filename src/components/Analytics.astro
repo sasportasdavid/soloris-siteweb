@@ -122,12 +122,15 @@ const PHONE_SEND_TO =
   // Action de conversion Google Ads DISTINCTE du formulaire (label dédié).
   // gtag respecte le Consent Mode v2 : rien n'est envoyé tant que le
   // consentement publicité n'est pas accordé via le bandeau.
+  // Valeur = 150 € (plancher d'un lead DPE) : un clic-appel est un lead à part
+  // entière. À 1 €, le Smart Bidding « Max. valeur » le sous-pondérait ~150× face
+  // à un formulaire (Vente 300 € / DPE 150 €) et n'enchérissait plus sur l'appel.
   document.addEventListener('click', function (e) {
     var link = e.target && e.target.closest ? e.target.closest('a[href^="tel:"]') : null;
     if (!link) return;
     try {
       if (window.gtag && PHONE_SEND_TO) {
-        window.gtag('event', 'conversion', { send_to: PHONE_SEND_TO, value: 1.0, currency: 'EUR' });
+        window.gtag('event', 'conversion', { send_to: PHONE_SEND_TO, value: 150.0, currency: 'EUR' });
       }
       if (window.dataLayer) window.dataLayer.push({ event: 'soloris_phone_call' });
     } catch (err) { /* on n'empêche jamais l'appel */ }

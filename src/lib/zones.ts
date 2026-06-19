@@ -138,6 +138,113 @@ export const ZONES: Zone[] = [
     geo: { latitude: 48.9145, longitude: 2.3835 },
   },
 
+  // ── Vague 1b — extension SEO (juin 2026) : arrondissements + communes 93 ──
+  // Prioritaire car recoupe les requêtes payées en Ads (volumes Keyword Planner).
+  {
+    slug: 'paris-16e',
+    name: 'Paris 16e',
+    prep: 'à',
+    longName: 'le 16e arrondissement de Paris',
+    dept: 'Paris (75)',
+    postalCodes: ['75016'],
+    metaDesc:
+      'Diagnostic immobilier à Paris 16e : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, diagnostiqueur certifié COFRAC.',
+    intro:
+      "Du Trocadéro à Auteuil-Passy, le 16e arrondissement aligne immeubles haussmanniens cossus, hôtels particuliers et résidences Art déco, sur l'un des marchés les plus valorisés de Paris. Soloris y réalise vos diagnostics de vente ou de location avec un rapport soigné et opposable, prêt pour le notaire.",
+    geo: { latitude: 48.8637, longitude: 2.2769 },
+  },
+  {
+    slug: 'paris-9e',
+    name: 'Paris 9e',
+    prep: 'à',
+    longName: 'le 9e arrondissement de Paris',
+    dept: 'Paris (75)',
+    postalCodes: ['75009'],
+    metaDesc:
+      'Diagnostic immobilier à Paris 9e : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, diagnostiqueur certifié COFRAC.',
+    intro:
+      "De la Nouvelle Athènes aux Grands Boulevards, le 9e arrondissement se distingue par son bel haussmannien et ses immeubles de rapport, prisés à la vente comme à la location. Soloris y réalise vos diagnostics avec un rapport clair et opposable, déplacement inclus.",
+    geo: { latitude: 48.8769, longitude: 2.3378 },
+  },
+  {
+    slug: 'paris-14e',
+    name: 'Paris 14e',
+    prep: 'à',
+    longName: 'le 14e arrondissement de Paris',
+    dept: 'Paris (75)',
+    postalCodes: ['75014'],
+    metaDesc:
+      'Diagnostic immobilier à Paris 14e : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, diagnostiqueur certifié COFRAC.',
+    intro:
+      "De Montparnasse à Denfert et la Porte d'Orléans, le 14e arrondissement mêle immeubles anciens, copropriétés des années 1930 et résidences d'après-guerre. Soloris y intervient rapidement pour vos projets de vente ou de location, avec un tarif tout compris.",
+    geo: { latitude: 48.8331, longitude: 2.3264 },
+  },
+  {
+    slug: 'paris-19e',
+    name: 'Paris 19e',
+    prep: 'à',
+    longName: 'le 19e arrondissement de Paris',
+    dept: 'Paris (75)',
+    postalCodes: ['75019'],
+    metaDesc:
+      'Diagnostic immobilier à Paris 19e : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, diagnostiqueur certifié COFRAC.',
+    intro:
+      "Des Buttes-Chaumont au bassin de la Villette, le 19e arrondissement conjugue immeubles anciens, grands ensembles et programmes récents, sur un marché locatif très actif. Soloris y intervient sous 48 h, avec des diagnostics rigoureux et un rapport pédagogique.",
+    geo: { latitude: 48.8839, longitude: 2.3822 },
+  },
+  {
+    slug: 'aulnay-sous-bois',
+    name: 'Aulnay-sous-Bois',
+    prep: 'à',
+    longName: 'Aulnay-sous-Bois',
+    dept: 'Seine-Saint-Denis (93)',
+    postalCodes: ['93600'],
+    metaDesc:
+      'Diagnostic immobilier à Aulnay-sous-Bois (93) : DPE, vente, location, audit. Tarif tout compris, sous 48 h, certifié COFRAC.',
+    intro:
+      "Deuxième ville de Seine-Saint-Denis, Aulnay-sous-Bois associe pavillons du Vieux-Pays, grandes copropriétés et quartiers en rénovation urbaine. Soloris y réunit les diagnostics nécessaires à votre vente ou location, sous 48 h et déplacement inclus.",
+    geo: { latitude: 48.9386, longitude: 2.4944 },
+  },
+  {
+    slug: 'noisy-le-grand',
+    name: 'Noisy-le-Grand',
+    prep: 'à',
+    longName: 'Noisy-le-Grand',
+    dept: 'Seine-Saint-Denis (93)',
+    postalCodes: ['93160'],
+    metaDesc:
+      'Diagnostic immobilier à Noisy-le-Grand (93) : DPE, vente, location, audit. Tarif tout compris, sous 48 h, certifié COFRAC.',
+    intro:
+      "À l'est de la métropole, Noisy-le-Grand mêle quartiers d'affaires (Mont d'Est), maisons de ville et copropriétés récentes le long du RER A. Soloris y réalise vos diagnostics sous 48 h, avec un rapport lisible et opposable pour votre notaire ou votre bail.",
+    geo: { latitude: 48.8488, longitude: 2.5527 },
+  },
+  {
+    slug: 'drancy',
+    name: 'Drancy',
+    prep: 'à',
+    longName: 'Drancy',
+    dept: 'Seine-Saint-Denis (93)',
+    postalCodes: ['93700'],
+    metaDesc:
+      'Diagnostic immobilier à Drancy (93) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.',
+    intro:
+      "Ville pavillonnaire du nord du 93, Drancy compte de nombreuses maisons individuelles et copropriétés des années 1960-1980. Pour vendre ou louer sereinement, Soloris y réalise les diagnostics applicables à votre bien, avec un tarif tout compris.",
+    geo: { latitude: 48.9239, longitude: 2.4453 },
+  },
+  {
+    slug: 'pantin',
+    name: 'Pantin',
+    prep: 'à',
+    longName: 'Pantin',
+    dept: 'Seine-Saint-Denis (93)',
+    postalCodes: ['93500'],
+    metaDesc:
+      'Diagnostic immobilier à Pantin (93) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.',
+    intro:
+      "Aux portes de Paris, le long du canal de l'Ourcq, Pantin transforme ses anciens sites industriels en lofts et bureaux, tout en conservant un parc de copropriétés anciennes. Soloris y intervient sous 48 h pour accompagner vos ventes et locations, avec un rapport clair.",
+    geo: { latitude: 48.8966, longitude: 2.409 },
+  },
+
   // ── Vague 2 — 92 / 94 / 95 : pages SEO (hors zones Ads pour l'instant) ──
   {
     slug: 'boulogne-billancourt',
