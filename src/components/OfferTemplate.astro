@@ -8,7 +8,6 @@
 import Base from '../layouts/Base.astro';
 import Hero from './Hero.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
-import PriceSimulator from './PriceSimulator.astro';
 import EnergyScale from './EnergyScale.astro';
 import Reviews from './Reviews.astro';
 import Faq from './Faq.astro';
@@ -22,6 +21,11 @@ interface Props { slug: string }
 const { slug } = Astro.props;
 const offer = getOffer(slug)!;
 const autres = OFFERS.filter((o) => o.slug !== slug);
+// Simulateur de devis (QuoteForm, composant UNIQUE) embarqué dans le hero sur TOUTES les
+// offres, + 2e instance plus bas (#simulateur). `isPack` (vente/location) pilote seulement
+// le teaser d'estimation : pack = estimation teasée puis dévoilée au contact (variante A,
+// gagnante du test A/B ×4) ; DPE/audit = cadrage « tarif par email » (revealEstimation=false).
+const isPack = offer.demande === 'vente' || offer.demande === 'location';
 
 const jsonLd = [
   service({ name: offer.nav, description: offer.metaDesc, url: offer.url, priceFrom: prixDes(offer.demande) }),
@@ -49,7 +53,13 @@ const jsonLd = [
     secondaryLabel="Voir les tarifs"
     showTrust={true}
     sun={true}
-  />
+    hideCta={true}
+    aside={true}
+  >
+    <Fragment slot="aside">
+      <QuoteForm revealEstimation={isPack} defaultDemande={offer.demande} />
+    </Fragment>
+  </Hero>
 
   <!-- Barre de réassurance (4,9★ · 111 avis · COFRAC · Assuré) -->
   <ReassuranceBar />
@@ -70,7 +80,7 @@ const jsonLd = [
             ))}
           </ul>
           <div class="flex-cta mt-4">
-            <a href={`/devis?type=${offer.demande}`} class="btn-blue">Obtenir mon devis en 2 min</a>
+            <a href="#simulateur" class="btn-blue">Obtenir mon devis en 2 min</a>
             <a href="#tarifs" class="btn-ghost">Voir les tarifs</a>
           </div>
         </div>
@@ -116,16 +126,13 @@ const jsonLd = [
       <div class="eyebrow">Tarif tout compris</div>
       <h2 class="sec-title">Combien ça coûte&nbsp;?</h2>
       {(offer.demande === 'vente' || offer.demande === 'location') ? (
-        <>
-          <p class="sec-intro">Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient). Dès {prixDes(offer.demande)} € tout compris, déplacement inclus. Estimez le vôtre&nbsp;: vous recevez le tarif par email, sans engagement.</p>
-          <div class="mt-5"><PriceSimulator defaultDemande={offer.demande} /></div>
-        </>
+        <p class="sec-intro">Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient). Dès {prixDes(offer.demande)} € tout compris, déplacement inclus. Estimez le vôtre en 2 min, sans engagement.</p>
       ) : offer.demande === 'dpe' ? (
         <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès {DPE_FROM} €</strong>, tout compris, déplacement inclus ({DPE_FROM} à {DPE_TO} € selon la surface du logement).</p>
       ) : (
         <p class="sec-intro" style="font-size:19px;color:var(--ink)"><strong style="font-family:var(--sora);color:var(--blue)">Dès {AUDIT_FROM} €</strong>, tout compris, déplacement inclus, selon le bien.</p>
       )}
-      <p class="mt-3"><a href={`/devis?type=${offer.demande}`} class="btn-blue">Estimer mon prix en 2 min</a></p>
+      <p class="mt-3"><a href="#simulateur" class="btn-blue">Estimer mon prix en 2 min</a></p>
     </div>
   </section>
 
@@ -157,18 +164,16 @@ const jsonLd = [
   <!-- Avis clients réels (preuve sociale avant le formulaire) -->
   <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
 
-  <!-- Formulaire compact -->
-  <section class="section-line">
+  <!-- Simulateur en bas de page (2e instance du QuoteForm, désormais instance-safe) —
+       cible des CTA « Estimer mon prix » / ancre #simulateur. revealEstimation suit isPack. -->
+  <section class="section-line" id="simulateur">
     <div class="wrap">
       <div class="sec-head center">
         <div class="eyebrow center">Devis en 2 min</div>
         <h2 class="sec-title">Obtenez votre estimation</h2>
       </div>
       <div class="mt-5">
-        {/* DPE & audit : prix d'accroche « Dès X € » déjà affiché plus haut → le tunnel
-            adopte le cadrage « devis confirmé au rappel » (pas de teaser d'estimation),
-            cohérent avec la doctrine « tarif par email ». Vente/location gardent le teaser. */}
-        <QuoteForm revealEstimation={offer.demande !== 'dpe' && offer.demande !== 'audit'} defaultDemande={offer.demande} />
+        <QuoteForm revealEstimation={isPack} defaultDemande={offer.demande} />
       </div>
     </div>
   </section>
@@ -202,7 +207,7 @@ const jsonLd = [
       <h2>Votre {offer.shortLabel}, en toute clarté</h2>
       <p>Estimation tout compris en 2 minutes, sans engagement.</p>
       <div class="cta">
-        <a href={`/devis?type=${offer.demande}`} class="btn-gold">Obtenir mon devis</a>
+        <a href="#simulateur" class="btn-gold">Obtenir mon devis</a>
       </div>
     </div>
   </section>

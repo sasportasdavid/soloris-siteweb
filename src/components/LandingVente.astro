@@ -16,9 +16,7 @@
  */
 import LandingLayout from '../layouts/LandingLayout.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
-import PriceSimulator from './PriceSimulator.astro';
 import ReportPreview from './ReportPreview.astro';
-import CallbackForm from './CallbackForm.astro';
 import Reviews from './Reviews.astro';
 import ReviewWall from './ReviewWall.astro';
 import Faq from './Faq.astro';
@@ -86,7 +84,7 @@ const piliers = [
             <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
           </div>
         )}
-        <div class="lp-cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
+        <div class="lp-cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis en 2 min</a></div>
         <div class="lp-trust">
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Devis gratuit, sans engagement</span>
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Prix tout compris, zéro frais surprise</span>
@@ -95,7 +93,15 @@ const piliers = [
         </div>
       </div>
       <div class="lp-hero-visual">
-        <CallbackForm defaultType="vente" title="Être rappelé en quelques minutes" sub="Laissez votre numéro et le code postal du bien : on vous rappelle pour confirmer vos diagnostics de vente et fixer le rendez-vous." />
+        <QuoteForm
+          lockExperiments={true}
+          forceCta="A"
+          forceSteps="A"
+          priceModelVariant={variant}
+          revealEstimation={withPrices}
+          defaultDemande="vente"
+          recallSla={recallSla}
+        />
       </div>
     </div>
   </section>
@@ -137,9 +143,9 @@ const piliers = [
         <div class="sec-head center">
           <div class="eyebrow center">Tarif tout compris</div>
           <h2 class="sec-title">Estimez votre prix, tout de suite</h2>
-          <p class="sec-intro">Dès {prixDes('vente')} € tout compris, déplacement inclus. Renseignez votre bien : l'estimation s'affiche immédiatement — le prix n'est jamais caché derrière le formulaire.</p>
+          <p class="sec-intro">Dès {prixDes('vente')} € tout compris, déplacement inclus. Renseignez votre bien en 2 minutes : votre estimation vous est confirmée, sans engagement.</p>
         </div>
-        <div class="mt-5"><PriceSimulator defaultDemande="vente" /></div>
+        <p class="mt-4" style="text-align:center"><a href="#simulateur" class="btn-blue">Estimer mon prix en 2 min</a></p>
       </div>
     </section>
   ) : (
@@ -197,13 +203,14 @@ const piliers = [
         <div class="eyebrow center">Devis en 2 min</div>
         <h2 class="sec-title">Obtenez votre devis</h2>
       </div>
-      <div class="mt-5">
+      <div class="mt-5" id="simulateur">
         <QuoteForm
           lockExperiments={true}
           forceCta="A"
           forceSteps="A"
           priceModelVariant={variant}
           revealEstimation={withPrices}
+          defaultDemande="vente"
           recallSla={recallSla}
         />
       </div>
@@ -221,7 +228,7 @@ const piliers = [
     <div class="wrap">
       <h2>Votre dossier de diagnostics, en toute clarté</h2>
       <p>Devis en 2 minutes, rendez-vous sous 48 h, sans engagement.</p>
-      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
+      <div class="cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis en 2 min</a></div>
     </div>
   </section>
 </LandingLayout>

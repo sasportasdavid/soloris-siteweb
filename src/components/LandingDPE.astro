@@ -13,7 +13,6 @@
 import LandingLayout from '../layouts/LandingLayout.astro';
 import ReassuranceBar from './ReassuranceBar.astro';
 import ReportPreview from './ReportPreview.astro';
-import CallbackForm from './CallbackForm.astro';
 import Reviews from './Reviews.astro';
 import ReviewWall from './ReviewWall.astro';
 import Faq from './Faq.astro';
@@ -82,7 +81,7 @@ const faqDpe = [
             <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
           </div>
         )}
-        <div class="lp-cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
+        <div class="lp-cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis en 2 min</a></div>
         <div class="lp-trust">
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Devis gratuit, sans engagement</span>
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Tarif tout compris, zéro frais surprise</span>
@@ -91,7 +90,14 @@ const faqDpe = [
         </div>
       </div>
       <div class="lp-hero-visual">
-        <CallbackForm defaultType="dpe" title="Être rappelé en quelques minutes" sub="Laissez votre numéro et le code postal du bien : on vous rappelle pour confirmer votre DPE et fixer le rendez-vous." />
+        <QuoteForm
+          lockExperiments={true}
+          forceCta="A"
+          forceSteps="A"
+          revealEstimation={false}
+          defaultDemande="dpe"
+          recallSla={recallSla}
+        />
       </div>
     </div>
   </section>
@@ -180,7 +186,7 @@ const faqDpe = [
         <div class="eyebrow center">Devis en 2 min</div>
         <h2 class="sec-title">Obtenez votre devis</h2>
       </div>
-      <div class="mt-5">
+      <div class="mt-5" id="simulateur">
         <QuoteForm
           lockExperiments={true}
           forceCta="A"
@@ -204,7 +210,7 @@ const faqDpe = [
     <div class="wrap">
       <h2>Votre DPE, en toute clarté</h2>
       <p>Devis en 2 minutes, rendez-vous sous 48 h, sans engagement.</p>
-      <div class="cta"><a href="#qform" class="btn-gold">Obtenir mon devis en 2 min</a></div>
+      <div class="cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis en 2 min</a></div>
     </div>
   </section>
 </LandingLayout>
