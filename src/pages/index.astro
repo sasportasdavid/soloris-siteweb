@@ -60,21 +60,7 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <!-- 3 · Barre de réassurance -->
   <ReassuranceBar />
 
-  <!-- 3b · Capture express « Être rappelé » (téléphone + code postal, friction minimale) -->
-  <section class="section-line" id="rappel">
-    <div class="wrap">
-      <div class="grid grid-2" style="align-items:center;gap:40px">
-        <div>
-          <div class="eyebrow">Pas envie de remplir un formulaire&nbsp;?</div>
-          <h2 class="sec-title">Laissez votre numéro, on vous rappelle</h2>
-          <p class="sec-intro">On vérifie avec vous les diagnostics obligatoires de votre bien, on confirme le prix tout compris et on fixe un rendez-vous sous 48&nbsp;h. Vous vendez, louez ou avez besoin d'un DPE&nbsp;: dites-le-nous.</p>
-        </div>
-        <CallbackForm title="Être rappelé rapidement" />
-      </div>
-    </div>
-  </section>
-
-  <!-- 4 · Quel est votre besoin ? -->
+  <!-- 3 · Quel est votre besoin ? -->
   <section class="section-line">
     <div class="wrap">
       <div class="sec-head center">
@@ -84,6 +70,20 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
       </div>
       <div class="grid grid-4 mt-5">
         {OFFERS.map((o) => <OfferCard offer={o} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Capture express « Être rappelé » (téléphone + code postal, friction minimale) -->
+  <section class="section-line" id="rappel">
+    <div class="wrap">
+      <div class="grid grid-2" style="align-items:center;gap:40px">
+        <div>
+          <div class="eyebrow">Pas envie de remplir un formulaire&nbsp;?</div>
+          <h2 class="sec-title">Laissez votre numéro, on vous rappelle</h2>
+          <p class="sec-intro">On vérifie avec vous les diagnostics obligatoires de votre bien, on confirme le prix tout compris et on fixe un rendez-vous sous 48&nbsp;h. Vous vendez, louez ou avez besoin d'un DPE&nbsp;: dites-le-nous.</p>
+        </div>
+        <CallbackForm title="Être rappelé rapidement" />
       </div>
     </div>
   </section>
