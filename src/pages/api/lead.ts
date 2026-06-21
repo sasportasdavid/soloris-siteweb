@@ -216,8 +216,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   } else if (isChat) {
     if (!nom || !telephone) return json({ error: 'Nom et téléphone sont requis.' }, 400);
   } else {
-    // devis complet — email requis (envoi du devis + confirmation par email)
-    if (!nom || !telephone || !email) return json({ error: 'Le nom, le téléphone et l\'email sont requis.' }, 400);
+    // devis complet — nom + téléphone requis ; EMAIL FACULTATIF. Le rappel est le canal
+    // principal ; l'email ne sert qu'à envoyer le devis détaillé par écrit quand il est fourni.
+    // (Réduit le « mur des coordonnées » : 43 % d'abandon mesuré à l'étape coordonnées.)
+    if (!nom || !telephone) return json({ error: 'Le nom et le téléphone sont requis.' }, 400);
   }
 
   const surfaceNum = Number(body.surface);

@@ -1,6 +1,8 @@
 ---
-// LP-B « sans prix » — bras B du test 'price_model' (aucun prix affiché ; le tunnel
-// calcule prix_estime en coulisse et le pousse dans lead_submitted).
+// Test 'price_model' TRANCHÉ (2026-06-21) : variante A (estimation teasée) gagne ~×4.
+// Les annonces vente ont été repointées vers /lp/vente-prix (variante A) → cette page
+// n'est plus la cible d'aucune annonce. On la remet donc à son rôle d'origine (variante B,
+// sans prix) ; elle reste dispo si besoin de re-tester un bras « sans prix ».
 import LandingVente from '../../components/LandingVente.astro';
 ---
 <LandingVente variant="B" />

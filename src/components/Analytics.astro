@@ -85,6 +85,10 @@ const PHONE_SEND_TO =
       var keys = ['gclid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'keyword', 'campaignid', 'adgroupid', 'creative', 'matchtype', 'device', 'network'];
       var acq = {};
       keys.forEach(function (k) { var v = params.get(k); if (v) acq[k] = v.slice(0, 255); });
+      // Garde-fou attribution : un clic Google Ads auto-taggé porte TOUJOURS un gclid, mais
+      // le suffixe utm peut manquer (clic antérieur à sa config, ou cas limite). On rattache
+      // alors la touche à google/cpc → attribution interne (CRM/analytics) cohérente.
+      if (acq.gclid && !acq.utm_source) { acq.utm_source = 'google'; acq.utm_medium = acq.utm_medium || 'cpc'; }
       acq.landing_path = window.location.pathname;
       try { var ref = document.referrer || ''; if (ref && new URL(ref).host !== window.location.host) acq.referrer = ref.slice(0, 255); } catch (e) {}
       var d = new Date(); d.setTime(d.getTime() + 30 * 864e5);
