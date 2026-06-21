@@ -7,23 +7,36 @@
 /* Polices auto-hébergées (woff2, font-display:swap) — voir Base.astro */
 
 :root {
-  /* Couleurs */
-  --blue: #0B2A4A;        /* Primaire — fonds forts, titres, signature */
-  --blue-light: #2E6FAE;  /* Secondaire — liens, libellés, actifs */
-  --gold: #F5A623;        /* Accent solaire — boutons, surlignages (~10 %) */
-  --ray: #FFC94D;         /* Highlight — rehauts, étiquettes énergie */
-  --paper: #FBFAF6;       /* Fond par défaut (blanc cassé chaleureux) */
-  --line: #E7ECF1;        /* Séparateurs, bordures */
-  --ink: #0B1F33;         /* Texte */
-  --ink-soft: #5B6B7C;    /* Texte secondaire, légendes */
+  /* ── Marine (primaire — titres, nav, fonds forts, confiance) ── */
+  --blue: #14385F;        /* Primaire — fonds forts, titres, signature */
+  --blue-700: #1E4F7C;    /* Marine clair — hovers, dégradés */
+  --blue-deep: #0E2A47;   /* Marine profond — footer, barre utilitaire */
+  --blue-light: #2E6FAE;  /* Secondaire — liens, libellés, états actifs */
+  --ink: #0F1B2A;         /* Texte très foncé */
+  --ink-soft: #5A6B7B;    /* Texte secondaire, légendes */
 
-  /* Teintes « sur fond bleu » (charte) — formalisées en tokens */
-  --ink-on-dark: #7FA3C6;                 /* texte secondaire sur bleu */
-  --ink-on-dark-strong: #C3D2E2;          /* texte accentué sur bleu */
-  --rule-on-dark: rgba(255, 255, 255, .22); /* filets sur bleu */
+  /* ── Orange (accent — CTA, conversions, surlignages · ~10 %) ── */
+  --gold: #E2671F;        /* Accent — aplats & CTA (texte blanc dessus) */
+  --gold-hover: #B84913;  /* Hover bouton orange + TOUT texte orange (AA) */
+  --amber: #F4A24A;       /* Accent clair — étoiles/puces sur marine */
+  --ray: #F4A24A;         /* Alias historique — rehauts sur fond foncé */
+  --accent-soft: #FBEDE3; /* Fonds de pastilles / chips orange clair */
+  --on-accent: #FFFFFF;   /* Texte SUR un aplat orange (toujours blanc) */
 
-  /* Bleu profond, variante utilitaire (hovers) */
-  --blue-700: #0A2342;
+  /* ── Vert (secondaire — réassurance, succès, RGE) ── */
+  --green: #1C6B4A;
+  --green-soft: #E7F1EB;
+
+  /* ── Neutres ── */
+  --paper: #F7F5F2;       /* Fond par défaut (off-white neutre) */
+  --surface: #F0EDE8;     /* Fills subtils, zébrures, hovers de lignes */
+  --line: #E5E1DB;        /* Séparateurs, bordures */
+  --line-strong: #D6D0C7; /* Bordures appuyées */
+
+  /* ── Teintes « sur fond marine » ── */
+  --ink-on-dark: #8AA0B8;                 /* texte secondaire sur marine */
+  --ink-on-dark-strong: #C3D2E2;          /* texte accentué sur marine */
+  --rule-on-dark: rgba(255, 255, 255, .22); /* filets sur marine */
 
   /* Familles typographiques */
   --sora: 'Sora', system-ui, sans-serif;
@@ -112,7 +125,7 @@ section { padding: 92px 0; }
 .eyebrow {
   font-family: var(--sora);
   font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase;
-  color: var(--blue-light);
+  color: var(--gold-hover);
   display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
 }
 .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--gold); display: inline-block; border-radius: 2px; }
@@ -140,10 +153,10 @@ section { padding: 92px 0; }
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   text-decoration: none; line-height: 1; transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
-.btn-gold { background: var(--gold); color: var(--blue); padding: 14px 24px; }
-.btn-gold:hover { background: #ffb53d; text-decoration: none; transform: translateY(-1px); }
+.btn-gold { background: var(--gold); color: var(--on-accent); padding: 14px 24px; box-shadow: 0 10px 24px -12px rgba(226, 103, 31, .7); }
+.btn-gold:hover { background: var(--gold-hover); text-decoration: none; transform: translateY(-1px); box-shadow: 0 12px 28px -12px rgba(184, 73, 19, .75); }
 .btn-blue { background: var(--blue); color: #fff; padding: 14px 26px; }
-.btn-blue:hover { background: #0d3358; text-decoration: none; transform: translateY(-1px); }
+.btn-blue:hover { background: var(--blue-700); text-decoration: none; transform: translateY(-1px); }
 .btn-ghost { background: transparent; color: var(--blue); border: 1px solid var(--line); padding: 13px 24px; }
 .btn-ghost:hover { border-color: var(--blue-light); text-decoration: none; }
 .btn-sm { padding: 10px 16px; font-size: 13px; }
@@ -191,6 +204,8 @@ section { padding: 92px 0; }
 .nav-links { display: flex; gap: 28px; align-items: center; font-family: var(--sora); font-size: 14px; color: var(--ink); font-weight: 500; }
 .nav-links a { color: var(--ink); }
 .nav-links a:hover { color: var(--blue-light); text-decoration: none; }
+/* Le CTA garde son texte blanc malgré la règle .nav-links a ci-dessus. */
+.nav-links a.btn-gold, .nav-links a.btn-gold:hover { color: var(--on-accent); }
 .nav-cta { display: flex; align-items: center; gap: 14px; }
 .nav-phone { font-family: var(--sora); font-weight: 600; font-size: 14px; color: var(--blue); white-space: nowrap; }
 .nav-phone:hover { color: var(--blue-light); text-decoration: none; }
@@ -329,7 +344,7 @@ body.nav-open { overflow: hidden; }
 .hero-media img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
 .hero-media::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--blue) 0%, rgba(11, 42, 74, 0) 26%); pointer-events: none; }
 .hero-float { position: absolute; left: 24px; bottom: 24px; z-index: 2; display: flex; align-items: center; gap: 12px; background: #fff; border-radius: var(--radius-sm); padding: 12px 16px 12px 12px; box-shadow: var(--shadow-strong); }
-.hero-float-pill { font-family: var(--sora); font-weight: 700; font-size: 15px; color: var(--blue); background: rgba(245, 166, 35, .18); border-radius: 9px; padding: 8px 11px; white-space: nowrap; }
+.hero-float-pill { font-family: var(--sora); font-weight: 700; font-size: 15px; color: var(--gold-hover); background: var(--accent-soft); border-radius: 9px; padding: 8px 11px; white-space: nowrap; }
 .hero-float-txt { font-family: var(--sora); font-weight: 600; font-size: 13.5px; color: var(--blue); line-height: 1.3; max-width: 150px; }
 @media (max-width: 880px) {
   .hero--split .hero-inner { grid-template-columns: 1fr; gap: 0; }
@@ -404,8 +419,8 @@ body.nav-open { overflow: hidden; }
 .offer-intro--dark .offer-intro-copy .eyebrow { color: var(--ray); }
 .offer-intro--dark .offer-intro-copy .sec-intro { color: var(--ink-on-dark-strong) !important; }
 .offer-intro--dark .offer-intro-copy .incl li, .offer-intro--dark .offer-intro-copy .incl li b { color: #fff; }
-.offer-intro--dark .offer-intro-copy .btn-blue { background: var(--gold); color: var(--blue); }
-.offer-intro--dark .offer-intro-copy .btn-blue:hover { background: #ffb53d; }
+.offer-intro--dark .offer-intro-copy .btn-blue { background: var(--gold); color: var(--on-accent); }
+.offer-intro--dark .offer-intro-copy .btn-blue:hover { background: var(--gold-hover); }
 .offer-intro--dark .offer-intro-copy .btn-ghost { color: #fff; border-color: var(--rule-on-dark); }
 .offer-intro--dark .offer-intro-copy .btn-ghost:hover { border-color: rgba(255, 255, 255, .55); }
 @media (max-width: 760px) {
@@ -424,7 +439,7 @@ body.nav-open { overflow: hidden; }
 
 /* ── Piliers ────────────────────────────────────────────── */
 .pillar { display: flex; gap: 16px; align-items: flex-start; }
-.pillar .ic { width: 44px; height: 44px; border-radius: 11px; background: rgba(245,166,35,.12); display: flex; align-items: center; justify-content: center; flex: none; }
+.pillar .ic { width: 44px; height: 44px; border-radius: 11px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; flex: none; }
 .pillar h3 { font-family: var(--sora); font-weight: 600; font-size: 18px; color: var(--blue); margin-bottom: 5px; }
 .pillar p { font-size: 14.5px; color: var(--ink-soft); }
 .pillar .proof { font-family: var(--sora); font-size: 12px; font-weight: 600; color: var(--blue-light); margin-top: 8px; display: inline-block; }
@@ -516,7 +531,7 @@ body.nav-open { overflow: hidden; }
 .ptable tbody tr:last-child td { border-bottom: none; }
 .ptable td.price { font-family: var(--sora); font-weight: 600; color: var(--blue); white-space: nowrap; }
 .ptable td.price small { font-weight: 400; color: var(--ink-soft); }
-.ptable tbody tr:hover { background: var(--paper); }
+.ptable tbody tr:hover { background: var(--surface); }
 .price-note { font-size: 13px; color: var(--ink-soft); margin-top: 14px; }
 
 /* ── Liste « ce qui est inclus » ────────────────────────── */
@@ -535,7 +550,7 @@ body.nav-open { overflow: hidden; }
 .rating-agg .big { font-size: 44px; font-weight: 600; color: var(--blue); line-height: 1; }
 
 /* ── Footer ─────────────────────────────────────────────── */
-.site-footer { background: var(--blue); color: #fff; padding: 64px 0 40px; }
+.site-footer { background: var(--blue-deep); color: #fff; padding: 64px 0 40px; }
 .site-footer .cols { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
 .site-footer .baseline { font-family: var(--serif); font-style: italic; color: #9FB8D2; font-size: 17px; margin-top: 14px; max-width: 280px; }
 .site-footer h4 { font-family: var(--sora); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #7FA3C6; margin-bottom: 16px; font-weight: 600; }
