@@ -50,8 +50,8 @@ export const OFFERS: Offer[] = [
     metaDesc:
       'Pack diagnostics vente tout compris, rapport opposable sous 48 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC. Devis en 2 min.',
     tagline: "Un seul rendez-vous, un prix annoncé d'avance, aucun frais surprise le jour J.",
-    // CTA héro : scroll vers le formulaire embarqué (#qform), même tunnel, sans quitter la page.
-    heroCtaHref: '#qform',
+    // CTA héro : scroll vers le simulateur embarqué (#simulateur), même tunnel, sans quitter la page.
+    heroCtaHref: '#simulateur',
     intro:
       "Pour vendre, l'acquéreur reçoit un dossier de diagnostic technique (DDT) annexé à la promesse de vente. Soloris réunit l'ensemble des diagnostics requis selon votre bien, en un seul rendez-vous, avec un rapport clair et opposable.",
     heroImage: '/images/vendeur-salon-vide.webp',

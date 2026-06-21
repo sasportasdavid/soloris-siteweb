@@ -75,17 +75,17 @@ const _GADS_DPE_LABEL = 'jvpdCNyZ4cAcEJXottlD';
 const FORM_SEND_TO_DPE =
   _GADS_ID && _GADS_ID !== _GADS_PH ? `${_GADS_ID}/${_GADS_DPE_LABEL}` : '';
 ---
-<div class="qform card" id="qform">
+<div class="qform card">
   {hasReviews && (
     <div class="qrating">
       <span class="stars" aria-hidden="true">
-        {[0,1,2,3,4].map(() => <svg width="14" height="14" viewBox="0 0 24 24" fill="#F5A623"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+        {[0,1,2,3,4].map(() => <svg width="14" height="14" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
       </span>
       <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
     </div>
   )}
 
-  <form id="quote-form" novalidate>
+  <form class="quote-form" novalidate>
     <div class="qsteps" aria-hidden="true">
       <span class="dot active" data-dot="1"></span><span class="dot" data-dot="2"></span>
       <span class="dot" data-dot="3"></span><span class="dot" data-dot="4"></span><span class="dot" data-dot="5"></span>
@@ -116,7 +116,7 @@ const FORM_SEND_TO_DPE =
       </div>
 
       <!-- Lots annexes vendus/loués seuls (cave/parking/box) — tarif unique. Affiché pour vente/location uniquement. -->
-      <div id="lot-annexe-block" hidden>
+      <div data-el="lot-annexe-block" hidden>
         <span class="qgroup-label" style="display:block;margin:16px 0 9px">Ou un lot annexe seul</span>
         <div class="qgrid qgrid-2">
           <label class="qopt"><input type="radio" name="type_bien" value="cave" /><span class="qopt-body"><b>Cave</b><span class="qopt-desc">Lot de cave</span></span></label>
@@ -131,7 +131,7 @@ const FORM_SEND_TO_DPE =
     <!-- Étape 3 — Surface + âge + estimation -->
     <fieldset class="qstep" data-step="3" hidden>
       <legend>Votre logement</legend>
-      <p class="qsub" id="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
+      <p class="qsub" data-el="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
 
       <label class="qfield">
         <span>Surface du bien (en m²)</span>
@@ -139,7 +139,7 @@ const FORM_SEND_TO_DPE =
         <small class="qfield-help">Surface habitable approximative, en mètres carrés.</small>
       </label>
 
-      <div id="age-block" class="qfield-group" hidden>
+      <div data-el="age-block" class="qfield-group" hidden>
         <span class="qgroup-label">Âge du bien</span>
         <div class="qgrid qgrid-2">
           {Object.entries(AGE_LABELS).map(([val, label]) => (
@@ -148,21 +148,21 @@ const FORM_SEND_TO_DPE =
         </div>
       </div>
 
-      <label class="qcheck" id="copro-block" hidden>
+      <label class="qcheck" data-el="copro-block" hidden>
         <input type="checkbox" name="copropriete" value="1" />
         <span>Maison en copropriété {revealEstimation && <span class="qopt-tag">+ {FIXED.coproSupp} €</span>}</span>
       </label>
 
-      <label class="qcheck" id="annexe-appart-block" hidden>
+      <label class="qcheck" data-el="annexe-appart-block" hidden>
         <input type="checkbox" name="annexe_appart" value="1" />
         <span>Cave, parking ou box à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Diagnostic d'un lot annexe (cave, parking, box) rattaché au bien — inclus dans le pack.</span></span>
       </label>
-      <label class="qcheck" id="annexe-maison-block" hidden>
+      <label class="qcheck" data-el="annexe-maison-block" hidden>
         <input type="checkbox" name="annexe_maison" value="1" />
         <span>Garage ou dépendance à diagnostiquer {revealEstimation && <span class="qopt-tag qopt-tag-incl">inclus</span>}<span class="qcheck-help">Pour une annexe séparée (garage non attenant, dépendance) — incluse dans le pack.</span></span>
       </label>
 
-      <div class="qestim" id="estim" hidden>
+      <div class="qestim" data-el="estim" hidden>
         {revealEstimation ? (
           <>
             <div class="qestim-amount">🔒 Votre estimation est prête</div>
@@ -185,11 +185,11 @@ const FORM_SEND_TO_DPE =
       <p class="qsub">Indiquez le code postal du logement.</p>
       <label class="qfield">
         <span>Code postal</span>
-        <input type="text" name="secteur" id="cp-input" required inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="ex : 75011" autocomplete="postal-code" />
+        <input type="text" name="secteur" data-el="cp-input" required inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="ex : 75011" autocomplete="postal-code" />
       </label>
-      <label class="qfield" id="ville-field" hidden>
+      <label class="qfield" data-el="ville-field" hidden>
         <span>Ville</span>
-        <select name="ville" id="ville-select" autocomplete="address-level2"></select>
+        <select name="ville" data-el="ville-select" autocomplete="address-level2"></select>
       </label>
       <p class="qhint">Nous intervenons à Paris et en Île-de-France (codes postaux 75, 77, 78, 91, 92, 93, 94, 95).</p>
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
@@ -198,10 +198,10 @@ const FORM_SEND_TO_DPE =
     <!-- Étape 5 — Coordonnées -->
     <fieldset class="qstep" data-step="5" hidden>
       <legend>Vos coordonnées</legend>
-      <div class="qrecap" id="qrecap" hidden></div>
+      <div class="qrecap" data-el="qrecap" hidden></div>
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
-      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /></label>
-      <label class="qfield"><span>Email</span><input type="email" name="email" required autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre devis et votre confirmation par email.</small></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /><small class="qfield-help">On vous rappelle pour confirmer votre devis, sous 48 h.</small></label>
+      <label class="qfield"><span>Email <span class="qfield-opt">— facultatif</span></span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre devis détaillé par écrit. Sinon, on vous l'explique de vive voix au téléphone.</small></label>
       <label class="qfield"><span>Message (optionnel)</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
 
       <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
@@ -217,16 +217,16 @@ const FORM_SEND_TO_DPE =
 
       <div class="qnav">
         <button type="button" class="btn-ghost" data-prev>Retour</button>
-        <button type="submit" class="btn-gold" id="qsubmit">Obtenir mon devis</button>
+        <button type="submit" class="btn-gold" data-el="qsubmit">Obtenir mon devis</button>
       </div>
     </fieldset>
   </form>
 
-  <div class="qthanks" id="qthanks" hidden>
-    <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+  <div class="qthanks" data-el="qthanks" hidden>
+    <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h3>Merci, c'est noté&nbsp;!</h3>
     <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous recontacte très vite pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
-    <div class="qthanks-estim" id="qthanks-estim" hidden></div>
+    <div class="qthanks-estim" data-el="qthanks-estim" hidden></div>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
 </div>
@@ -250,13 +250,14 @@ const FORM_SEND_TO_DPE =
   .qopt-body b { font-family: var(--sora); font-weight: 600; color: var(--blue); font-size: 15px; }
   .qopt-desc { display: block; font-family: var(--inter); font-weight: 400; font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
   .qopt:hover .qopt-body { border-color: var(--blue-light); }
-  .qopt input:checked + .qopt-body { border-color: var(--gold); background: rgba(245,166,35,.07); }
+  .qopt input:checked + .qopt-body { border-color: var(--gold); background: var(--accent-soft); }
   .qopt input:focus-visible + .qopt-body { outline: 3px solid var(--blue-light); outline-offset: 2px; }
   .qopt-tag { font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); }
   .qopt-tag-incl { font-weight: 600; color: #1a7f4b; text-transform: uppercase; letter-spacing: .03em; font-size: 11px; }
   .qfield { display: block; margin-top: 16px; }
   .qfield:first-of-type { margin-top: 0; }
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
+  .qfield-opt { font-weight: 400; color: var(--ink-soft); }
   .qfield input, .qfield textarea, .qfield select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
   .qfield input:focus, .qfield textarea:focus, .qfield select:focus { outline: none; border-color: var(--blue-light); }
   .qfield-help { display: block; font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); margin-top: 6px; line-height: 1.45; }
@@ -299,8 +300,19 @@ const FORM_SEND_TO_DPE =
 
 <script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
   (function () {
-    var form = document.getElementById('quote-form');
+    // ── Multi-instances : le QuoteForm peut apparaître plusieurs fois sur une page
+    //    (ex. simulateur dans le hero + formulaire plus bas). On initialise CHAQUE
+    //    racine .qform indépendamment ; tous les éléments sont résolus via gid() scopé
+    //    à la racine (data-el="…") → plus aucun id global, plus de collision. ──
+    var roots = Array.prototype.slice.call(document.querySelectorAll('.qform'));
+    if (!roots.length) return;
+    var imprPushed = {}; // experiment_impression : une seule fois par page (pas par instance)
+    roots.forEach(initQuoteForm);
+
+    function initQuoteForm(root) {
+    var form = root.querySelector('form');
     if (!form) return;
+    function gid(n) { return root.querySelector('[data-el="' + n + '"]'); }
     var steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
     var dots = Array.prototype.slice.call(form.querySelectorAll('.dot'));
     var current = 0;
@@ -366,7 +378,7 @@ const FORM_SEND_TO_DPE =
       if (userAction) {
         var f = steps[i].querySelector('input, select, textarea, button');
         if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
-        document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        root.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
 
@@ -395,7 +407,7 @@ const FORM_SEND_TO_DPE =
         var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
         if (!/^\d{5}$/.test(cp) || IDF.indexOf(cp.slice(0, 2)) === -1) {
           ok = false;
-          var cpEl = form.querySelector('#cp-input'); if (cpEl) cpEl.style.borderColor = '#b3261e';
+          var cpEl = gid('cp-input'); if (cpEl) cpEl.style.borderColor = '#b3261e';
         }
       }
       return ok;
@@ -403,7 +415,7 @@ const FORM_SEND_TO_DPE =
 
     // Récap de la demande à la dernière étape (CRO #5)
     function buildRecap() {
-      var el = document.getElementById('qrecap'); if (!el) return;
+      var el = gid('qrecap'); if (!el) return;
       var d = demande(), b = bien(), m2 = surfaceM2(), age = checkedVal('age_bien'), est = val('estimation');
       var parts = [];
       if (d && DEMANDE_LABELS[d]) parts.push(DEMANDE_LABELS[d]);
@@ -422,20 +434,20 @@ const FORM_SEND_TO_DPE =
     }
 
     function updateEstimation() {
-      var box = document.getElementById('estim');
-      var amount = document.getElementById('estim-amount');
+      var box = gid('estim');
+      var amount = gid('estim-amount');
       var hEst = form.querySelector('[name="estimation"]');
       var hSurf = form.querySelector('[name="surface"]');
-      var ageBlock = document.getElementById('age-block');
-      var coproBlock = document.getElementById('copro-block');
-      var annexeAppartBlock = document.getElementById('annexe-appart-block');
-      var annexeMaisonBlock = document.getElementById('annexe-maison-block');
+      var ageBlock = gid('age-block');
+      var coproBlock = gid('copro-block');
+      var annexeAppartBlock = gid('annexe-appart-block');
+      var annexeMaisonBlock = gid('annexe-maison-block');
       var d = demande(), b = bien(), bi = bandIndex(), age = checkedVal('age_bien');
       var isPack = (d === 'vente' || d === 'location');
       var lot = isLotBien();
 
       // Lots annexes (cave/parking/box) : proposés pour vente/location uniquement.
-      var lotBlock = document.getElementById('lot-annexe-block');
+      var lotBlock = gid('lot-annexe-block');
       if (lotBlock) lotBlock.hidden = !isPack;
       // Si on quitte vente/location avec un lot sélectionné, il devient invalide → on le désélectionne.
       if (lot && !isPack) {
@@ -451,7 +463,7 @@ const FORM_SEND_TO_DPE =
       if (hSurf) { var sM2 = surfaceM2(); hSurf.value = sM2 != null ? String(sM2) : ''; } // surface réelle (m²)
 
       // Sous-titre conditionnel : lot annexe / DPE-audit / vente-location
-      var sub = document.getElementById('step3-sub');
+      var sub = gid('step3-sub');
       if (sub) {
         if (lot) sub.textContent = 'La surface est facultative pour ce type de lot. Le tarif est unique, tout compris.';
         else if (ageNeeded()) sub.textContent = abStepsB
@@ -598,11 +610,11 @@ const FORM_SEND_TO_DPE =
     // ⚠️ Pas d'auto-avance ici : le visiteur clique « Continuer » comme aux autres
     // étapes (laisse le temps de vérifier/choisir la ville quand le CP en couvre plusieurs).
     (function setupCodePostal() {
-      var input = form.querySelector('#cp-input');
+      var input = gid('cp-input');
       if (!input) return;
       var IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
-      var villeSel = form.querySelector('#ville-select');
-      var villeField = form.querySelector('#ville-field');
+      var villeSel = gid('ville-select');
+      var villeField = gid('ville-field');
       var reqId = 0;
       function validCp(v) { return /^\d{5}$/.test(v) && IDF.indexOf(v.slice(0, 2)) > -1; }
       input.addEventListener('input', function () {
@@ -642,9 +654,9 @@ const FORM_SEND_TO_DPE =
           var d = new Date(); d.setTime(d.getTime() + 90 * 864e5);
           document.cookie = name + '=' + v + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
         }
-        try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'cta_devis', variant: v }); } catch (e) {}
+        try { if (!imprPushed['cta_devis'] && window.dataLayer) { imprPushed['cta_devis'] = 1; window.dataLayer.push({ event: 'experiment_impression', experiment: 'cta_devis', variant: v }); } } catch (e) {}
       }
-      var btn = document.getElementById('qsubmit');
+      var btn = gid('qsubmit');
       if (btn && v === 'B') btn.textContent = 'Recevoir mon estimation gratuite';
     })();
 
@@ -652,7 +664,7 @@ const FORM_SEND_TO_DPE =
     // Émis UNIQUEMENT quand priceModelVariant ∈ {A,B} (donc jamais hors LP). Aucun cookie.
     (function priceModelImpression() {
       if (PRICE_MODEL !== 'A' && PRICE_MODEL !== 'B') return;
-      try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'price_model', variant: PRICE_MODEL }); } catch (e) {}
+      try { if (!imprPushed['price_model'] && window.dataLayer) { imprPushed['price_model'] = 1; window.dataLayer.push({ event: 'experiment_impression', experiment: 'price_model', variant: PRICE_MODEL }); } } catch (e) {}
     })();
 
     // ── Capture anticipée : lead « partiel » si abandon après l'estimation ──
@@ -671,7 +683,7 @@ const FORM_SEND_TO_DPE =
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!validStep(current)) return;
-      var btn = document.getElementById('qsubmit'); btn.disabled = true; btn.textContent = 'Envoi…';
+      var btn = gid('qsubmit'); btn.disabled = true; btn.textContent = 'Envoi…';
       submitted = true; // n'envoie plus de partiel
 
       // Lead COMPLET : upsert (statut complet) + conversion (uniquement ici)
@@ -752,7 +764,7 @@ const FORM_SEND_TO_DPE =
           } catch (err) {}
           // Estimation CONDITIONNÉE AU CONTACT : on ne dévoile le montant qu'ICI, une fois
           // les coordonnées envoyées (évite que le trafic froid prenne le prix puis reparte).
-          var estEl = document.getElementById('qthanks-estim');
+          var estEl = gid('qthanks-estim');
           if (estEl && REVEAL_ESTIMATION) {
             var estv = Number(payload.estimation || 0);
             estEl.innerHTML = estv > 0
@@ -761,8 +773,8 @@ const FORM_SEND_TO_DPE =
             estEl.hidden = false;
           }
           form.hidden = true;
-          document.getElementById('qthanks').hidden = false;
-          document.getElementById('qform').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          gid('qthanks').hidden = false;
+          root.scrollIntoView({ behavior: 'smooth', block: 'start' });
         })
         .catch(function () {
           submitted = false; btn.disabled = false; btn.textContent = 'Obtenir mon devis';
@@ -790,7 +802,7 @@ const FORM_SEND_TO_DPE =
           var dt = new Date(); dt.setTime(dt.getTime() + 90 * 864e5);
           document.cookie = name + '=' + v + '; expires=' + dt.toUTCString() + '; path=/; SameSite=Lax';
         }
-        try { if (window.dataLayer) window.dataLayer.push({ event: 'experiment_impression', experiment: 'steps_order', variant: v }); } catch (e) {}
+        try { if (!imprPushed['steps_order'] && window.dataLayer) { imprPushed['steps_order'] = 1; window.dataLayer.push({ event: 'experiment_impression', experiment: 'steps_order', variant: v }); } } catch (e) {}
       }
       if (v !== 'B') return;
       try {
@@ -811,5 +823,6 @@ const FORM_SEND_TO_DPE =
 
     applyAutoSteps();
     showStep(0);
+    } // initQuoteForm
   })();
 </script>

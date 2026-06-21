@@ -3,7 +3,7 @@
  * /tarifs — pilier Clarté. Grille complète + add-ons. JSON-LD AggregateOffer + FAQ.
  */
 import Base from '../layouts/Base.astro';
-import PriceSimulator from '../components/PriceSimulator.astro';
+import QuoteForm from '../components/QuoteForm.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
@@ -61,7 +61,7 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
       <div class="eyebrow">Votre prix exact</div>
       <h2 class="sec-title" style="font-size:28px">Vous voulez connaître le prix exact pour votre bien&nbsp;?</h2>
       <p class="sec-intro">Le tarif dépend de votre projet, de la surface, de l'âge du logement et des diagnostics obligatoires. Répondez à quelques questions pour obtenir une estimation adaptée — confirmée avant l'intervention.</p>
-      <div class="flex-cta mt-4"><a href="/devis" class="btn-blue">Calculer mon prix exact</a></div>
+      <div class="flex-cta mt-4"><a href="#simulateur" class="btn-blue">Calculer mon prix exact</a></div>
     </div>
   </section>
 
@@ -70,9 +70,9 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
       <div class="sec-head center">
         <div class="eyebrow center">Votre devis en direct</div>
         <h2 class="sec-title" style="font-size:28px">Estimez votre prix, tout compris</h2>
-        <p class="sec-intro">Renseignez votre bien : l'estimation s'affiche immédiatement, déplacement inclus. Le prix n'est jamais caché — vous le voyez avant même de laisser vos coordonnées.</p>
+        <p class="sec-intro">Renseignez votre bien en 2 minutes : vous obtenez votre estimation tout compris, déplacement inclus, sans engagement.</p>
       </div>
-      <div class="mt-5"><PriceSimulator /></div>
+      <div class="mt-5" id="simulateur"><QuoteForm revealEstimation={true} /></div>
     </div>
   </section>
 
@@ -131,7 +131,7 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
     <div class="wrap">
       <h2>Une estimation en 2 minutes</h2>
       <p>Obtenez votre prix tout compris immédiatement, sans engagement.</p>
-      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+      <div class="cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis</a></div>
     </div>
   </section>
 

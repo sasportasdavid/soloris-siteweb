@@ -9,6 +9,7 @@ import Base from '../../layouts/Base.astro';
 import Hero from '../../components/Hero.astro';
 import ReassuranceBar from '../../components/ReassuranceBar.astro';
 import Faq from '../../components/Faq.astro';
+import QuoteForm from '../../components/QuoteForm.astro';
 import ResponsiveImage from '../../components/ResponsiveImage.astro';
 import { DIAGNOSTICS, type Diagnostic } from '../../lib/diagnostics';
 import { getOffer } from '../../lib/offers';
@@ -58,13 +59,15 @@ const jsonLd = [
     tagpill="Certifié COFRAC · Rapport opposable"
     h1={`${diag.h1}, <span class="hl">en toute clarté</span>`}
     sub={diag.tagline}
-    primaryHref="/devis"
-    primaryLabel="Obtenir mon devis en 2 min"
-    secondaryHref="#tarif"
-    secondaryLabel="Voir le tarif"
     showTrust={true}
     sun={true}
-  />
+    hideCta={true}
+    aside={true}
+  >
+    <Fragment slot="aside">
+      <QuoteForm revealEstimation={true} />
+    </Fragment>
+  </Hero>
 
   <ReassuranceBar />
 
@@ -141,22 +144,21 @@ const jsonLd = [
         ))} — regrouper vos diagnostics revient à un tarif plus avantageux qu’à l’unité.</p>
       )}
       <div class="flex-cta mt-4">
-        <a href="/devis" class="btn-blue">Obtenir mon devis en 2 min</a>
+        <a href="#simulateur" class="btn-blue">Obtenir mon devis en 2 min</a>
         <a href="/tarifs" class="btn-ghost">Voir tous les tarifs</a>
       </div>
     </div>
   </section>
 
-  <!-- Doute / pack (cross-sell conversion) — §12 audit -->
-  <section class="section-line">
-    <div class="wrap" style="max-width:820px">
-      <div class="eyebrow">Pas sûr de vos obligations&nbsp;?</div>
-      <h2 class="sec-title">On vérifie ce qui est obligatoire pour votre bien</h2>
-      <p class="sec-intro">Ce diagnostic est souvent réalisé avec d'autres. Indiquez votre projet et les informations principales du bien&nbsp;: nous confirmons les diagnostics nécessaires avant l'intervention et regroupons le rendez-vous lorsque c'est possible, pour éviter plusieurs déplacements.</p>
-      <div class="flex-cta mt-4">
-        <a href="/devis" class="btn-blue">Calculer mon pack</a>
-        <a href="/devis" class="btn-ghost">Vérifier mon obligation</a>
+  <!-- Doute / pack (cross-sell conversion) — simulateur en 2e instance (#simulateur) -->
+  <section class="section-line" id="simulateur">
+    <div class="wrap">
+      <div class="sec-head center">
+        <div class="eyebrow center">Pas sûr de vos obligations&nbsp;?</div>
+        <h2 class="sec-title">On vérifie ce qui est obligatoire pour votre bien</h2>
+        <p class="sec-intro">Indiquez votre projet et les informations principales du bien&nbsp;: nous confirmons les diagnostics nécessaires avant l'intervention et regroupons le rendez-vous quand c'est possible.</p>
       </div>
+      <div class="mt-5"><QuoteForm revealEstimation={true} /></div>
     </div>
   </section>
 
@@ -194,7 +196,7 @@ const jsonLd = [
     <div class="wrap">
       <h2>{diag.name}, en toute clarté</h2>
       <p>Estimation tout compris en 2 minutes, sans engagement.</p>
-      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+      <div class="cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis</a></div>
     </div>
   </section>
 </Base>

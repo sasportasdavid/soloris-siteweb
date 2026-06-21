@@ -12,9 +12,9 @@ interface Props {
 }
 const { variant = 'light', size = 24, withWord = true, class: cls = '' } = Astro.props;
 
-const arc = variant === 'dark' ? '#fff' : '#0B2A4A';
+const arc = variant === 'dark' ? '#fff' : '#14385F';
 const ray = variant === 'dark' ? '#FFC94D' : '#F5A623';
-const wordColor = variant === 'dark' ? '#fff' : '#0B2A4A';
+const wordColor = variant === 'dark' ? '#fff' : '#14385F';
 ---
 
 <span class={`logo-word ${cls}`} style={`font-size:${size}px;color:${wordColor}`} aria-label="Soloris">

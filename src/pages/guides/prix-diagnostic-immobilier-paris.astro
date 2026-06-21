@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PriceSimulator from '../../components/PriceSimulator.astro';
+import QuoteForm from '../../components/QuoteForm.astro';
 import { getGuide } from '../../lib/guides';
 import { prixDes, DPE_FROM, DPE_TO, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
@@ -50,8 +50,8 @@ const jsonLd = [
         <h2>Combien coûte un diagnostic immobilier à Paris ?</h2>
         <p>Chez Soloris, le prix d'un pack de diagnostics dépend de deux choses : la <strong>surface</strong> du logement et son <strong>âge</strong>. Pourquoi l'âge ? Parce que les diagnostics obligatoires changent : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un pack vente démarre ainsi à <strong>{prixDes('vente')} €</strong> (petit logement de moins de 15 ans) et augmente avec la surface et l'ancienneté.</p>
         <p>Estimez votre devis Soloris, <strong>tout compris, déplacement inclus</strong> (appartements et maisons) — vous recevez votre tarif par email, sans engagement :</p>
-        <div style="margin:8px 0 10px">
-          <PriceSimulator />
+        <div style="margin:8px 0 10px" id="simulateur">
+          <QuoteForm revealEstimation={false} />
         </div>
 
         <h2>Ce qui fait varier le prix</h2>

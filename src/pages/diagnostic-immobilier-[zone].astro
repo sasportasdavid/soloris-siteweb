@@ -10,7 +10,7 @@ import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import OfferCard from '../components/OfferCard.astro';
-import PriceSimulator from '../components/PriceSimulator.astro';
+import QuoteForm from '../components/QuoteForm.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
@@ -68,13 +68,15 @@ const jsonLd = [
     tagpill={`${zone.dept} · Certifié COFRAC`}
     h1={`Diagnostic immobilier ${where}, <span class="hl">sous 48 h</span>`}
     sub={`DPE, vente, location, audit : tarif tout compris, déplacement inclus. Soloris intervient ${where} et en Île-de-France.`}
-    primaryHref="/devis"
-    primaryLabel="Obtenir mon devis en 2 min"
-    secondaryHref="#tarifs"
-    secondaryLabel="Voir les tarifs"
     showTrust={true}
     sun={true}
-  />
+    hideCta={true}
+    aside={true}
+  >
+    <Fragment slot="aside">
+      <QuoteForm revealEstimation={true} />
+    </Fragment>
+  </Hero>
 
   <ReassuranceBar />
 
@@ -99,13 +101,13 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- Tarifs -->
+  <!-- Tarifs + simulateur (2e instance du QuoteForm, ancre #simulateur) -->
   <section class="section-line" id="tarifs">
     <div class="wrap">
       <div class="eyebrow">Tarif tout compris</div>
       <h2 class="sec-title">Combien ça coûte {where}&nbsp;?</h2>
-      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente. Estimez le vôtre&nbsp;: vous recevez le tarif par email, sans engagement.</p>
-      <div class="mt-5"><PriceSimulator /></div>
+      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente. Estimez le vôtre en 2 min, sans engagement.</p>
+      <div class="mt-5" id="simulateur"><QuoteForm revealEstimation={true} /></div>
     </div>
   </section>
 
@@ -134,7 +136,7 @@ const jsonLd = [
       <h2>Vos diagnostics {where}, en toute clarté</h2>
       <p>Estimation tout compris en 2 minutes, sans engagement.</p>
       <div class="cta">
-        <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+        <a href="#simulateur" class="btn-gold">Obtenir mon devis</a>
         <a href="/tarifs" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir les tarifs</a>
       </div>
     </div>
