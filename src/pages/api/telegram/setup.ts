@@ -5,8 +5,10 @@
  * Protégé : soit ?key=<TELEGRAM_WEBHOOK_SECRET>, soit une session back-office
  * (Authorization: Bearer <jwt Supabase>, comme /api/rdv/confirm) — ce second mode permet
  * de déclencher l'enregistrement depuis /admin sans manipuler de variable Vercel.
- * L'endpoint lit le token et le secret côté serveur, appelle setWebhook avec EXACTEMENT
- * TELEGRAM_WEBHOOK_SECRET (donc aucun risque de décalage de secret), puis renvoie getWebhookInfo + un
+ * L'endpoint lit le token et le secret côté serveur, appelle setWebhook avec EXACTEMENT le
+ * jeton que le webhook entrant vérifie (TELEGRAM_WEBHOOK_TOKEN : le secret lui-même, ou sa
+ * dérivation SHA-256 si le secret contient des caractères refusés par Telegram — donc aucun
+ * risque de décalage ni de « secret token contains illegal characters »), puis renvoie getWebhookInfo + un
  * diagnostic des chats (chat où les cartes sont postées vs groupe RDV ; le webhook
  * entrant accepte les clics venant de l'un comme de l'autre).
  *
@@ -19,7 +21,8 @@
 import type { APIRoute } from 'astro';
 import {
   SUPABASE_URL, SUPABASE_ANON, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
-  TELEGRAM_CHAT_ID, TELEGRAM_LEADS_CHAT_ID, SITE_URL,
+  TELEGRAM_WEBHOOK_TOKEN, TELEGRAM_WEBHOOK_TOKEN_DERIVE, TELEGRAM_CHAT_ID,
+  TELEGRAM_LEADS_CHAT_ID, SITE_URL,
 } from '../../../lib/serverEnv';
 
 export const prerender = false;
@@ -55,7 +58,7 @@ async function adminEmail(jwt: string): Promise<string | null> {
 }
 
 export const GET: APIRoute = async ({ url, request }) => {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_WEBHOOK_SECRET) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_WEBHOOK_SECRET || !TELEGRAM_WEBHOOK_TOKEN) {
     return json({ error: 'TELEGRAM_BOT_TOKEN ou TELEGRAM_WEBHOOK_SECRET absent au runtime (vérifier les variables Vercel en Production + redéployer).' }, 500);
   }
   // Garde : soit le secret (le même que celui posé en Vercel), soit une session admin valide.
@@ -80,7 +83,7 @@ export const GET: APIRoute = async ({ url, request }) => {
   if (!infoOnly) {
     setResult = await tg('setWebhook', {
       url: webhookUrl,
-      secret_token: TELEGRAM_WEBHOOK_SECRET,
+      secret_token: TELEGRAM_WEBHOOK_TOKEN,
       allowed_updates: ['callback_query'],
     });
   }
@@ -102,6 +105,9 @@ export const GET: APIRoute = async ({ url, request }) => {
       url_ok: (info?.url || '') === webhookUrl,
       pending_update_count: info?.pending_update_count ?? null,
       last_error_message: info?.last_error_message || null,
+      // Vrai si le secret Vercel contient des caractères refusés par Telegram : le jeton transmis
+      // et vérifié est alors sa dérivation SHA-256 (base64url). Aucune action requise.
+      jeton_derive: TELEGRAM_WEBHOOK_TOKEN_DERIVE,
       // Chats (identiques dans la configuration habituelle ; les deux sont acceptés par le webhook)
       chat_cartes_postees: String(TELEGRAM_CHAT_ID || '(non défini)'),
       chat_accepte_par_webhook: String(TELEGRAM_LEADS_CHAT_ID || '(non défini)'),
