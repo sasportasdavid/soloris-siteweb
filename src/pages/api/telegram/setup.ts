@@ -5,8 +5,8 @@
  * Protégé par le secret : ?key=<TELEGRAM_WEBHOOK_SECRET>. L'endpoint lit le token et
  * le secret côté serveur, appelle setWebhook avec EXACTEMENT TELEGRAM_WEBHOOK_SECRET
  * (donc aucun risque de décalage de secret), puis renvoie getWebhookInfo + un
- * diagnostic du filtre de groupe (chat où les cartes sont postées vs chat accepté
- * par le webhook entrant).
+ * diagnostic des chats (chat où les cartes sont postées vs groupe RDV ; le webhook
+ * entrant accepte les clics venant de l'un comme de l'autre).
  *
  *   ?key=SECRET            → setWebhook puis getWebhookInfo (enregistrement)
  *   ?key=SECRET&info=1     → getWebhookInfo seul (diagnostic, ne modifie rien)
@@ -58,9 +58,9 @@ export const GET: APIRoute = async ({ url }) => {
   const infoRaw = await tg('getWebhookInfo');
   const info = infoRaw?.result || infoRaw;
 
-  // Diagnostic du filtre de groupe : le webhook entrant n'accepte que les clics venant
-  // de TELEGRAM_LEADS_CHAT_ID. Les cartes sont postées dans TELEGRAM_CHAT_ID. S'ils
-  // diffèrent, les boutons resteront inertes (callback rejeté). On le signale.
+  // Diagnostic des chats : les cartes sont postées dans TELEGRAM_CHAT_ID, les RDV dans
+  // TELEGRAM_LEADS_CHAT_ID. Le webhook entrant accepte les clics venant des deux ; on
+  // signale simplement s'ils diffèrent (information, plus une cause de boutons inertes).
   const chatMatch = String(TELEGRAM_CHAT_ID || '') === String(TELEGRAM_LEADS_CHAT_ID || '');
 
   return json({
@@ -73,7 +73,7 @@ export const GET: APIRoute = async ({ url }) => {
       url_ok: (info?.url || '') === webhookUrl,
       pending_update_count: info?.pending_update_count ?? null,
       last_error_message: info?.last_error_message || null,
-      // Filtre de groupe (les 2 doivent être identiques pour que les boutons marchent)
+      // Chats (identiques dans la configuration habituelle ; les deux sont acceptés par le webhook)
       chat_cartes_postees: String(TELEGRAM_CHAT_ID || '(non défini)'),
       chat_accepte_par_webhook: String(TELEGRAM_LEADS_CHAT_ID || '(non défini)'),
       chat_match: chatMatch,
