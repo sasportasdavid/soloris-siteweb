@@ -21,6 +21,19 @@ const STATUT_LABELS: Record<string, string> = {
     <h1 class="adm-h1">Leads</h1>
     <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
+    <!-- Outils : boutons des cartes Telegram (webhook). Pas de secret à manipuler : la session admin suffit. -->
+    <details class="adm-tools">
+      <summary>Outils · boutons Telegram</summary>
+      <div class="adm-tools-body">
+        <p class="muted">Si les boutons sous les cartes Telegram (Contacté · Caler le RDV · Perdu) ne réagissent pas, ré-enregistrez le webhook ici, puis recliquez un bouton sur une carte.</p>
+        <div class="adm-tools-actions">
+          <button type="button" class="adm-btn" id="tg-setup-run">Ré-enregistrer le webhook Telegram</button>
+          <button type="button" class="adm-btn adm-btn-ghost" id="tg-setup-info">Diagnostic seul</button>
+        </div>
+        <div id="tg-setup-result" class="adm-tools-result" hidden></div>
+      </div>
+    </details>
+
     <!-- Mini stats (cartes cliquables = filtres) -->
     <div class="adm-stats">
       <div class="adm-stat adm-stat--click" data-card="reset" title="Voir tous les leads"><div class="lbl">Leads ce mois</div><div class="val" id="stat-month">—</div></div>
@@ -231,6 +244,13 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-btn-ghost { background:#fff; color:var(--blue); border:1.5px solid var(--line); }
     .adm-btn-ghost:hover { border-color:var(--blue); background:var(--paper); }
     .adm-btn-sm { background:none; border:1px dashed var(--line); color:var(--blue-light); cursor:pointer; font-size:12px; padding:6px 10px; border-radius:8px; margin-top:8px; }
+    /* Outils (webhook Telegram) */
+    .adm-tools { margin:-6px 0 18px; border:1px dashed var(--line); border-radius:10px; padding:8px 12px; font-size:13px; }
+    .adm-tools summary { cursor:pointer; font-family:var(--sora); font-weight:600; color:var(--blue); }
+    .adm-tools-body { padding-top:8px; }
+    .adm-tools-actions { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 8px; }
+    .adm-tools-result { background:var(--paper); border-radius:8px; padding:8px 10px; line-height:1.5; white-space:pre-line; }
+    .adm-tools-result pre { margin:6px 0 0; font-size:11px; white-space:pre-wrap; word-break:break-all; color:var(--ink-soft); }
     .adm-devis-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
     .adm-lig { display:grid; grid-template-columns:1fr 92px 26px; gap:8px; margin-bottom:8px; align-items:center; }
     .adm-lig input { width:100%; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-size:13px; font-family:var(--inter); }
@@ -979,6 +999,45 @@ const STATUT_LABELS: Record<string, string> = {
         if ((e.target as HTMLElement).closest('[data-close]')) closeDrawer();
       });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
+      // Outils Telegram : (ré)enregistre le webhook des boutons avec la session admin,
+      // puis affiche un diagnostic lisible (+ JSON brut). Texte seul : rien d'injecté en HTML.
+      async function tgSetup(infoOnly: boolean) {
+        const out = document.getElementById('tg-setup-result') as HTMLElement;
+        out.hidden = false;
+        out.textContent = infoOnly ? 'Diagnostic en cours…' : 'Enregistrement du webhook…';
+        const { data: sess } = await supabase.auth.getSession();
+        const tok = sess.session && sess.session.access_token;
+        if (!tok) { out.textContent = 'Session expirée, reconnectez-vous.'; return; }
+        try {
+          const res = await fetch('/api/telegram/setup' + (infoOnly ? '?info=1' : ''), { headers: { Authorization: 'Bearer ' + tok } });
+          const j: any = await res.json().catch(() => null);
+          if (!res.ok || !j) { out.textContent = 'Échec : ' + (j && j.error ? j.error : 'HTTP ' + res.status); return; }
+          const d = j.diagnostics || {};
+          const ic = (ok: boolean) => (ok ? '✅' : '❌');
+          const setOk = !!(j.set_webhook && j.set_webhook.ok);
+          const lines = [
+            infoOnly ? '' : `${ic(setOk)} Enregistrement du webhook : ${setOk ? 'réussi' : (j.set_webhook && j.set_webhook.description) || 'échec'}`,
+            `${ic(!!d.url_ok)} URL du webhook : ${d.url_ok ? 'correcte' : 'différente (' + (d.url_enregistree || 'aucune') + ')'}`,
+            `${d.last_error_message ? '⚠️' : '✅'} Dernière erreur Telegram : ${d.last_error_message || 'aucune'}`,
+            `ℹ️ Mises à jour en attente : ${d.pending_update_count ?? '—'}`,
+            `${ic(!!d.chat_match)} Chats identiques (cartes / groupe RDV) : ${d.chat_match ? 'oui' : 'non — les deux sont acceptés par le webhook'}`,
+          ].filter(Boolean);
+          out.textContent = '';
+          const summary = document.createElement('div');
+          summary.textContent = lines.join('\n');
+          const hint = document.createElement('div');
+          hint.className = 'muted';
+          hint.textContent = 'Cliquez maintenant un bouton sous une carte Telegram pour tester.';
+          const pre = document.createElement('pre');
+          pre.textContent = JSON.stringify(j, null, 2);
+          out.append(summary, hint, pre);
+        } catch (e: any) {
+          out.textContent = 'Échec : ' + String((e && e.message) || e);
+        }
+      }
+      document.getElementById('tg-setup-run')?.addEventListener('click', () => tgSetup(false));
+      document.getElementById('tg-setup-info')?.addEventListener('click', () => tgSetup(true));
 
       document.getElementById('logout-btn')?.addEventListener('click', async () => {
         await supabase.auth.signOut();

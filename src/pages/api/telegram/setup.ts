@@ -2,21 +2,24 @@
  * GET /api/telegram/setup — outil d'administration (one-shot) pour (ré)enregistrer
  * le webhook Telegram des boutons de cartes lead, SANS manipuler le token à la main.
  *
- * Protégé par le secret : ?key=<TELEGRAM_WEBHOOK_SECRET>. L'endpoint lit le token et
- * le secret côté serveur, appelle setWebhook avec EXACTEMENT TELEGRAM_WEBHOOK_SECRET
- * (donc aucun risque de décalage de secret), puis renvoie getWebhookInfo + un
- * diagnostic du filtre de groupe (chat où les cartes sont postées vs chat accepté
- * par le webhook entrant).
+ * Protégé : soit ?key=<TELEGRAM_WEBHOOK_SECRET>, soit une session back-office
+ * (Authorization: Bearer <jwt Supabase>, comme /api/rdv/confirm) — ce second mode permet
+ * de déclencher l'enregistrement depuis /admin sans manipuler de variable Vercel.
+ * L'endpoint lit le token et le secret côté serveur, appelle setWebhook avec EXACTEMENT
+ * TELEGRAM_WEBHOOK_SECRET (donc aucun risque de décalage de secret), puis renvoie getWebhookInfo + un
+ * diagnostic des chats (chat où les cartes sont postées vs groupe RDV ; le webhook
+ * entrant accepte les clics venant de l'un comme de l'autre).
  *
  *   ?key=SECRET            → setWebhook puis getWebhookInfo (enregistrement)
  *   ?key=SECRET&info=1     → getWebhookInfo seul (diagnostic, ne modifie rien)
+ *   (ou les mêmes appels sans clé, avec l'en-tête Authorization du back-office)
  *
  * Ne renvoie JAMAIS le token. getWebhookInfo ne contient ni token ni secret.
  */
 import type { APIRoute } from 'astro';
 import {
-  TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_CHAT_ID,
-  TELEGRAM_LEADS_CHAT_ID, SITE_URL,
+  SUPABASE_URL, SUPABASE_ANON, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
+  TELEGRAM_CHAT_ID, TELEGRAM_LEADS_CHAT_ID, SITE_URL,
 } from '../../../lib/serverEnv';
 
 export const prerender = false;
@@ -28,24 +31,50 @@ function json(data: unknown, status = 200): Response {
 }
 
 async function tg(method: string, body?: unknown): Promise<any> {
-  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body || {}),
-  });
-  return res.json().catch(() => ({ ok: false, description: 'réponse Telegram illisible' }));
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+    return await res.json().catch(() => ({ ok: false, description: 'réponse Telegram illisible' }));
+  } catch (e) {
+    console.error(`[tg-setup] Telegram ${method} injoignable :`, e);
+    return { ok: false, description: 'Telegram injoignable depuis le serveur' };
+  }
 }
 
-export const GET: APIRoute = async ({ url }) => {
+/** Vérifie le JWT Supabase d'une session back-office → email de l'admin, ou null. */
+async function adminEmail(jwt: string): Promise<string | null> {
+  if (!SUPABASE_URL || !SUPABASE_ANON) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_ANON as string, Authorization: `Bearer ${jwt}` } });
+    if (!res.ok) return null;
+    const u = await res.json();
+    return u?.email || 'back-office';
+  } catch { return null; }
+}
+
+export const GET: APIRoute = async ({ url, request }) => {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_WEBHOOK_SECRET) {
     return json({ error: 'TELEGRAM_BOT_TOKEN ou TELEGRAM_WEBHOOK_SECRET absent au runtime (vérifier les variables Vercel en Production + redéployer).' }, 500);
   }
-  // Garde : il faut connaître le secret pour déclencher (le même que celui posé en Vercel).
-  if (url.searchParams.get('key') !== TELEGRAM_WEBHOOK_SECRET) {
-    return json({ error: 'Clé invalide. Appeler avec ?key=<TELEGRAM_WEBHOOK_SECRET>.' }, 401);
+  // Garde : soit le secret (le même que celui posé en Vercel), soit une session admin valide.
+  let declenchePar = '';
+  const key = url.searchParams.get('key');
+  if (key && key === TELEGRAM_WEBHOOK_SECRET) {
+    declenchePar = 'clé';
+  } else {
+    const jwt = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    const email = jwt ? await adminEmail(jwt) : null;
+    if (!email) {
+      return json({ error: 'Non autorisé. Appeler avec ?key=<TELEGRAM_WEBHOOK_SECRET> ou depuis le back-office (session admin).' }, 401);
+    }
+    declenchePar = email;
   }
 
   const webhookUrl = `${SITE_URL}/api/telegram/webhook`;
   const infoOnly = url.searchParams.get('info') === '1';
+  console.log(`[tg-setup] ${infoOnly ? 'diagnostic' : 'enregistrement du webhook'} demandé par ${declenchePar}`);
 
   let setResult: any = null;
   if (!infoOnly) {
@@ -58,9 +87,9 @@ export const GET: APIRoute = async ({ url }) => {
   const infoRaw = await tg('getWebhookInfo');
   const info = infoRaw?.result || infoRaw;
 
-  // Diagnostic du filtre de groupe : le webhook entrant n'accepte que les clics venant
-  // de TELEGRAM_LEADS_CHAT_ID. Les cartes sont postées dans TELEGRAM_CHAT_ID. S'ils
-  // diffèrent, les boutons resteront inertes (callback rejeté). On le signale.
+  // Diagnostic des chats : les cartes sont postées dans TELEGRAM_CHAT_ID, les RDV dans
+  // TELEGRAM_LEADS_CHAT_ID. Le webhook entrant accepte les clics venant des deux ; on
+  // signale simplement s'ils diffèrent (information, plus une cause de boutons inertes).
   const chatMatch = String(TELEGRAM_CHAT_ID || '') === String(TELEGRAM_LEADS_CHAT_ID || '');
 
   return json({
@@ -73,7 +102,7 @@ export const GET: APIRoute = async ({ url }) => {
       url_ok: (info?.url || '') === webhookUrl,
       pending_update_count: info?.pending_update_count ?? null,
       last_error_message: info?.last_error_message || null,
-      // Filtre de groupe (les 2 doivent être identiques pour que les boutons marchent)
+      // Chats (identiques dans la configuration habituelle ; les deux sont acceptés par le webhook)
       chat_cartes_postees: String(TELEGRAM_CHAT_ID || '(non défini)'),
       chat_accepte_par_webhook: String(TELEGRAM_LEADS_CHAT_ID || '(non défini)'),
       chat_match: chatMatch,
