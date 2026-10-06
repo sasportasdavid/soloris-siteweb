@@ -1,6 +1,7 @@
 /**
  * POST /api/telegram/webhook — webhook entrant Telegram (boutons sous les cartes lead).
- * - Vérifie X-Telegram-Bot-Api-Secret-Token == TELEGRAM_WEBHOOK_SECRET (rejette sinon).
+ * - Vérifie X-Telegram-Bot-Api-Secret-Token == TELEGRAM_WEBHOOK_TOKEN (jeton transmis à Telegram
+ *   par /api/telegram/setup ; dérivé du secret si celui-ci contient des caractères refusés).
  * - N'accepte que les callback_query venant des chats connus : celui où les cartes sont
  *   postées (TELEGRAM_CHAT_ID) et le groupe « Soloris Leads » (TELEGRAM_LEADS_CHAT_ID).
  *   Ils sont en général identiques ; s'ils diffèrent, les clics restent acceptés et la
@@ -12,9 +13,10 @@
  * Secrets côté serveur uniquement.
  */
 import type { APIRoute } from 'astro';
+import { timingSafeEqual } from 'node:crypto';
 import {
   SUPABASE_URL, SUPABASE_ANON, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-  TELEGRAM_LEADS_CHAT_ID, TELEGRAM_WEBHOOK_SECRET, SITE_URL,
+  TELEGRAM_LEADS_CHAT_ID, TELEGRAM_WEBHOOK_TOKEN, SITE_URL,
 } from '../../../lib/serverEnv';
 import { leadKeyboard, STATUT_LABELS_TG } from '../../../lib/telegram';
 import { signRdvToken } from '../../../lib/rdvToken';
@@ -22,6 +24,13 @@ import { signRdvToken } from '../../../lib/rdvToken';
 export const prerender = false;
 
 const ok = () => new Response('ok', { status: 200 });
+
+/** Comparaison à temps constant du jeton d'en-tête avec le jeton attendu. */
+function tokenOk(header: string | null): boolean {
+  if (!TELEGRAM_WEBHOOK_TOKEN || !header) return false;
+  const a = Buffer.from(header), b = Buffer.from(TELEGRAM_WEBHOOK_TOKEN);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /** Chats dont les clics sont acceptés : chat des cartes lead + groupe RDV. */
 const ALLOWED_CHATS = new Set(
@@ -76,8 +85,8 @@ function statusCard(lead: any, statut: string, by: string): string {
 
 export const POST: APIRoute = async ({ request }) => {
   // Sécurité : secret d'en-tête obligatoire
-  if (!TELEGRAM_WEBHOOK_SECRET || request.headers.get('x-telegram-bot-api-secret-token') !== TELEGRAM_WEBHOOK_SECRET) {
-    console.warn('[tg-webhook] requête rejetée : secret d’en-tête absent ou différent de TELEGRAM_WEBHOOK_SECRET');
+  if (!tokenOk(request.headers.get('x-telegram-bot-api-secret-token'))) {
+    console.warn('[tg-webhook] requête rejetée : jeton d’en-tête absent ou différent du jeton attendu (ré-enregistrer le webhook depuis /admin → Outils)');
     return new Response('forbidden', { status: 401 });
   }
   let update: any;
