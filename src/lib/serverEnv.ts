@@ -15,6 +15,8 @@ function pick(runtime: string | undefined, build: string | undefined): string | 
 
 export const SUPABASE_URL = pick(P.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_URL);
 export const SUPABASE_ANON = pick(P.PUBLIC_SUPABASE_ANON_KEY, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+/** Clé service_role (facultative) : création / blocage des comptes de connexion des opérateurs. */
+export const SUPABASE_SERVICE_ROLE = pick(P.SUPABASE_SERVICE_ROLE, import.meta.env.SUPABASE_SERVICE_ROLE);
 
 export const RESEND_API_KEY = pick(P.RESEND_API_KEY, import.meta.env.RESEND_API_KEY);
 /** Expéditeur des emails. Domaine à vérifier dans Resend (ex. "Soloris <devis@soloris.fr>"). */

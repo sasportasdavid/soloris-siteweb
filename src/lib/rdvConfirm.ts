@@ -3,13 +3,11 @@
  * (JWT admin) et le lien public signé (token HMAC). Côté serveur uniquement.
  *
  * Séquence : a) rdv_save (RPC) → b) email Resend + .ics (non bloquant) →
- *            c) rdv_mark_sent → d) réécriture de la carte Telegram du lead.
+ *            c) rdv_mark_sent → d) réécriture de la carte Telegram du lead (telegramPush).
  * L'échec d'email ne bloque jamais l'enregistrement (les données sont déjà écrites).
  */
-import {
-  SUPABASE_URL, SUPABASE_ANON, RESEND_API_KEY, CONFIRM_FROM_EMAIL,
-  TELEGRAM_BOT_TOKEN, TELEGRAM_LEADS_CHAT_ID,
-} from './serverEnv';
+import { SUPABASE_URL, SUPABASE_ANON, RESEND_API_KEY, CONFIRM_FROM_EMAIL } from './serverEnv';
+import { refreshLeadCard } from './telegramPush';
 import { SITE } from './site';
 import { buildRdvConfirmation, formatDateFr, formatHeureFr } from './rdvEmail';
 import { buildIcs } from './ics';
@@ -32,28 +30,6 @@ async function rpc(fn: string, body: unknown): Promise<any> {
   // et fait planter toute la confirmation APRÈS l'envoi de l'email (faux négatif côté UI).
   if (!txt) return null;
   try { return JSON.parse(txt); } catch (e) { console.error(`[rdv] RPC ${fn} réponse non-JSON`, e); return null; }
-}
-
-/** Réécrit (ou poste en repli) la carte Telegram du lead avec le RDV confirmé. */
-async function rewriteTelegramCard(lead: any): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_LEADS_CHAT_ID) return;
-  const d = new Date(lead.rdv_at);
-  const prenom = (lead.nom || '').trim().split(/\s+/)[0] || '—';
-  const prix = lead.prix_total_ttc != null ? `${lead.prix_total_ttc}€` : '';
-  const text = `✅ RDV pris · ${formatDateFr(d)} ${formatHeureFr(d)} · ${lead.prestation || ''}${prix ? ' · ' + prix : ''} — par ${lead.traite_par || '—'}\n👤 ${prenom}${lead.telephone ? ' · 📞 ' + lead.telephone : ''}`;
-  try {
-    if (lead.telegram_message_id) {
-      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: TELEGRAM_LEADS_CHAT_ID, message_id: lead.telegram_message_id, text, reply_markup: { inline_keyboard: [] } }),
-      });
-      if (res.ok) return; // sinon repli sendMessage
-    }
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_LEADS_CHAT_ID, text, disable_web_page_preview: true }),
-    });
-  } catch (e) { console.error('[rdv] réécriture carte Telegram échouée (RDV enregistré):', e); }
 }
 
 export interface RunRdvResult {
@@ -98,8 +74,8 @@ export async function runRdvConfirm(opts: { leadId: string; fields: RdvFields; t
   let stampedAt: string | null = null;
   if (emailSent) { stampedAt = new Date().toISOString(); await rpc('rdv_mark_sent', { p_id: opts.leadId }); }
 
-  // d) Réécriture de la carte Telegram (toujours, le RDV est pris)
-  await rewriteTelegramCard(lead);
+  // d) Réécriture de la carte Telegram (source unique : détails + « ✅ RDV pris · date · par X »)
+  try { await refreshLeadCard(lead.id); } catch (e) { console.error('[rdv] réécriture carte Telegram échouée (RDV enregistré):', e); }
 
   return { ok: true, emailSent, emailError, reason, to: lead.email || undefined, confirmation_rdv_envoyee_at: stampedAt };
 }

@@ -73,6 +73,18 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="parking">Parking</option>
         <option value="box">Box</option>
       </select>
+      <select id="filter-op" title="Opérateur en charge">
+        <option value="">Toute l'équipe</option>
+        <option value="me">Mes leads</option>
+        <option value="none">Non assignés</option>
+      </select>
+      <select id="sort-mobile" class="adm-sort-mobile" title="Tri">
+        <option value="date:-1">Plus récents d'abord</option>
+        <option value="date:1">Plus anciens d'abord</option>
+        <option value="estimation:-1">Estimation ↓</option>
+        <option value="statut:-1">Statut : les plus avancés</option>
+        <option value="statut:1">Statut : nouveaux d'abord</option>
+      </select>
       <label class="adm-toggle" title="Une ligne par contact (téléphone / email) : ses demandes sont regroupées. Décocher pour voir chaque lead séparément.">
         <input type="checkbox" id="group-dupes" /> Une ligne par contact
       </label>
@@ -194,16 +206,43 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-sortable.sort-asc .adm-caret::after { content:'▲'; opacity:1; }
     .adm-sortable.sort-desc .adm-caret::after { content:'▼'; opacity:1; }
 
-    /* Vue mobile : tableau en cartes empilées */
+    /* Assignation (ligne + panneau) */
+    .adm-assign { display:block; margin-top:6px; max-width:170px; border:1px solid var(--line); border-radius:8px; padding:4px 6px; font-size:12px; font-family:var(--sora); color:var(--ink-soft); background:#fff; cursor:pointer; }
+    .adm-assign.on { color:#1f4e7a; border-color:#a9c2dd; background:rgba(46,111,174,.06); }
+    .adm-sort-mobile { display:none; }
+
+    /* Vue mobile : tableau en cartes empilées, cibles tactiles confortables */
     @media (max-width:760px) {
+      .adm-h1 { font-size:24px; }
+      .adm-sub { margin-bottom:14px; }
+      .adm-stats { gap:8px; margin-bottom:16px; }
+      .adm-stat { padding:10px 12px; border-radius:12px; }
+      .adm-stat .val { font-size:22px; }
+      .adm-filters { gap:8px; }
+      .adm-filters input[type="search"] { flex:1 1 100%; min-width:0; }
+      .adm-filters select { flex:1 1 calc(50% - 4px); min-width:0; }
+      .adm-filters input, .adm-filters select { font-size:16px; padding:11px 12px; } /* 16px : pas de zoom iOS */
+      .adm-sort-mobile { display:block; }
+      .adm-toggle { flex:1 1 100%; }
+      .adm-count { margin-left:0; flex:1 1 100%; }
       .adm-tablewrap { border:none; background:transparent; overflow:visible; }
       .adm-table thead { display:none; }
       .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display:block; width:100%; }
       .adm-table tr.adm-row { background:#fff; border:1px solid var(--line); border-radius:14px; margin-bottom:12px; padding:6px 4px; position:relative; }
+      .adm-row--stale { box-shadow: inset 4px 0 0 #d8503a; }
       .adm-table td { border:none; padding:6px 14px; }
       .adm-table td.adm-chev { display:none; }
       .adm-table td::before { content:attr(data-th); display:block; font-family:var(--sora); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px; }
       .adm-table td:first-child::before { content:''; margin:0; }
+      .adm-table td[data-th="CP"], .adm-table td[data-th="Estim."] { display:inline-block; width:50%; }
+      .adm-table .price { font-size:16px; }
+      .adm-statut { width:100%; font-size:16px; padding:10px 12px; }
+      .adm-assign { max-width:none; width:100%; font-size:14px; padding:9px 12px; }
+      .adm-iact button, .adm-iact a { font-size:13px; padding:8px 12px; }
+      .adm-btn-sm { font-size:13px; padding:8px 12px; }
+      .adm-table a[href^="tel:"] { font-size:16px; font-weight:600; }
+      .adm-tools { font-size:12px; }
+      .adm-edit input, .adm-edit select, .adm-edit textarea, .adm-adresse-input { font-size:16px; }
     }
 
     /* Drawer */
@@ -304,6 +343,14 @@ const STATUT_LABELS: Record<string, string> = {
 
     let allLeads: any[] = [];
     let allDevis: any[] = [];
+    let allOps: any[] = [];      // opérateurs (équipe), actifs en tête
+    let me: any = null;          // fiche opérateur de l'utilisateur connecté (si elle existe)
+    let meEmail = '';
+    /** Options du sélecteur « Assigné à » (actifs + l'opérateur courant même désactivé). */
+    function opsOptions(selected: any): string {
+      const opts = allOps.filter((o) => o.actif || o.id === selected);
+      return `<option value="">— Non assigné —</option>` + opts.map((o) => `<option value="${o.id}" ${o.id === selected ? 'selected' : ''}>${esc(o.nom)}</option>`).join('');
+    }
     let devisByLead: Record<string, any> = {}; // lead_id → devis le plus récent
     let currentLeadId: string | null = null;
     let adresseTimer: any = null; // debounce autocomplétion adresse
@@ -383,6 +430,7 @@ const STATUT_LABELS: Record<string, string> = {
         secteur: pick('secteur'), ville: pick('ville'),
         estimation: val(latest.estimation) ? latest.estimation : pick('estimation'),
         statut: pipeline.statut || 'nouveau', rdv_date: pipeline.rdv_date, montant: pipeline.montant,
+        assigne_a: pipeline.assigne_a || pick('assigne_a') || null,
         _statutId: pipeline.id, _devisId: devisLead.id,
         _dupes: sorted.length, _firstAt: sorted[sorted.length - 1].created_at,
       });
@@ -402,6 +450,7 @@ const STATUT_LABELS: Record<string, string> = {
           so: (document.getElementById('filter-source') as HTMLSelectElement).value,
           ld: (document.getElementById('filter-lead') as HTMLSelectElement).value,
           bn: (document.getElementById('filter-bien') as HTMLSelectElement).value,
+          op: (document.getElementById('filter-op') as HTMLSelectElement).value,
           sortKey, sortDir, groupDupes,
         }));
       } catch { /* quota / mode privé : ignoré */ }
@@ -410,7 +459,7 @@ const STATUT_LABELS: Record<string, string> = {
       let p: any = {};
       try { p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { p = {}; }
       const set = (id: string, v: any) => { const el = document.getElementById(id) as HTMLInputElement | null; if (el && v != null) el.value = v; };
-      set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn);
+      set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn); set('filter-op', p.op);
       if (p.sortKey && ['date', 'estimation', 'statut'].includes(p.sortKey)) sortKey = p.sortKey;
       if (p.sortDir === 1 || p.sortDir === -1) sortDir = p.sortDir;
       groupDupes = p.groupDupes === undefined ? true : !!p.groupDupes;
@@ -463,9 +512,13 @@ const STATUT_LABELS: Record<string, string> = {
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
       const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
       const fBien = (document.getElementById('filter-bien') as HTMLSelectElement).value;
+      const fOp = (document.getElementById('filter-op') as HTMLSelectElement).value;
 
       let rows = allLeads.slice();
       if (fBien) rows = rows.filter((l) => l.type_bien === fBien);
+      if (fOp === 'me') rows = rows.filter((l) => me && l.assigne_a === me.id);
+      else if (fOp === 'none') rows = rows.filter((l) => !l.assigne_a);
+      else if (fOp) rows = rows.filter((l) => l.assigne_a === fOp);
       if (fStatut) rows = rows.filter((l) => l.statut === fStatut);
       if (fSource === 'ads') rows = rows.filter(isAds);
       if (fSource === 'organique') rows = rows.filter((l) => !isAds(l));
@@ -542,7 +595,7 @@ const STATUT_LABELS: Record<string, string> = {
           <td data-th="Estim." class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
           <td data-th="Acquisition">${sourceTag}${acq}</td>
           <td data-th="Devis">${devisCell}</td>
-          <td data-th="Statut">${statutSelect(l)}</td>
+          <td data-th="Statut">${statutSelect(l)}${allOps.length ? `<select class="adm-assign${l.assigne_a ? ' on' : ''}" data-id="${l._statutId || l.id}" data-field="assigne_a" title="Opérateur en charge">${opsOptions(l.assigne_a)}</select>` : ''}</td>
           <td class="adm-chev">›</td>
         </tr>`;
       }).join('');
@@ -837,6 +890,7 @@ const STATUT_LABELS: Record<string, string> = {
       const metaRows = [
         dlRow('Reçu le', fmtDateTime(l.created_at)),
         dlRow('Mis à jour', l.updated_at ? fmtDateTime(l.updated_at) : ''),
+        dlRow('Traité par', esc(l.traite_par)),
         dlRow('Notif. partiel', l.notified_partial ? '✓ envoyée' : '—'),
         dlRow('Notif. complet', l.notified_complete ? '✓ envoyée' : '—'),
         dlRow('ID session', l.lead_uid ? esc(l.lead_uid) : ''),
@@ -879,6 +933,7 @@ const STATUT_LABELS: Record<string, string> = {
             <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
               <div class="adm-edit">
                 <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
+                <div><label>Assigné à</label><select data-id="${l.id}" data-field="assigne_a">${opsOptions(l.assigne_a)}</select></div>
                 <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
                 <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
                 <div></div>
@@ -914,7 +969,34 @@ const STATUT_LABELS: Record<string, string> = {
       (document.getElementById('adm-drawer') as HTMLElement).hidden = true;
     }
 
+    /** Statut et assignation passent par l'API : traçabilité (« par X ») + carte Telegram réécrite. */
+    async function updateViaApi(id: string, field: string, value: any): Promise<boolean> {
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess.session && sess.session.access_token;
+      if (!tok) { alert('Session expirée, reconnectez-vous.'); return false; }
+      try {
+        const res = await fetch('/api/admin/lead-update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+          body: JSON.stringify({ lead_id: id, field, value: value === '' ? null : value }),
+        });
+        const j: any = await res.json().catch(() => null);
+        if (!res.ok || !j || !j.ok) { alert('Échec de la mise à jour : ' + ((j && j.error) || ('HTTP ' + res.status))); return false; }
+        const lead = allLeads.find((l) => l.id === id);
+        if (lead) { lead[field] = j.value; if (j.traite_par) lead.traite_par = j.traite_par; lead.updated_at = new Date().toISOString(); }
+        return true;
+      } catch (e: any) { alert('Échec de la mise à jour : ' + String((e && e.message) || e)); return false; }
+    }
+
     async function update(id: string, field: string, value: any) {
+      if (field === 'statut' || field === 'assigne_a') {
+        const done = await updateViaApi(id, field, value);
+        if (!done) { render(); return; }
+        renderStats(allLeads);
+        render();
+        const saved = document.getElementById('adm-saved');
+        if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
+        return;
+      }
       const patch: any = {};
       patch[field] = value === '' ? null : value;
       const { error } = await supabase.from('leads').update(patch).eq('id', id);
@@ -936,6 +1018,8 @@ const STATUT_LABELS: Record<string, string> = {
 
     // Reflète l'état (filtres actifs sur les cartes, sens de tri sur les en-têtes)
     function syncControls() {
+      const sm = document.getElementById('sort-mobile') as HTMLSelectElement | null;
+      if (sm) { const v = `${sortKey}:${sortDir}`; if ([...sm.options].some((o) => o.value === v)) sm.value = v; }
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
       const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
       const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
@@ -952,7 +1036,7 @@ const STATUT_LABELS: Record<string, string> = {
     function rerender() { render(); syncControls(); savePrefs(); }
 
     function wireEvents() {
-      ['search', 'filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
+      ['search', 'filter-statut', 'filter-source', 'filter-lead', 'filter-bien', 'filter-op'].forEach((id) => {
         document.getElementById(id)!.addEventListener('input', rerender);
       });
 
@@ -981,6 +1065,11 @@ const STATUT_LABELS: Record<string, string> = {
       });
 
       // Regroupement des doublons
+      document.getElementById('sort-mobile')!.addEventListener('change', (e) => {
+        const [k, d] = String((e.target as HTMLSelectElement).value).split(':');
+        sortKey = k; sortDir = d === '1' ? 1 : -1;
+        rerender();
+      });
       document.getElementById('group-dupes')!.addEventListener('change', (e) => {
         groupDupes = (e.target as HTMLInputElement).checked;
         rerender();
@@ -1110,6 +1199,19 @@ const STATUT_LABELS: Record<string, string> = {
       const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
       if (error) { alert('Erreur de chargement : ' + error.message); return; }
       allLeads = data || [];
+
+      // Équipe (opérateurs) : actifs d'abord, puis par nom. Table absente (migration non
+      // appliquée) → liste vide, l'assignation est simplement masquée.
+      meEmail = String(sessionData.session.user?.email || '').toLowerCase();
+      try {
+        const { data: ops } = await supabase.from('operateurs').select('*').order('actif', { ascending: false }).order('nom');
+        allOps = ops || [];
+      } catch { allOps = []; }
+      const uid = sessionData.session.user?.id;
+      me = allOps.find((o) => o.auth_user_id === uid) || allOps.find((o) => String(o.email || '').toLowerCase() === meEmail) || null;
+      const fop = document.getElementById('filter-op') as HTMLSelectElement;
+      allOps.filter((o) => o.actif).forEach((o) => { const opt = document.createElement('option'); opt.value = o.id; opt.textContent = o.nom; fop.appendChild(opt); });
+      if (!allOps.length) fop.hidden = true;
 
       // Devis (le plus récent par lead)
       const { data: dv } = await supabase.from('devis').select('*').order('created_at', { ascending: false });
