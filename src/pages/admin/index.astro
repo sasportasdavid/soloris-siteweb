@@ -6,6 +6,9 @@
  *   éditable (statut, RDV, montant, notes) et traçabilité d'acquisition complète
  *   (UTM, ValueTrack Google Ads, gclid/fbclid, page d'entrée, référent, appareil, réseau…).
  * - Mini-stats du mois (volume, part publicité, à rappeler, conversion, CA facturé).
+ * - Vue CRM par défaut : UNE ligne par contact (téléphone > email), triée par dernière
+ *   activité, du plus récent au plus ancien. Un contact regroupe ses demandes (doublons) :
+ *   détails de la dernière demande, statut le plus avancé, historique dans le panneau.
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 
@@ -70,8 +73,8 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="parking">Parking</option>
         <option value="box">Box</option>
       </select>
-      <label class="adm-toggle" title="Regrouper les visites d'un même contact (téléphone / email)">
-        <input type="checkbox" id="group-dupes" /> Regrouper les doublons
+      <label class="adm-toggle" title="Une ligne par contact (téléphone / email) : ses demandes sont regroupées. Décocher pour voir chaque lead séparément.">
+        <input type="checkbox" id="group-dupes" /> Une ligne par contact
       </label>
       <span class="adm-count" id="adm-count"></span>
     </div>
@@ -81,7 +84,7 @@ const STATUT_LABELS: Record<string, string> = {
       <table class="adm-table">
         <thead>
           <tr>
-            <th class="adm-sortable" data-sort="date">Date <span class="adm-caret"></span></th>
+            <th class="adm-sortable" data-sort="date" title="Dernière activité du contact">Date <span class="adm-caret"></span></th>
             <th>Lead</th>
             <th>Contact</th>
             <th>CP</th>
@@ -164,6 +167,14 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-row--stale .adm-aging { color:#b3261e; font-weight:600; }
     .adm-aging { font-size:11px; color:var(--ink-soft); }
     .adm-dupes { display:inline-block; margin-left:6px; font-family:var(--sora); font-size:10px; font-weight:600; color:var(--ink-soft); background:var(--paper); border:1px solid var(--line); border-radius:100px; padding:1px 7px; vertical-align:middle; }
+    /* Historique du contact (panneau) */
+    .adm-hist { list-style:none; margin:0; padding:0; font-size:13px; }
+    .adm-hist li { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); }
+    .adm-hist li:first-child { border-top:none; }
+    .adm-hist li.cur { font-weight:600; }
+    .adm-hist button { background:none; border:1px solid var(--line); border-radius:8px; padding:3px 8px; font-size:12px; color:var(--blue); cursor:pointer; font-family:var(--sora); }
+    .adm-hist button[disabled] { color:var(--ink-soft); cursor:default; background:var(--paper); }
+    .adm-hist .adm-hist-meta { color:var(--ink-soft); }
 
     /* Actions rapides sur la ligne contact */
     .adm-iact { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
@@ -347,14 +358,42 @@ const STATUT_LABELS: Record<string, string> = {
       if (l.lead_uid) return 'u:' + l.lead_uid;
       return 'i:' + l.id;
     }
-    // Le « représentant » d'un groupe : complet d'abord, puis le plus récent.
+    // Avancement dans le pipeline (pour le tri par statut et le statut d'un contact).
+    const STATUT_RANK: Record<string, number> = { perdu: -1, nouveau: 0, contacte: 1, rdv_pris: 2, realise: 3, facture: 4 };
+    function statutRank(st: any): number { return STATUT_RANK[st] ?? 0; }
     function leadScore(l: any): number { return (l.lead_status === 'complet' ? 1e15 : 0) + new Date(l.created_at || 0).getTime(); }
+    function byDateDesc(a: any, b: any): number { return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); }
 
-    // État de tri / regroupement (persistés en localStorage)
-    let sortKey = 'default'; // 'date' | 'estimation' | 'statut' | 'default'
+    /**
+     * Vue « contact » : fusionne les demandes d'un même contact en UNE ligne.
+     * - détails (projet, bien, CP, estimation, acquisition, date) = la DERNIÈRE demande ;
+     * - nom / téléphone / email = première valeur renseignée parmi les demandes ;
+     * - statut = le plus avancé (lead « pipeline »), éditable via _statutId ;
+     * - devis = premier devis trouvé parmi les demandes (_devisId) ;
+     * - _dupes = nombre de demandes, _firstAt = première demande.
+     */
+    function contactView(leads: any[]): any {
+      const sorted = leads.slice().sort(byDateDesc);
+      const latest = sorted[0];
+      const pick = (f: string) => { for (const x of sorted) if (val(x[f])) return x[f]; return latest[f]; };
+      const pipeline = sorted.slice().sort((a, b) => (statutRank(b.statut) - statutRank(a.statut)) || (leadScore(b) - leadScore(a)))[0];
+      const devisLead = sorted.find((x) => devisByLead[x.id]) || latest;
+      return Object.assign({}, latest, {
+        nom: pick('nom'), telephone: pick('telephone'), email: pick('email'),
+        secteur: pick('secteur'), ville: pick('ville'),
+        estimation: val(latest.estimation) ? latest.estimation : pick('estimation'),
+        statut: pipeline.statut || 'nouveau', rdv_date: pipeline.rdv_date, montant: pipeline.montant,
+        _statutId: pipeline.id, _devisId: devisLead.id,
+        _dupes: sorted.length, _firstAt: sorted[sorted.length - 1].created_at,
+      });
+    }
+
+    // État de tri / regroupement (persistés en localStorage). Défauts CRM : une ligne par
+    // contact, dernière activité en premier.
+    let sortKey = 'date';    // 'date' | 'estimation' | 'statut'
     let sortDir = -1;        // 1 = asc, -1 = desc
-    let groupDupes = false;
-    const PREFS_KEY = 'soloris_admin_prefs_v1';
+    let groupDupes = true;
+    const PREFS_KEY = 'soloris_admin_prefs_v2';
     function savePrefs() {
       try {
         localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -372,9 +411,9 @@ const STATUT_LABELS: Record<string, string> = {
       try { p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { p = {}; }
       const set = (id: string, v: any) => { const el = document.getElementById(id) as HTMLInputElement | null; if (el && v != null) el.value = v; };
       set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn);
-      if (p.sortKey) sortKey = p.sortKey;
+      if (p.sortKey && ['date', 'estimation', 'statut'].includes(p.sortKey)) sortKey = p.sortKey;
       if (p.sortDir === 1 || p.sortDir === -1) sortDir = p.sortDir;
-      groupDupes = !!p.groupDupes;
+      groupDupes = p.groupDupes === undefined ? true : !!p.groupDupes;
       (document.getElementById('group-dupes') as HTMLInputElement).checked = groupDupes;
     }
 
@@ -415,7 +454,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     function statutSelect(lead: any): string {
       const opts = STATUTS.map((s: string) => `<option value="${s}" ${lead.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
-      return `<select class="adm-statut adm-st-${lead.statut || 'nouveau'}" data-id="${lead.id}" data-field="statut">${opts}</select>`;
+      return `<select class="adm-statut adm-st-${lead.statut || 'nouveau'}" data-id="${lead._statutId || lead.id}" data-field="statut">${opts}</select>`;
     }
 
     function getFiltered(): any[] {
@@ -435,29 +474,25 @@ const STATUT_LABELS: Record<string, string> = {
       else if (fLead === 'complet') rows = rows.filter((l) => l.lead_status === 'complet');
       if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword, l.message].some((v) => String(v ?? '').toLowerCase().includes(q)));
 
-      // Regroupement des doublons : une ligne par contact (le « représentant »),
-      // avec le nombre de visites. Sinon, une vue par lead.
+      // Une ligne par contact (téléphone > email > session) : les demandes d'un même
+      // contact sont fusionnées (contactView). Sinon, une ligne par lead.
       let views: any[];
       if (groupDupes) {
-        const map = new Map<string, { p: any; n: number }>();
-        for (const l of rows) {
-          const k = groupKey(l); const g = map.get(k);
-          if (!g) map.set(k, { p: l, n: 1 });
-          else { g.n++; if (leadScore(l) > leadScore(g.p)) g.p = l; }
-        }
-        views = Array.from(map.values()).map((g) => Object.assign({}, g.p, { _dupes: g.n }));
+        const map = new Map<string, any[]>();
+        for (const l of rows) { const k = groupKey(l); const g = map.get(k); if (g) g.push(l); else map.set(k, [l]); }
+        views = Array.from(map.values()).map(contactView);
       } else {
-        views = rows.map((l) => Object.assign({}, l, { _dupes: 1 }));
+        views = rows.map((l) => Object.assign({}, l, { _dupes: 1, _statutId: l.id, _devisId: l.id, _firstAt: l.created_at }));
       }
 
+      // Tri : date (défaut, = dernière activité du contact), estimation, ou avancement du
+      // statut ; à égalité, toujours du plus récent au plus ancien.
       views.sort((a, b) => {
-        if (sortKey === 'estimation') return sortDir * ((Number(a.estimation) || 0) - (Number(b.estimation) || 0));
-        if (sortKey === 'statut') return sortDir * (STATUTS.indexOf(a.statut) - STATUTS.indexOf(b.statut));
-        if (sortKey === 'date') return sortDir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        // défaut : les « à rappeler » en tête, puis du plus récent au plus ancien
-        const ra = isRappel(a) ? 1 : 0, rb = isRappel(b) ? 1 : 0;
-        if (ra !== rb) return rb - ra;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        let c = 0;
+        if (sortKey === 'estimation') c = sortDir * ((Number(a.estimation) || 0) - (Number(b.estimation) || 0));
+        else if (sortKey === 'statut') c = sortDir * (statutRank(a.statut) - statutRank(b.statut));
+        else c = sortDir * (new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+        return c || byDateDesc(a, b);
       });
       return views;
     }
@@ -466,14 +501,17 @@ const STATUT_LABELS: Record<string, string> = {
       const rows = getFiltered();
       const body = document.getElementById('leads-body') as HTMLElement;
       (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
-      const noun = groupDupes ? 'contact' : 'lead';
-      (document.getElementById('adm-count') as HTMLElement).textContent = `${rows.length} ${noun}${rows.length > 1 ? 's' : ''} affiché${rows.length > 1 ? 's' : ''}`;
+      const totalLeads = rows.reduce((n, r) => n + (r._dupes || 1), 0);
+      const plural = (n: number) => (n > 1 ? 's' : '');
+      (document.getElementById('adm-count') as HTMLElement).textContent = groupDupes && totalLeads !== rows.length
+        ? `${rows.length} contact${plural(rows.length)} · ${totalLeads} lead${plural(totalLeads)}`
+        : `${rows.length} ${groupDupes ? 'contact' : 'lead'}${plural(rows.length)} affiché${plural(rows.length)}`;
 
       body.innerHTML = rows.map((l) => {
         const leadBadge = l.lead_status === 'partiel'
           ? `<span class="adm-pill pill-partiel">🟠 partiel</span> `
           : l.lead_status === 'complet' ? `<span class="adm-pill pill-complet">🟢 complet</span> ` : '';
-        const dupesBadge = l._dupes > 1 ? `<span class="adm-dupes" title="${l._dupes} visites du même contact, regroupées">${l._dupes} visites</span>` : '';
+        const dupesBadge = l._dupes > 1 ? `<span class="adm-dupes" title="${l._dupes} demandes du même contact (téléphone / email), regroupées · première le ${fmtDate(l._firstAt)}">${l._dupes} demandes</span>` : '';
         const sourceTag = isAds(l) ? `<span class="adm-pill pill-pub">Pub</span>` : `<span class="adm-pill pill-orga">Organique</span>`;
         const annexeTag = l.annexe
           ? `<div style="margin-top:4px"><span class="adm-pill pill-annexe">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span></div>`
@@ -482,7 +520,7 @@ const STATUT_LABELS: Record<string, string> = {
         if (l.gads_keyword) acqBits.push('🎯 <b>' + esc(l.gads_keyword) + '</b>');
         if (l.campaign) acqBits.push(esc(l.campaign));
         const acq = acqBits.length ? `<div class="adm-cell-sub">${acqBits.join('<br>')}</div>` : (l.gclid ? '<div class="adm-cell-sub">gclid ✓</div>' : '');
-        const dv = devisByLead[l.id];
+        const dv = devisByLead[l._devisId || l.id];
         const devisCell = dv
           ? `<a class="adm-devis-link" href="/api/devis/${dv.sign_token}.pdf" target="_blank" rel="noopener" title="Télécharger le PDF du devis ${esc(dv.numero)}">${statutDevisBadge(dv.statut)} 📄</a>`
           : `<button type="button" class="adm-btn-sm" data-quick-devis="${l.id}">+ Devis</button>`;
@@ -490,7 +528,7 @@ const STATUT_LABELS: Record<string, string> = {
         // Actions rapides (n'ouvrent pas le drawer : le clic ignore boutons/liens)
         const wa = l.telephone ? `<a class="ia-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener" title="WhatsApp">WhatsApp</a>` : '';
         const cpEmail = l.email ? `<button type="button" data-copy-email="${esc(l.email)}" title="Copier l'email">Copier l'email</button>` : '';
-        const mkRappel = isRappel(l) && l.statut === 'nouveau' ? `<button type="button" class="ia-rappel" data-mark-rappel="${l.id}" title="Marquer comme rappelé (passe en Contacté)">✓ Rappelé</button>` : '';
+        const mkRappel = isRappel(l) && l.statut === 'nouveau' ? `<button type="button" class="ia-rappel" data-mark-rappel="${l._statutId || l.id}" title="Marquer comme rappelé (passe en Contacté)">✓ Rappelé</button>` : '';
         const iact = (wa || cpEmail || mkRappel) ? `<div class="adm-iact">${wa}${cpEmail}${mkRappel}</div>` : '';
 
         const stale = isStale(l);
@@ -832,6 +870,8 @@ const STATUT_LABELS: Record<string, string> = {
 
             <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
 
+            ${buildHistorySection(l)}
+
             <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
 
@@ -853,6 +893,21 @@ const STATUT_LABELS: Record<string, string> = {
         </div>
       `;
       (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
+    }
+
+    /** Historique du contact : toutes ses demandes (même téléphone / email), la courante en gras. */
+    function buildHistorySection(l: any): string {
+      const k = groupKey(l);
+      const history = allLeads.filter((x) => groupKey(x) === k).sort(byDateDesc);
+      if (history.length < 2) return '';
+      const items = history.map((x) => {
+        const cur = x.id === l.id;
+        const etat = x.lead_status === 'complet' ? '🟢 complet' : '🟠 partiel';
+        return `<li class="${cur ? 'cur' : ''}"><button type="button" data-open-lead="${x.id}" ${cur ? 'disabled' : ''}>${fmtDateTime(x.created_at)}</button>` +
+          `<span>${esc(DEMANDE_LBL[x.type_demande] || x.type_demande || '—')}</span>` +
+          `<span class="adm-hist-meta">${etat} · ${esc(STATUT_LABELS[x.statut] || x.statut || 'Nouveau')}${x.estimation ? ' · ' + fmtEUR(x.estimation) : ''}${x.campaign ? ' · ' + esc(x.campaign) : ''}</span></li>`;
+      }).join('');
+      return `<div class="adm-sec"><h3>Historique du contact (${history.length} demandes)</h3><ul class="adm-hist">${items}</ul></div>`;
     }
 
     function closeDrawer() {
@@ -962,9 +1017,11 @@ const STATUT_LABELS: Record<string, string> = {
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
-      // Actions Devis
+      // Actions Devis (+ navigation dans l'historique du contact)
       panel.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
+        const other = t.closest('[data-open-lead]') as HTMLElement | null;
+        if (other) { openDrawer(other.getAttribute('data-open-lead') as string); return; }
         const adr = t.closest('[data-adr]') as HTMLElement | null;
         if (adr) {
           const input = document.getElementById('lead-adresse') as HTMLInputElement | null;
