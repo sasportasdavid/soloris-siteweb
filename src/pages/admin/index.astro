@@ -285,11 +285,39 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-mhead { position:sticky; top:0; z-index:3; background:#fff; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:22px 30px 16px; border-bottom:1px solid var(--line); }
     .adm-mhead h2 { font-family:var(--sora); font-weight:600; font-size:22px; color:var(--blue); }
     .adm-mhead .badges { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
-    /* Corps 2 colonnes : infos (gauche) · actions (droite) */
-    .adm-mbody { display:grid; grid-template-columns:1fr 1fr; gap:0 36px; padding:6px 30px 34px; align-items:start; }
-    .adm-mbody .adm-col { min-width:0; }
-    .adm-mbody .adm-col > .adm-sec:first-child { margin-top:18px; }
-    @media (max-width:760px){ .adm-mbody{ grid-template-columns:1fr; gap:0; padding:6px 18px 30px; } .adm-mbody .adm-col:last-child{ order:-1; } }
+    /* Fiche lead : en-tête résumé (nom, demande, pastilles) · actions rapides · onglets */
+    .adm-mhead-main { min-width:0; flex:1; }
+    .adm-sum { margin-top:4px; font-size:13.5px; color:var(--ink-soft); line-height:1.4; }
+    .adm-sum b { color:var(--blue); font-family:var(--sora); }
+    .adm-stpill { border:1px solid transparent; }
+    .adm-quick { display:flex; gap:8px; flex-wrap:wrap; padding:14px 30px 0; }
+    .adm-qa { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--sora); font-weight:600; font-size:13px; padding:9px 14px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--blue); text-decoration:none; cursor:pointer; line-height:1.2; }
+    .adm-qa:hover { border-color:var(--blue-light); background:var(--paper); text-decoration:none; }
+    .adm-qa-wa { color:#1d7a48; border-color:#9bd0b3; }
+    .adm-qa-primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .adm-qa-primary:hover { background:#0d3358; color:#fff; }
+    .adm-tabs { display:flex; gap:2px; padding:14px 30px 0; border-bottom:1px solid var(--line); }
+    .adm-tabs button { flex:1; font-family:var(--sora); font-weight:600; font-size:13px; padding:10px 6px; background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-1px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+    .adm-tabs button:hover { color:var(--blue); }
+    .adm-tabs button.on { color:var(--blue); border-bottom-color:var(--blue); }
+    .adm-panes { padding:0 30px 34px; }
+    .adm-pane { padding:0; margin:0; }
+    .adm-pane[hidden] { display:none; }
+    .adm-pane > .adm-sec:first-child { margin-top:18px; }
+    .adm-dl--meta { margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); font-size:12.5px; }
+    @media (max-width:760px) {
+      .adm-mhead { padding:14px 16px 10px; }
+      .adm-mhead h2 { font-size:18px; }
+      .adm-sum { font-size:13px; }
+      .adm-mhead .badges { margin-top:6px; }
+      .adm-quick { padding:10px 16px 0; gap:6px; }
+      .adm-qa { flex:1 1 auto; padding:11px 8px; font-size:13px; }
+      .adm-tabs { padding:10px 16px 0; }
+      .adm-tabs button { font-size:12.5px; padding:10px 2px; }
+      .adm-panes { padding:0 16px 30px; }
+      .adm-dl { grid-template-columns:112px 1fr; gap:7px 10px; font-size:13px; }
+      .adm-edit { gap:10px; }
+    }
     .adm-x { background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:26px; line-height:1; padding:0 4px; }
     .adm-x:hover { color:var(--blue); }
 
@@ -371,6 +399,15 @@ const STATUT_LABELS: Record<string, string> = {
     let allOps: any[] = [];      // opérateurs (équipe), actifs en tête
     let me: any = null;          // fiche opérateur de l'utilisateur connecté (si elle existe)
     let meEmail = '';
+    const opName = (id: any): string => { const o = allOps.find((x) => x.id === id); return o ? o.nom : ''; };
+    // Onglet courant de la fiche lead (mémorisé pour les ré-affichages : devis, RDV…)
+    let drawerTab = 'suivi';
+    function setTab(name: string) {
+      drawerTab = name;
+      const panel = document.getElementById('adm-drawer-panel') as HTMLElement;
+      panel.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+      panel.querySelectorAll<HTMLElement>('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+    }
     /** Options du sélecteur « Assigné à » (actifs + l'opérateur courant même désactivé). */
     function opsOptions(selected: any): string {
       const opts = allOps.filter((o) => o.actif || o.id === selected);
@@ -936,24 +973,63 @@ const STATUT_LABELS: Record<string, string> = {
         dlRow('ID session', l.lead_uid ? esc(l.lead_uid) : ''),
       ].filter(Boolean).join('');
 
+      // Résumé d'en-tête : projet · bien · lieu · estimation ; pastilles statut / assigné / demandes
+      const sumBits = [DEMANDE_LBL[l.type_demande] || l.type_demande, bienLine(l), [l.secteur, l.ville].filter(Boolean).join(' ')].filter(Boolean).map(esc);
+      const stKey = l.statut || 'nouveau';
+      const statutPill = `<span class="adm-pill adm-stpill adm-st-${stKey}">${esc(STATUT_LABELS[stKey] || stKey)}</span>`;
+      const opPill = l.assigne_a ? `<span class="adm-pill pill-chan">👷 ${esc(opName(l.assigne_a) || 'assigné')}</span>` : '';
+      const histCount = allLeads.filter((x) => groupKey(x) === groupKey(l)).length;
+      const quick = [
+        l.telephone ? `<a class="adm-qa" href="tel:${esc(l.telephone)}">📞 Appeler</a>` : '',
+        l.telephone ? `<a class="adm-qa adm-qa-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : '',
+        l.email ? `<a class="adm-qa" href="mailto:${esc(l.email)}">✉️ Email</a>` : '',
+        `<button type="button" class="adm-qa adm-qa-primary" data-goto-tab="rdv">📅 ${l.confirmation_rdv_envoyee_at ? 'RDV confirmé' : 'Caler le RDV'}</button>`,
+      ].filter(Boolean).join('');
+      const suiviMeta = [
+        dlRow('Reçu le', fmtDateTime(l.created_at)),
+        dlRow('Traité par', esc(l.traite_par)),
+        dlRow('Mis à jour', l.updated_at ? fmtDateTime(l.updated_at) : ''),
+      ].filter(Boolean).join('');
+
       panel.innerHTML = `
         <div class="adm-mhead">
-          <div>
+          <div class="adm-mhead-main">
             <h2>${esc(l.nom || 'Lead sans nom')}</h2>
-            <div class="badges">${badges.join('')}</div>
+            <div class="adm-sum">${sumBits.join(' · ')}${l.estimation ? ` · <b>${fmtEUR(l.estimation)}</b>` : ''}</div>
+            <div class="badges">${badges.join('')}${statutPill}${opPill}${histCount > 1 ? `<span class="adm-dupes" title="Demandes du même contact">${histCount} demandes</span>` : ''}</div>
           </div>
           <button type="button" class="adm-x" data-close aria-label="Fermer">×</button>
         </div>
 
-        <div class="adm-mbody">
-          <div class="adm-col">
-            <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
+        <div class="adm-quick">${quick}</div>
 
+        <nav class="adm-tabs" role="tablist" aria-label="Sections de la fiche">
+          <button type="button" data-tab="suivi">Suivi</button>
+          <button type="button" data-tab="demande">Demande</button>
+          <button type="button" data-tab="rdv">RDV & devis</button>
+          <button type="button" data-tab="histo">Historique</button>
+        </nav>
+
+        <div class="adm-panes">
+          <div class="adm-pane" data-pane="suivi">
+            <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
+              <div class="adm-edit">
+                <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
+                <div><label>Assigné à</label><select data-id="${l.id}" data-field="assigne_a">${opsOptions(l.assigne_a)}</select></div>
+                <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
+                <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
+                <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
+              </div>
+              <dl class="adm-dl adm-dl--meta">${suiviMeta}</dl>
+            </div>
+          </div>
+
+          <div class="adm-pane" data-pane="demande" hidden>
+            <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
             <div class="adm-sec"><h3>Contact</h3>
               <dl class="adm-dl">${contactRows}</dl>
               ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
             </div>
-
             <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
               <div style="position:relative">
                 <input type="text" id="lead-adresse" class="adm-adresse-input" data-id="${l.id}" data-field="adresse" value="${esc(l.adresse || '')}" placeholder="Commencez à taper l'adresse…" autocomplete="off">
@@ -961,32 +1037,21 @@ const STATUT_LABELS: Record<string, string> = {
               </div>
               <p class="muted" style="font-size:12px;margin-top:6px">Autocomplétion (Base Adresse Nationale). Le formulaire public ne demande que le code postal ; l'adresse saisie ici figure sur le devis PDF.</p>
             </div>
-
-            <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
-
-            ${buildHistorySection(l)}
-
-            <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
 
-          <div class="adm-col">
-            <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
-              <div class="adm-edit">
-                <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
-                <div><label>Assigné à</label><select data-id="${l.id}" data-field="assigne_a">${opsOptions(l.assigne_a)}</select></div>
-                <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
-                <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
-                <div></div>
-                <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
-              </div>
-            </div>
-
+          <div class="adm-pane" data-pane="rdv" hidden>
             ${buildRdvSection(l)}
-
             ${buildDevisSection(l)}
+          </div>
+
+          <div class="adm-pane" data-pane="histo" hidden>
+            ${buildHistorySection(l)}
+            <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
+            <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
         </div>
       `;
+      setTab(drawerTab);
       (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
     }
 
@@ -1164,9 +1229,20 @@ const STATUT_LABELS: Record<string, string> = {
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
-      // Actions Devis (+ navigation dans l'historique du contact)
+      // Actions Devis (+ onglets, bouton RDV de l'en-tête, navigation dans l'historique)
       panel.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
+        const tab = t.closest('[data-tab]') as HTMLElement | null;
+        if (tab) { setTab(tab.dataset.tab as string); return; }
+        const go = t.closest('[data-goto-tab]') as HTMLElement | null;
+        if (go) {
+          setTab(go.dataset.gotoTab as string);
+          const lead = allLeads.find((x) => x.id === currentLeadId);
+          const wrap = document.getElementById('rdv-form-wrap');
+          if (go.dataset.gotoTab === 'rdv' && lead && !lead.confirmation_rdv_envoyee_at && wrap && !wrap.innerHTML.trim()) openRdvForm(lead);
+          (document.getElementById('adm-rdv') || panel).scrollIntoView({ block: 'start', behavior: 'smooth' });
+          return;
+        }
         const other = t.closest('[data-open-lead]') as HTMLElement | null;
         if (other) { openDrawer(other.getAttribute('data-open-lead') as string); return; }
         const adr = t.closest('[data-adr]') as HTMLElement | null;
