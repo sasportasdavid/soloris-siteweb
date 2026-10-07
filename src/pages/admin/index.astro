@@ -317,6 +317,7 @@ const STATUT_LABELS: Record<string, string> = {
       .adm-panes { padding:0 16px 30px; }
       .adm-dl { grid-template-columns:112px 1fr; gap:7px 10px; font-size:13px; }
       .adm-edit { gap:10px; }
+      .adm-drawer-panel input[type="date"], .adm-drawer-panel input[type="time"], .adm-drawer-panel input[type="datetime-local"] { min-height:46px; font-size:16px; }
     }
     .adm-x { background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:26px; line-height:1; padding:0 4px; }
     .adm-x:hover { color:var(--blue); }
@@ -334,7 +335,16 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-edit { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
     .adm-edit .full { grid-column:1 / -1; }
     .adm-edit label { display:block; font-size:11.5px; font-family:var(--sora); color:var(--ink-soft); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
-    .adm-edit input, .adm-edit select, .adm-edit textarea { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    .adm-edit > div { min-width:0; } /* une cellule de grille ne s'élargit jamais au-delà de sa colonne */
+    .adm-edit input, .adm-edit select, .adm-edit textarea { width:100%; max-width:100%; min-width:0; box-sizing:border-box; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    /* iOS / Safari : les champs date / heure ont une largeur et une hauteur intrinsèques qui
+       débordaient de la colonne (chevauchement avec le champ voisin). On neutralise l'apparence
+       native et on impose la taille de la cellule. */
+    .adm-drawer-panel input[type="date"], .adm-drawer-panel input[type="time"], .adm-drawer-panel input[type="datetime-local"] {
+      -webkit-appearance:none; appearance:none; display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+      height:auto; min-height:42px; line-height:1.3; text-align:left; background:#fff;
+    }
+    .adm-drawer-panel input[type="date"]::-webkit-date-and-time-value, .adm-drawer-panel input[type="time"]::-webkit-date-and-time-value, .adm-drawer-panel input[type="datetime-local"]::-webkit-date-and-time-value { text-align:left; min-height:1.3em; }
     .adm-edit select { font-family:var(--sora); }
     .adm-edit input:focus, .adm-edit select:focus, .adm-edit textarea:focus { outline:none; border-color:var(--blue-light); }
     .adm-edit textarea { resize:vertical; min-height:64px; }
