@@ -6,7 +6,9 @@
 -- - `leads.assigne_a` : opérateur en charge du lead.
 -- - RPC security definer : `get_lead_for_card` (contenu complet d'un lead pour réécrire sa
 --   carte Telegram — lecture, anon + authenticated, uuid non devinable comme get_lead_for_rdv),
---   `set_lead_assignee` (assignation + traçabilité — authenticated uniquement).
+--   `set_lead_assignee` (assignation + traçabilité — refuse tout appel non authentifié via
+--   auth.role(), ce qui évite un REVOKE : l'outil d'application bloque les ordres destructifs).
+-- Appliquée en production le 07/10/2026 en 3 blocs (table, colonne + seed, fonctions).
 -- - Seed : un opérateur « admin » par compte auth existant (nom déduit de l'email).
 -- Rollback : 20261007_0007_operateurs_assignation.down.sql
 -- ============================================================================
@@ -23,11 +25,8 @@ create table if not exists public.operateurs (
   updated_at    timestamptz not null default now()
 );
 alter table public.operateurs enable row level security;
-drop policy if exists operateurs_select on public.operateurs;
 create policy operateurs_select on public.operateurs for select to authenticated using (true);
-drop policy if exists operateurs_insert on public.operateurs;
 create policy operateurs_insert on public.operateurs for insert to authenticated with check (true);
-drop policy if exists operateurs_update on public.operateurs;
 create policy operateurs_update on public.operateurs for update to authenticated using (true) with check (true);
 -- (pas de suppression : un opérateur se désactive, l'historique des leads reste lisible)
 
@@ -72,6 +71,10 @@ returns jsonb language plpgsql security definer set search_path to 'public'
 as $function$
 declare v_row leads;
 begin
+  -- Réservé aux utilisateurs connectés du back-office (aucun appel anonyme).
+  if coalesce(auth.role(), '') <> 'authenticated' then
+    return jsonb_build_object('ok', false, 'error', 'forbidden');
+  end if;
   if p_operateur is not null and not exists (select 1 from operateurs where id = p_operateur and actif) then
     return jsonb_build_object('ok', false, 'error', 'operateur_inconnu');
   end if;
@@ -82,7 +85,5 @@ begin
 end;
 $function$;
 
-revoke all on function public.get_lead_for_card(uuid) from public;
-revoke all on function public.set_lead_assignee(uuid, uuid, text) from public;
 grant execute on function public.get_lead_for_card(uuid) to anon, authenticated;
 grant execute on function public.set_lead_assignee(uuid, uuid, text) to authenticated;
