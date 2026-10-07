@@ -1,0 +1,215 @@
+---
+/**
+ * /admin/equipe — l'équipe (opérateurs) : liste, ajout, édition, accès au back-office, activation.
+ * - Fiches lues / écrites directement via Supabase (RLS : utilisateurs connectés).
+ * - Comptes de connexion (mot de passe temporaire, blocage) via /api/admin/operateurs
+ *   (clé service_role côté serveur, réservé au rôle admin).
+ * Les opérateurs apparaissent dans « Assigné à » (leads) et sur les cartes Telegram.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const ROLES: [string, string][] = [['admin', 'Admin'], ['commercial', 'Commercial'], ['diagnostiqueur', 'Diagnostiqueur']];
+---
+<AdminLayout title="Équipe" showNav={true}>
+  <div id="eq-loading" style="text-align:center;padding:60px 0;color:var(--ink-soft)">Chargement…</div>
+
+  <div id="eq-app" hidden>
+    <h1 class="adm-h1">Équipe</h1>
+    <p class="muted adm-sub">Les opérateurs peuvent être assignés aux leads (colonne « Assigné à », cartes Telegram) et, s'ils ont un accès, se connecter au back-office. Un accès se crée en un clic : un mot de passe temporaire vous est affiché une fois, à transmettre.</p>
+
+    <form id="eq-form" class="eq-form" autocomplete="off">
+      <input name="nom" placeholder="Prénom Nom" required maxlength="80" />
+      <input name="email" type="email" placeholder="Email (requis pour un accès)" maxlength="160" />
+      <input name="telephone" placeholder="Téléphone" maxlength="30" />
+      <select name="role">{ROLES.map(([v, l]) => <option value={v}>{l}</option>)}</select>
+      <button type="submit" class="adm-btn">Ajouter</button>
+      <div id="eq-msg" class="eq-msg" hidden></div>
+    </form>
+
+    <div id="eq-list" class="eq-list"></div>
+    <p id="eq-empty" class="muted" style="text-align:center;padding:30px 0" hidden>Aucun opérateur pour l'instant. Ajoutez le premier ci-dessus.</p>
+  </div>
+
+  <style is:global>
+    .eq-form { display:grid; grid-template-columns:1.3fr 1.6fr 1fr 1fr auto; gap:10px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:22px; }
+    .eq-form input, .eq-form select { border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; min-width:0; }
+    .eq-form input:focus, .eq-form select:focus { outline:none; border-color:var(--blue-light); }
+    .eq-msg { grid-column:1 / -1; font-size:13px; padding:10px 12px; border-radius:10px; background:var(--paper); border:1px solid var(--line); white-space:pre-line; }
+    .eq-msg.err { color:#9a3322; background:rgba(216,80,58,.08); border-color:#e3a99e; }
+    .eq-msg.ok { color:#1d7a48; background:rgba(34,160,90,.08); border-color:#9bd0b3; }
+    .eq-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; }
+    .eq-card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .eq-card.off { opacity:.62; }
+    .eq-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .eq-name { font-family:var(--sora); font-weight:600; font-size:17px; color:var(--blue); border:none; border-bottom:1px dashed transparent; background:none; width:100%; padding:2px 0; }
+    .eq-name:focus { outline:none; border-bottom-color:var(--blue-light); }
+    .eq-role { font-family:var(--sora); font-size:12px; border:1px solid var(--line); border-radius:100px; padding:4px 10px; background:var(--paper); cursor:pointer; }
+    .eq-role.r-admin { color:#8a5a00; border-color:#e3cf9a; background:rgba(245,166,35,.12); }
+    .eq-fields { display:grid; grid-template-columns:1fr; gap:6px; font-size:13.5px; }
+    .eq-fields input { border:1px solid transparent; border-radius:8px; padding:6px 8px; font-size:13.5px; font-family:var(--inter); color:var(--ink); background:var(--paper); width:100%; }
+    .eq-fields input:focus { outline:none; border-color:var(--blue-light); background:#fff; }
+    .eq-access { font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .eq-access .dot { width:8px; height:8px; border-radius:50%; background:#c9c9c9; display:inline-block; }
+    .eq-access .dot.on { background:#22a05a; }
+    .eq-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; }
+    .eq-actions button { font-family:var(--sora); font-size:12px; font-weight:600; border:1px solid var(--line); background:#fff; color:var(--blue); border-radius:8px; padding:8px 11px; cursor:pointer; }
+    .eq-actions button:hover { border-color:var(--blue-light); background:var(--paper); }
+    .eq-actions button.danger { color:#9a3322; }
+    .eq-actions button[disabled] { opacity:.5; cursor:wait; }
+    .eq-pass { background:#0b2a4a; color:#fff; border-radius:12px; padding:14px 16px; font-size:14px; line-height:1.5; }
+    .eq-pass code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:17px; letter-spacing:.03em; background:rgba(255,255,255,.12); padding:3px 8px; border-radius:6px; user-select:all; }
+    .eq-pass button { margin-left:8px; font-size:12px; border:1px solid rgba(255,255,255,.4); background:transparent; color:#fff; border-radius:7px; padding:5px 9px; cursor:pointer; }
+    @media (max-width:760px) {
+      .eq-form { grid-template-columns:1fr 1fr; padding:12px; }
+      .eq-form input[name="nom"], .eq-form input[name="email"], .eq-form button { grid-column:1 / -1; }
+      .eq-form input, .eq-form select { font-size:16px; padding:11px 12px; }
+      .eq-list { grid-template-columns:1fr; }
+      .eq-actions button { font-size:13px; padding:10px 12px; }
+    }
+  </style>
+
+  <script>
+    import { supabase } from '../../lib/supabase';
+
+    const ROLE_LBL: Record<string, string> = { admin: 'Admin', commercial: 'Commercial', diagnostiqueur: 'Diagnostiqueur' };
+    let ops: any[] = [];
+    let myRole = '';
+
+    function esc(s: any): string {
+      return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+    }
+    function msg(text: string, kind: 'ok' | 'err' | '' = '') {
+      const el = document.getElementById('eq-msg') as HTMLElement;
+      el.textContent = text; el.className = 'eq-msg' + (kind ? ' ' + kind : ''); el.hidden = !text;
+    }
+    async function token(): Promise<string | null> {
+      const { data } = await supabase.auth.getSession();
+      return (data.session && data.session.access_token) || null;
+    }
+    async function api(body: any): Promise<any> {
+      const tok = await token();
+      if (!tok) { window.location.href = '/admin/login'; return null; }
+      const res = await fetch('/api/admin/operateurs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(body) });
+      const j: any = await res.json().catch(() => null);
+      if (!res.ok || !j || !j.ok) { msg((j && j.error) || ('Erreur HTTP ' + res.status), 'err'); return null; }
+      return j;
+    }
+
+    async function load() {
+      const { data, error } = await supabase.from('operateurs').select('*').order('actif', { ascending: false }).order('nom');
+      if (error) {
+        msg(/operateurs/.test(error.message) && /not exist|schema cache/i.test(error.message)
+          ? "La table des opérateurs n'existe pas encore : la migration 7 doit être appliquée à la base."
+          : 'Erreur de chargement : ' + error.message, 'err');
+        ops = [];
+      } else ops = data || [];
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('eq-list') as HTMLElement;
+      (document.getElementById('eq-empty') as HTMLElement).hidden = ops.length > 0;
+      list.innerHTML = ops.map((o) => {
+        const roleOpts = Object.keys(ROLE_LBL).map((r) => `<option value="${r}" ${o.role === r ? 'selected' : ''}>${ROLE_LBL[r]}</option>`).join('');
+        const acces = o.auth_user_id
+          ? `<span class="dot on"></span> Accès au back-office actif`
+          : `<span class="dot"></span> Pas d'accès (fiche seulement)`;
+        const isAdmin = myRole === 'admin' || myRole === '';
+        return `<div class="eq-card${o.actif ? '' : ' off'}" data-id="${o.id}">
+          <div class="eq-head">
+            <input class="eq-name" data-field="nom" value="${esc(o.nom)}" maxlength="80" title="Nom (modifiable)" />
+            <select class="eq-role r-${esc(o.role)}" data-field="role" title="Rôle">${roleOpts}</select>
+          </div>
+          <div class="eq-fields">
+            <input data-field="email" type="email" value="${esc(o.email || '')}" placeholder="Email" maxlength="160" />
+            <input data-field="telephone" value="${esc(o.telephone || '')}" placeholder="Téléphone" maxlength="30" />
+          </div>
+          <div class="eq-access">${acces}${o.actif ? '' : ' · <b>désactivé</b>'}</div>
+          <div class="eq-actions">
+            ${isAdmin ? `<button type="button" data-act="access" ${o.email ? '' : 'disabled title="Renseignez un email"'}>${o.auth_user_id ? '🔑 Réinitialiser le mot de passe' : '🔑 Créer l’accès'}</button>` : ''}
+            ${isAdmin ? `<button type="button" data-act="toggle" class="${o.actif ? 'danger' : ''}">${o.actif ? 'Désactiver' : 'Réactiver'}</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function save(id: string, field: string, value: string) {
+      const patch: any = {}; patch[field] = value.trim() === '' ? null : value.trim();
+      if (field === 'nom' && !patch.nom) { msg('Le nom est requis.', 'err'); return; }
+      patch.updated_at = new Date().toISOString();
+      const { error } = await supabase.from('operateurs').update(patch).eq('id', id);
+      if (error) { msg('Enregistrement impossible : ' + error.message, 'err'); return; }
+      const o = ops.find((x) => x.id === id); if (o) Object.assign(o, patch);
+      msg('Enregistré ✓', 'ok'); setTimeout(() => msg(''), 1200);
+      if (field === 'role' || field === 'email') render();
+    }
+
+    function wire() {
+      (document.getElementById('eq-form') as HTMLFormElement).addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement; const fd = new FormData(f);
+        const row = {
+          nom: String(fd.get('nom') || '').trim(), email: String(fd.get('email') || '').trim().toLowerCase() || null,
+          telephone: String(fd.get('telephone') || '').trim() || null, role: String(fd.get('role') || 'commercial'),
+        };
+        if (!row.nom) { msg('Le nom est requis.', 'err'); return; }
+        const { data, error } = await supabase.from('operateurs').insert(row).select('*').single();
+        if (error) { msg(/duplicate|unique/i.test(error.message) ? 'Un opérateur a déjà cet email.' : 'Ajout impossible : ' + error.message, 'err'); return; }
+        ops.push(data); ops.sort((a, b) => Number(b.actif) - Number(a.actif) || String(a.nom).localeCompare(String(b.nom), 'fr'));
+        f.reset(); msg(`${data.nom} ajouté·e. ${data.email ? 'Vous pouvez maintenant lui créer un accès.' : ''}`, 'ok');
+        render();
+      });
+
+      const list = document.getElementById('eq-list') as HTMLElement;
+      list.addEventListener('change', (e) => {
+        const t = e.target as HTMLInputElement; const card = t.closest('.eq-card') as HTMLElement | null;
+        if (card && t.dataset.field) save(card.dataset.id as string, t.dataset.field, t.value);
+      });
+      list.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest('button[data-act]') as HTMLButtonElement | null;
+        if (!btn) return;
+        const card = btn.closest('.eq-card') as HTMLElement; const id = card.dataset.id as string;
+        const o = ops.find((x) => x.id === id); if (!o) return;
+        btn.disabled = true;
+        try {
+          if (btn.dataset.act === 'access') {
+            if (!confirm(`${o.auth_user_id ? 'Réinitialiser le mot de passe' : 'Créer un accès au back-office'} pour ${o.nom} (${o.email}) ?`)) return;
+            const j = await api({ action: 'create_access', operateur_id: id });
+            if (!j) return;
+            o.auth_user_id = j.auth_user_id || o.auth_user_id; o.actif = true;
+            render();
+            const box = document.createElement('div'); box.className = 'eq-pass';
+            box.innerHTML = `<b>${j.reset ? 'Mot de passe réinitialisé' : 'Accès créé'}</b> pour ${esc(j.email)}.<br>Mot de passe temporaire (affiché une seule fois) : <code>${esc(j.temp_password)}</code><button type="button" data-copy="${esc(j.temp_password)}">Copier</button><br><span style="opacity:.8">Connexion : ${location.origin}/admin/login — à transmettre par un canal sûr.</span>`;
+            (document.querySelector(`.eq-card[data-id="${id}"]`) as HTMLElement).appendChild(box);
+          } else if (btn.dataset.act === 'toggle') {
+            const actif = !o.actif;
+            if (!actif && !confirm(`Désactiver ${o.nom} ? Ses leads restent visibles ; son accès est bloqué.`)) return;
+            const j = await api({ action: 'set_active', operateur_id: id, actif });
+            if (!j) return;
+            o.actif = actif; render();
+            msg(actif ? `${o.nom} réactivé·e.` : `${o.nom} désactivé·e (accès ${j.compte}).`, 'ok');
+          }
+        } finally { btn.disabled = false; }
+      });
+      document.addEventListener('click', (e) => {
+        const c = (e.target as HTMLElement).closest('[data-copy]') as HTMLElement | null;
+        if (c) { navigator.clipboard?.writeText(c.getAttribute('data-copy') || '').then(() => { c.textContent = 'Copié ✓'; }); }
+      });
+      document.getElementById('logout-btn')?.addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href = '/admin/login'; });
+    }
+
+    async function init() {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) { window.location.href = '/admin/login'; return; }
+      await load();
+      const uid = sess.session.user?.id; const email = String(sess.session.user?.email || '').toLowerCase();
+      const meOp = ops.find((o) => o.auth_user_id === uid) || ops.find((o) => String(o.email || '').toLowerCase() === email);
+      myRole = meOp ? meOp.role : '';
+      render();
+      (document.getElementById('eq-loading') as HTMLElement).hidden = true;
+      (document.getElementById('eq-app') as HTMLElement).hidden = false;
+      wire();
+    }
+    init();
+  </script>
+</AdminLayout>

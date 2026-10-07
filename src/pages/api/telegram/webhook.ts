@@ -20,6 +20,7 @@ import {
 } from '../../../lib/serverEnv';
 import { leadKeyboard, STATUT_LABELS_TG } from '../../../lib/telegram';
 import { signRdvToken } from '../../../lib/rdvToken';
+import { fetchLeadForCard, rewriteLeadCard } from '../../../lib/telegramPush';
 
 export const prerender = false;
 
@@ -74,15 +75,6 @@ async function rpc(fn: string, body: unknown): Promise<any> {
 }
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
-/** Carte réécrite après un changement de statut (sans RDV). */
-function statusCard(lead: any, statut: string, by: string): string {
-  const icon = statut === 'perdu' ? '❌' : statut === 'contacte' ? '📞' : '•';
-  const prenom = (lead.nom || '').trim() || '—';
-  return `${icon} ${STATUT_LABELS_TG[statut] || statut} — par ${by}\n👤 ${prenom}` +
-    `${lead.telephone ? ' · 📞 ' + lead.telephone : ''}${lead.secteur ? ' · 📍 ' + lead.secteur : ''}` +
-    `${lead.estimation ? ' · 💶 ' + lead.estimation + ' €' : ''}`;
-}
-
 export const POST: APIRoute = async ({ request }) => {
   // Sécurité : secret d'en-tête obligatoire
   if (!tokenOk(request.headers.get('x-telegram-bot-api-secret-token'))) {
@@ -119,9 +111,10 @@ export const POST: APIRoute = async ({ request }) => {
     const r = await rpc('tg_set_status', { p_id: leadId, p_statut: statut, p_traite_par: from });
     await tg('answerCallbackQuery', { callback_query_id: cq.id, text: r?.ok ? `Statut : ${STATUT_LABELS_TG[statut]}` : 'Action impossible' });
     if (r?.ok && messageId) {
-      // « Perdu » → on retire les boutons ; « Contacté » → on garde les actions
-      const reply_markup = statut === 'perdu' ? { inline_keyboard: [] } : leadKeyboard(leadId);
-      await tg('editMessageText', { chat_id: chatId, message_id: messageId, text: statusCard(r.lead, statut, from), reply_markup });
+      // Carte complète réécrite (source unique) : détails du lead + ligne « 📞 Contacté · par X »
+      // ou « ❌ Perdu … » ; le clavier reste tant que le lead est ouvert, retiré sinon.
+      const full = await fetchLeadForCard(leadId);
+      if (full) await rewriteLeadCard(full, { chatId, messageId, postIfMissing: false });
     }
     return ok();
   }

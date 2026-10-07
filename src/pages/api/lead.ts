@@ -13,7 +13,8 @@
 import type { APIRoute } from 'astro';
 import { sendLeadConfirmation } from '../../lib/confirmEmail';
 import { leadKeyboard } from '../../lib/telegram';
-import { computePrix, prixDes } from '../../lib/pricing';
+import { buildLeadCard, type CardKind } from '../../lib/telegramCard';
+import { computePrix } from '../../lib/pricing';
 
 export const prerender = false;
 
@@ -70,79 +71,9 @@ async function notifyTelegram(lead: Record<string, any>, kind: string, leadId?: 
     return null;
   }
 
-  let dateHeure = '';
-  try { dateHeure = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }); }
-  catch { dateHeure = new Date().toISOString(); }
-
-  const ageLbl: Record<string, string> = { avant1949: 'avant 1949', intermediaire: '1949 à <15 ans', recent: '<15 ans' };
-  const bienLine = [lead.type_demande || '—', lead.type_bien, lead.age_bien ? ageLbl[lead.age_bien] || lead.age_bien : '', lead.surface ? `${lead.surface} m²` : '']
-    .filter(Boolean).join(' · ');
-  const annexeLine = lead.annexe
-    ? `🔧 annexe : ${lead.annexe_type === 'garage_dependance' ? 'garage / dépendance' : 'cave / parking / box'} (inclus)`
-    : '';
-  const acqLine = (lead.gads_keyword || lead.campaign)
-    ? `🎯 ${lead.gads_keyword ? 'mot-clé ciblé : ' + lead.gads_keyword : ''}${lead.gads_keyword && lead.campaign ? ' · ' : ''}${lead.campaign ? 'campagne : ' + lead.campaign : ''}`
-    : '';
-  const prenom = (lead.nom || '').trim().split(/\s+/)[0] || '—';
-
-  // 📍 Lieu : code postal + ville (« 75011 Paris »). Tolère l'absence de l'un ou l'autre.
-  const lieuLine = (lead.secteur || lead.ville)
-    ? `📍 ${[lead.secteur, lead.ville].filter(Boolean).join(' ')}`
-    : '';
-
-  // 💶 Toujours montrer un montant : estimation exacte si connue, sinon prix
-  // d'entrée de la prestation (« à partir de ») tant que les infos sont incomplètes.
-  const demandeOk = lead.type_demande && DEMANDES.includes(lead.type_demande) ? lead.type_demande : null;
-  const estimLine = lead.estimation
-    ? `💶 estimation ${lead.estimation} €`
-    : demandeOk
-      ? `💶 à partir de ${prixDes(demandeOk)} € (estimation à préciser)`
-      : '';
-
-  let lines: string[];
-  if (kind === 'partiel') {
-    lines = [
-      '🟠 Lead PARTIEL à rappeler — Soloris',
-      lead.nom ? `👤 ${lead.nom}` : '',
-      `📞 ${lead.telephone || '—'}`,
-      lead.email ? `✉️ ${lead.email}` : '',
-      `📋 ${bienLine}`,
-      annexeLine,
-      estimLine,
-      lieuLine,
-      acqLine,
-      `🔗 ${lead.landing_path || '/'}`,
-      `🕒 ${dateHeure}`,
-    ];
-  } else if (kind === 'chat' || kind === 'contact') {
-    const isChat = kind === 'chat';
-    lines = [
-      `${isChat ? '💬' : '📨'} Nouveau ${isChat ? 'CHAT' : 'CONTACT'} Soloris`,
-      `👤 ${lead.nom || '—'}`,
-      `📞 ${lead.telephone || '—'}`,
-      lead.email ? `✉️ ${lead.email}` : '',
-      lead.message ? `💬 ${lead.message}` : '',
-      estimLine,
-      `🔗 ${lead.landing_path || '/'}`,
-      `🕒 ${dateHeure}`,
-    ];
-  } else {
-    lines = [
-      '🟢 Nouveau lead COMPLET — Soloris',
-      `📋 ${bienLine}`,
-      annexeLine,
-      `👤 ${lead.nom || '—'} (${prenom})`,
-      `📞 ${lead.telephone || '—'}`,
-      lead.email ? `✉️ ${lead.email}` : '',
-      lieuLine,
-      estimLine,
-      lead.message ? `💬 ${lead.message}` : '',
-      acqLine,
-      `🔗 ${lead.landing_path || '/'}`,
-      `🕒 ${dateHeure}`,
-    ];
-  }
-  lines = lines.filter(Boolean);
+  // Texte de la carte : source unique (src/lib/telegramCard.ts), partagée avec le webhook,
+  // la confirmation de RDV et l'API admin (réécritures avec ligne de statut).
+  const lines = buildLeadCard(lead, kind as CardKind, new Date());
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
