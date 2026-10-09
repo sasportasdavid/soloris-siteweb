@@ -23,9 +23,22 @@ function json(data: unknown, status = 200): Response {
 /** Mot de passe temporaire lisible : « Sol-xxxxxxxxxxxx » (base64url, 12 car. aléatoires). */
 function tempPassword(): string { return 'Sol-' + randomBytes(9).toString('base64url'); }
 
+/**
+ * En-têtes d'authentification de l'API admin selon le format de la clé :
+ * - nouvelle clé `sb_secret_…` : uniquement `apikey` — Supabase demande de ne PAS la passer en
+ *   `Authorization: Bearer` (ce n'est pas un JWT, l'Auth la rejetterait) ;
+ * - JWT `service_role` historique (eyJ…) : `apikey` + `Authorization: Bearer`.
+ */
+function adminHeaders(): Record<string, string> {
+  const key = SUPABASE_SERVICE_ROLE as string;
+  const h: Record<string, string> = { apikey: key, 'Content-Type': 'application/json' };
+  if (!key.startsWith('sb_secret_')) h.Authorization = `Bearer ${key}`;
+  return h;
+}
+
 async function adminApi(method: string, path: string, body?: unknown): Promise<{ ok: boolean; status: number; data: any }> {
   const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/${path}`, {
-    method, headers: { apikey: SUPABASE_SERVICE_ROLE as string, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE}`, 'Content-Type': 'application/json' },
+    method, headers: adminHeaders(),
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await r.json().catch(() => null);
@@ -54,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (action === 'create_access') {
     if (!SUPABASE_SERVICE_ROLE) {
-      return json({ error: 'La création de comptes de connexion nécessite la variable SUPABASE_SERVICE_ROLE (clé service_role du projet Supabase) dans Vercel → Settings → Environment Variables, puis un redéploiement. En attendant, créez l\u2019utilisateur dans Supabase → Authentication → Users avec le même email : dès que la clé sera configurée, « Créer l\u2019accès » reliera ce compte à la fiche.' }, 501);
+      return json({ error: 'La création de comptes de connexion nécessite la variable SUPABASE_SERVICE_ROLE (clé secrète « sb_secret_… » ou service_role du projet Supabase, Settings → API Keys) dans Vercel → Settings → Environment Variables, puis un redéploiement. En attendant, créez l\u2019utilisateur dans Supabase → Authentication → Users avec le même email : dès que la clé sera configurée, « Créer l\u2019accès » reliera ce compte à la fiche.' }, 501);
     }
     if (!op.email) return json({ error: "L'opérateur n'a pas d'email." }, 400);
     const password = tempPassword();

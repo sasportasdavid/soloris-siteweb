@@ -15,8 +15,15 @@ function pick(runtime: string | undefined, build: string | undefined): string | 
 
 export const SUPABASE_URL = pick(P.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_URL);
 export const SUPABASE_ANON = pick(P.PUBLIC_SUPABASE_ANON_KEY, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
-/** Clé service_role (facultative) : création / blocage des comptes de connexion des opérateurs. */
-export const SUPABASE_SERVICE_ROLE = pick(P.SUPABASE_SERVICE_ROLE, import.meta.env.SUPABASE_SERVICE_ROLE);
+/**
+ * Clé secrète Supabase (facultative) : création / blocage des comptes de connexion des opérateurs.
+ * Accepte l'ancien JWT `service_role` (eyJ…) comme la nouvelle clé `sb_secret_…`, sous l'un des noms
+ * SUPABASE_SERVICE_ROLE (historique), SUPABASE_SERVICE_ROLE_KEY ou SUPABASE_SECRET_KEY.
+ */
+export const SUPABASE_SERVICE_ROLE =
+  pick(P.SUPABASE_SERVICE_ROLE, import.meta.env.SUPABASE_SERVICE_ROLE) ||
+  pick(P.SUPABASE_SERVICE_ROLE_KEY, import.meta.env.SUPABASE_SERVICE_ROLE_KEY) ||
+  pick(P.SUPABASE_SECRET_KEY, import.meta.env.SUPABASE_SECRET_KEY);
 
 export const RESEND_API_KEY = pick(P.RESEND_API_KEY, import.meta.env.RESEND_API_KEY);
 /** Expéditeur des emails. Domaine à vérifier dans Resend (ex. "Soloris <devis@soloris.fr>"). */
