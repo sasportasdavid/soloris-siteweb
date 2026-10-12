@@ -14,6 +14,6 @@ export function leadKeyboard(leadId: string) {
 }
 
 export const STATUT_LABELS_TG: Record<string, string> = {
-  nouveau: 'Nouveau', contacte: 'Contacté', rdv_pris: 'RDV pris',
+  nouveau: 'Nouveau', contacte: 'Contacté', a_recontacter: 'À recontacter', rdv_pris: 'RDV pris',
   realise: 'Réalisé', facture: 'Facturé', perdu: 'Perdu',
 };

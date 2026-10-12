@@ -1068,6 +1068,8 @@ const STATUT_LABELS: Record<string, string> = {
                 <div><label>Assigné à</label><select data-id="${l.id}" data-field="assigne_a">${opsOptions(l.assigne_a)}</select></div>
                 <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
                 <div><label>À recontacter le</label><input type="date" data-id="${l.id}" data-field="recontacter_le" value="${l.recontacter_le || ''}"></div>
+                <div><label>Montant devis (€)</label><input type="number" data-id="${l.id}" data-field="montant_devis" value="${l.montant_devis ?? ''}" placeholder="€"></div>
+                <div><label>Montant validé (€)</label><input type="number" data-id="${l.id}" data-field="montant_valide" value="${l.montant_valide ?? ''}" placeholder="€"></div>
                 <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
                 <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
               </div>
@@ -1267,6 +1269,11 @@ const STATUT_LABELS: Record<string, string> = {
         renderStats(allLeads);
         render();
         renderRappels();
+        // Passage en « à recontacter » → on ouvre la fiche pour proposer la date de rappel
+        if (field === 'statut' && value === 'a_recontacter') {
+          const l0 = allLeads.find((x) => x.id === id);
+          if (l0 && !l0.recontacter_le) openDrawer(id);
+        }
         const saved = document.getElementById('adm-saved');
         if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
         return;

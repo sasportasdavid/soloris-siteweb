@@ -13,7 +13,7 @@ import { callerIdentity, bearer } from '../../../lib/adminAuth';
 
 export const prerender = false;
 
-const STATUTS = ['nouveau', 'contacte', 'rdv_pris', 'realise', 'facture', 'perdu'];
+const STATUTS = ['nouveau', 'contacte', 'a_recontacter', 'rdv_pris', 'realise', 'facture', 'perdu'];
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
