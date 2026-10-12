@@ -17,6 +17,14 @@ async function tg(method: string, body: unknown): Promise<any> {
   } catch (e) { console.error(`[tg-card] Telegram ${method} injoignable :`, e); return null; }
 }
 
+/** Envoie un message texte simple au canal (par défaut le canal Leads). Pour les notifications cron. */
+export async function sendTelegramMessage(text: string, chatId?: string | number): Promise<boolean> {
+  const chat = chatId ?? TELEGRAM_LEADS_CHAT_ID ?? TELEGRAM_CHAT_ID;
+  if (!TELEGRAM_BOT_TOKEN || !chat) return false;
+  const j = await tg('sendMessage', { chat_id: chat, text, disable_web_page_preview: true });
+  return !!(j && j.ok);
+}
+
 /** Lead complet (+ nom de l'opérateur assigné) pour sa carte, ou null. */
 export async function fetchLeadForCard(leadId: string): Promise<Record<string, any> | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON) return null;
