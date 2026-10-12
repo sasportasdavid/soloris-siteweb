@@ -957,6 +957,15 @@ const STATUT_LABELS: Record<string, string> = {
       }, 250);
     }
 
+    function quickHtml(l: any): string {
+      return [
+        l.telephone ? `<a class="adm-qa" href="tel:${esc(l.telephone)}">📞 Appeler</a>` : '',
+        l.telephone ? `<a class="adm-qa adm-qa-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : '',
+        l.email ? `<a class="adm-qa" href="mailto:${esc(l.email)}">✉️ Email</a>` : '',
+        `<button type="button" class="adm-qa adm-qa-primary" data-goto-tab="rdv">📅 ${l.confirmation_rdv_envoyee_at ? 'RDV confirmé' : 'Caler le RDV'}</button>`,
+      ].filter(Boolean).join('');
+    }
+
     function openDrawer(id: string) {
       const l = allLeads.find((x) => x.id === id);
       if (!l) return;
@@ -974,15 +983,8 @@ const STATUT_LABELS: Record<string, string> = {
         dlRow('Type de bien', l.type_bien ? esc(BIEN_LBL[l.type_bien] || l.type_bien) : ''),
         dlRow('Surface', l.surface ? esc(l.surface) + ' m²' : ''),
         dlRow('Âge du bien', l.age_bien ? esc(AGE_LBL[l.age_bien] || l.age_bien) : ''),
-        dlRow('Code postal', esc(l.secteur)),
         dlRow('Estimation', l.estimation ? fmtEUR(l.estimation) : ''),
         dlRow('Option annexe', l.annexe ? '🔧 ' + esc(ANNEXE_LBL[l.annexe_type] || l.annexe_type || 'annexe') + ' (+99 €)' : ''),
-      ].filter(Boolean).join('');
-
-      const contactRows = [
-        dlRow('Nom', esc(l.nom), true),
-        dlRow('Téléphone', l.telephone ? `<a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a>` : ''),
-        dlRow('Email', l.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : ''),
       ].filter(Boolean).join('');
 
       const statutOpts = STATUTS.map((s: string) => `<option value="${s}" ${l.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
@@ -1002,12 +1004,7 @@ const STATUT_LABELS: Record<string, string> = {
       const statutPill = `<span class="adm-pill adm-stpill adm-st-${stKey}">${esc(STATUT_LABELS[stKey] || stKey)}</span>`;
       const opPill = l.assigne_a ? `<span class="adm-pill pill-chan">👷 ${esc(opName(l.assigne_a) || 'assigné')}</span>` : '';
       const histCount = allLeads.filter((x) => groupKey(x) === groupKey(l)).length;
-      const quick = [
-        l.telephone ? `<a class="adm-qa" href="tel:${esc(l.telephone)}">📞 Appeler</a>` : '',
-        l.telephone ? `<a class="adm-qa adm-qa-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : '',
-        l.email ? `<a class="adm-qa" href="mailto:${esc(l.email)}">✉️ Email</a>` : '',
-        `<button type="button" class="adm-qa adm-qa-primary" data-goto-tab="rdv">📅 ${l.confirmation_rdv_envoyee_at ? 'RDV confirmé' : 'Caler le RDV'}</button>`,
-      ].filter(Boolean).join('');
+      const quick = quickHtml(l);
       const suiviMeta = [
         dlRow('Reçu le', fmtDateTime(l.created_at)),
         dlRow('Traité par', esc(l.traite_par)),
@@ -1049,8 +1046,13 @@ const STATUT_LABELS: Record<string, string> = {
 
           <div class="adm-pane" data-pane="demande" hidden>
             <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
-            <div class="adm-sec"><h3>Contact</h3>
-              <dl class="adm-dl">${contactRows}</dl>
+            <div class="adm-sec"><h3>Contact <span class="adm-saved" id="adm-saved-contact">enregistré ✓</span></h3>
+              <div class="adm-edit">
+                <div class="full"><label>Nom</label><input type="text" data-id="${l.id}" data-field="nom" value="${esc(l.nom || '')}" placeholder="Nom Prénom"></div>
+                <div><label>Téléphone</label><input type="tel" data-id="${l.id}" data-field="telephone" value="${esc(l.telephone || '')}" placeholder="06…"></div>
+                <div><label>Email</label><input type="email" data-id="${l.id}" data-field="email" value="${esc(l.email || '')}" placeholder="client@…"></div>
+                <div><label>Code postal</label><input type="text" inputmode="numeric" maxlength="5" data-id="${l.id}" data-field="secteur" value="${esc(l.secteur || '')}"></div>
+              </div>
               ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
             </div>
             <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
@@ -1224,6 +1226,9 @@ const STATUT_LABELS: Record<string, string> = {
       } catch (e: any) { alert('Échec de la mise à jour : ' + String((e && e.message) || e)); return false; }
     }
 
+    // Champs contact du lead → colonnes recopiées sur le devis (PDF, envoi email)
+    const CONTACT_DEVIS_FIELD: Record<string, string> = { nom: 'client_nom', email: 'client_email', telephone: 'client_tel', secteur: 'client_cp', adresse: 'client_adresse' };
+
     async function update(id: string, field: string, value: any) {
       if (field === 'statut' || field === 'assigne_a') {
         const done = await updateViaApi(id, field, value);
@@ -1235,21 +1240,41 @@ const STATUT_LABELS: Record<string, string> = {
         return;
       }
       const patch: any = {};
+      if (typeof value === 'string') value = value.trim();
+      if (field === 'email' && value) value = value.toLowerCase();
       patch[field] = value === '' ? null : value;
+      const lead0 = allLeads.find((l) => l.id === id);
+      // Saisie refusée → message + on remet l'ancienne valeur dans le champ
+      const reject = (m: string) => {
+        alert(m);
+        const el = document.querySelector(`#adm-drawer-panel [data-id="${id}"][data-field="${field}"]`) as HTMLInputElement | null;
+        if (el) el.value = lead0?.[field] ?? '';
+      };
+      if (field === 'email' && patch.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(patch.email)) return reject('Email invalide.');
+      if (field === 'secteur' && patch.secteur && !/^\d{5}$/.test(patch.secteur)) return reject('Code postal invalide (5 chiffres).');
+      if ((field === 'telephone' || field === 'email') && !patch[field] && !(field === 'telephone' ? lead0?.email : lead0?.telephone)) {
+        return reject('Gardez au moins un téléphone ou un email.');
+      }
       const { error } = await supabase.from('leads').update(patch).eq('id', id);
       if (error) { alert('Échec de la mise à jour : ' + error.message); return; }
       const lead = allLeads.find((l) => l.id === id);
       if (lead) lead[field] = patch[field];
-      // L'adresse exacte se répercute sur le devis existant (pour le PDF / la signature)
-      if (field === 'adresse' && devisByLead[id]) {
+      // Les coordonnées se répercutent sur le devis existant (PDF, envoi email, signature)
+      const dvField = CONTACT_DEVIS_FIELD[field];
+      if (dvField && devisByLead[id]) {
         try {
-          const { data: dvu } = await supabase.from('devis').update({ client_adresse: patch.adresse, updated_at: new Date().toISOString() }).eq('id', devisByLead[id].id).select('*').single();
+          const { data: dvu } = await supabase.from('devis').update({ [dvField]: patch[field], updated_at: new Date().toISOString() }).eq('id', devisByLead[id].id).select('*').single();
           if (dvu) syncDevis(dvu);
         } catch (e) { /* non bloquant */ }
       }
+      // En-tête de la fiche (nom, boutons Appeler / WhatsApp / Email) à jour
+      if (dvField && currentLeadId === id && lead) {
+        const h = document.querySelector('#adm-drawer-panel .adm-mhead h2'); if (h) h.textContent = lead.nom || 'Lead sans nom';
+        const q = document.querySelector('#adm-drawer-panel .adm-quick'); if (q) q.innerHTML = quickHtml(lead);
+      }
       renderStats(allLeads);
       render();
-      const saved = document.getElementById('adm-saved');
+      const saved = document.getElementById(dvField && field !== 'adresse' ? 'adm-saved-contact' : 'adm-saved');
       if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
     }
 
