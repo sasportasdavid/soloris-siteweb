@@ -1,0 +1,15 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/gads-rdv-upload",
+      "schedule": "0 7 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/lp/vente-sans-prix",
+      "destination": "/lp/vente-prix",
+      "permanent": true
+    }
+  ]
+}
