@@ -26,6 +26,7 @@ const STATUT_LABELS: Record<string, string> = {
       <div class="adm-titlebar-actions">
         <button type="button" class="adm-btn adm-btn--ghost" id="kpi-btn" aria-expanded="false">📊 Tableau de bord</button>
         <button type="button" class="adm-btn adm-btn--ghost" id="rappels-btn" aria-expanded="false">📅 Rappels <span id="rappels-count" class="rappels-badge"></span></button>
+        <button type="button" class="adm-btn adm-btn--ghost" id="kanban-btn" aria-pressed="false" title="Vue pipeline (glisser-déposer)">🗂 Pipeline</button>
         <button type="button" class="adm-btn adm-btn--ghost" id="export-btn" title="Exporter les leads filtrés en CSV">⬇ Export</button>
         <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
       </div>
@@ -120,6 +121,9 @@ const STATUT_LABELS: Record<string, string> = {
     </div>
 
     <!-- Tableau -->
+    <!-- Vue pipeline (Kanban) — alternative au tableau, glisser-déposer pour changer de statut -->
+    <div id="kanban-panel" class="kanban-panel" hidden><div id="kanban-body" class="kanban-body"></div></div>
+
     <div class="adm-tablewrap">
       <table class="adm-table">
         <thead>
@@ -237,6 +241,18 @@ const STATUT_LABELS: Record<string, string> = {
     .act-when { color:var(--ink-soft); font-size:12px; white-space:nowrap; flex:none; width:118px; }
     .act-what { color:var(--ink); flex:1; }
     .act-who { color:var(--ink-soft); font-size:12px; flex:none; }
+    /* Vue Kanban */
+    .kanban-body { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(220px,1fr); gap:12px; overflow-x:auto; padding-bottom:8px; align-items:start; }
+    .kb-col { background:var(--paper); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; }
+    .kb-colhead { font-family:var(--sora); font-size:13px; font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line); border-radius:12px 12px 0 0; }
+    .kb-n { float:right; color:var(--ink-soft); font-weight:400; }
+    .kb-cards { padding:8px; display:grid; gap:8px; min-height:48px; flex:1; align-content:start; }
+    .kb-cards.kb-over { background:rgba(46,111,174,.10); }
+    .kb-card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px 11px; cursor:grab; }
+    .kb-card:hover { border-color:var(--blue-light); }
+    .kb-card.kb-dragging { opacity:.5; }
+    .kb-name { font-family:var(--sora); font-weight:600; font-size:13.5px; color:var(--ink); }
+    .kb-meta { font-size:12px; color:var(--ink-soft); margin-top:2px; }
 
     .rappels-panel { border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:12px; background:var(--paper); padding:10px 14px; margin-bottom:18px; }
     .rappel-day { padding:8px 0; border-top:1px dashed var(--line); }
@@ -1535,6 +1551,14 @@ const STATUT_LABELS: Record<string, string> = {
       L.filter((l) => l.statut === 'perdu').forEach((l) => { const m = l.motif_perte || '(non renseigné)'; motifs[m] = (motifs[m] || 0) + 1; });
       const motifRows = Object.entries(motifs).sort((a, b) => b[1] - a[1]);
 
+      // CA facturé — 6 derniers mois (tout l'historique, indépendant de la période)
+      const monthsCa: Record<string, number> = {};
+      const mkey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(d.getMonth() - i); monthsCa[mkey(d)] = 0; }
+      allLeads.filter((l) => l.statut === 'facture').forEach((l) => { const k = String(l.updated_at || l.created_at).slice(0, 7); if (k in monthsCa) monthsCa[k] += Number(l.montant) || 0; });
+      const monthsArr = Object.entries(monthsCa);
+      const maxCa = Math.max(1, ...monthsArr.map(([, v]) => v));
+
       const fbar = (label: string, c: number, prev: number | null) => {
         const w = n ? Math.max(3, Math.round((c / n) * 100)) : 0;
         const rate = prev != null && prev > 0 ? ` ${pct(c, prev)}%` : '';
@@ -1570,10 +1594,35 @@ const STATUT_LABELS: Record<string, string> = {
         ${lost ? `<div class="kpi-sec-title">Motifs de perte (${lost})</div>
         <div style="overflow-x:auto"><table class="kpi-table"><thead><tr><th>Motif</th><th class="num">Nb</th><th class="num">%</th></tr></thead>
         <tbody>${motifRows.map(([k, v]) => `<tr><td>${esc(MOTIF_LABELS[k] || k)}</td><td class="num">${v}</td><td class="num">${pct(v, lost)}%</td></tr>`).join('')}</tbody></table></div>` : ''}
+
+        <div class="kpi-sec-title">CA facturé — 6 derniers mois</div>
+        <div class="kpi-funnel">
+          ${monthsArr.map(([m, v]) => `<div class="kpi-fstage"><span class="kpi-flabel">${esc(m)}</span><span class="kpi-fbarwrap"><span class="kpi-fbar" style="width:${Math.max(3, Math.round((v / maxCa) * 100))}%;background:linear-gradient(90deg,#6fc294,#13633a)">${v ? fmtEUR(v) : ''}</span></span><span class="kpi-frate"></span></div>`).join('')}
+        </div>
       `;
     }
 
-    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); renderKpi(); }
+    // ── Vue Kanban (pipeline) ──
+    const KANBAN_COLS = ['nouveau', 'contacte', 'a_recontacter', 'rdv_pris', 'realise', 'facture', 'perdu'];
+    function renderKanban() {
+      const body = document.getElementById('kanban-body'); if (!body) return;
+      const views = getFiltered();
+      const by: Record<string, any[]> = {}; KANBAN_COLS.forEach((s) => (by[s] = []));
+      views.forEach((v) => { const s = KANBAN_COLS.includes(v.statut) ? v.statut : 'nouveau'; by[s].push(v); });
+      body.innerHTML = KANBAN_COLS.map((s) => `
+        <div class="kb-col">
+          <div class="kb-colhead adm-st-${s}">${esc(STATUT_LABELS[s] || s)} <span class="kb-n">${by[s].length}</span></div>
+          <div class="kb-cards" data-statut="${s}">
+            ${by[s].map((v) => `<div class="kb-card" draggable="true" data-id="${v._statutId || v.id}" data-open="${v.id}">
+              <div class="kb-name">${esc(v.nom || 'Lead sans nom')}</div>
+              <div class="kb-meta">${esc(v.type_demande || '')}${v.secteur ? ' · ' + esc(v.secteur) : ''}${v.estimation ? ' · ' + fmtEUR(v.estimation) : ''}</div>
+            </div>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+    const kanbanOpen = () => !(document.getElementById('kanban-panel') as HTMLElement)?.hidden;
+
+    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); renderKpi(); if (kanbanOpen()) renderKanban(); }
 
     function wireEvents() {
       // Recherche texte : filtrage instantané côté client (sur les données chargées)
@@ -1645,6 +1694,34 @@ const STATUT_LABELS: Record<string, string> = {
       }
       document.getElementById('kpi-period')?.addEventListener('change', renderKpi);
       document.getElementById('export-btn')?.addEventListener('click', exportCsv);
+
+      // Vue Kanban : bascule tableau ↔ pipeline + glisser-déposer pour changer de statut
+      const kanbanBtn = document.getElementById('kanban-btn');
+      const kanbanPanel = document.getElementById('kanban-panel') as HTMLElement | null;
+      const tableWrap = document.querySelector('.adm-tablewrap') as HTMLElement | null;
+      if (kanbanBtn && kanbanPanel && tableWrap) {
+        kanbanBtn.addEventListener('click', () => {
+          const show = kanbanPanel.hidden;
+          kanbanPanel.hidden = !show; tableWrap.hidden = show;
+          kanbanBtn.setAttribute('aria-pressed', String(show));
+          if (show) renderKanban();
+        });
+        const kb = document.getElementById('kanban-body')!;
+        let dragId: string | null = null;
+        kb.addEventListener('dragstart', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) { dragId = c.getAttribute('data-id'); (e as DragEvent).dataTransfer!.effectAllowed = 'move'; c.classList.add('kb-dragging'); } });
+        kb.addEventListener('dragend', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) c.classList.remove('kb-dragging'); dragId = null; });
+        kb.addEventListener('dragover', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) { e.preventDefault(); col.classList.add('kb-over'); } });
+        kb.addEventListener('dragleave', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) col.classList.remove('kb-over'); });
+        kb.addEventListener('drop', async (e) => {
+          const col = (e.target as HTMLElement).closest('.kb-cards'); if (!col) return;
+          e.preventDefault(); col.classList.remove('kb-over');
+          const id = dragId; const newStatut = col.getAttribute('data-statut');
+          if (!id || !newStatut) return;
+          const lead = allLeads.find((l) => l.id === id);
+          if (lead && lead.statut !== newStatut) { await update(id, 'statut', newStatut); renderKanban(); }
+        });
+        kb.addEventListener('click', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) openDrawer(c.getAttribute('data-open') as string); });
+      }
 
       const rb = document.getElementById('rappels-btn');
       const rp = document.getElementById('rappels-panel');
