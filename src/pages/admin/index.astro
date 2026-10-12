@@ -21,7 +21,10 @@ const STATUT_LABELS: Record<string, string> = {
   <div id="admin-loading" style="text-align:center;padding:60px 0;color:var(--ink-soft)">Chargement…</div>
 
   <div id="admin-app" hidden>
-    <h1 class="adm-h1">Leads</h1>
+    <div class="adm-titlebar">
+      <h1 class="adm-h1">Leads</h1>
+      <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
+    </div>
     <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
     <!-- Outils : boutons des cartes Telegram (webhook). Pas de secret à manipuler : la session admin suffit. -->
@@ -123,6 +126,7 @@ const STATUT_LABELS: Record<string, string> = {
   </div>
 
   <style is:global>
+    .adm-titlebar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     .adm-h1 { font-family:var(--sora); font-weight:600; font-size:28px; color:var(--blue); margin-bottom:4px; }
     .adm-sub { font-size:14px; margin-bottom:24px; }
 
@@ -382,6 +386,14 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-suggest button { display:block; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--line); padding:9px 12px; font-size:13.5px; color:var(--ink); cursor:pointer; font-family:var(--inter); line-height:1.4; }
     .adm-suggest button:last-child { border-bottom:none; }
     .adm-suggest button:hover { background:var(--paper); }
+
+    /* Formulaire « Nouveau lead » (saisie manuelle : appel, WhatsApp, recommandation…) */
+    .adm-newlead { padding:6px 30px 30px; }
+    .adm-newlead .adm-edit { grid-template-columns:repeat(3,1fr); }
+    @media (max-width:760px){ .adm-newlead{ padding:6px 18px 26px; } .adm-newlead .adm-edit{ grid-template-columns:1fr 1fr; } }
+    .adm-newlead .req { color:#b3261e; }
+    #nl-msg { min-height:16px; font-size:13px; }
+    #nl-msg.err { color:#b3261e; }
   </style>
 
   <script define:vars={{ STATUTS, STATUT_LABELS }}>
@@ -392,6 +404,7 @@ const STATUT_LABELS: Record<string, string> = {
     import { supabase } from '../../lib/supabase';
     import { buildDevisDraftFromLead } from '../../lib/devis';
     import { rdvPrefill, renderRdvFormFields, RDV_FORM_CSS } from '../../lib/rdvForm';
+    import { computePrix } from '../../lib/pricing';
 
     const { STATUTS, STATUT_LABELS } = (window as any).__ADMIN_CONST;
     const fmtEUR = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -924,8 +937,8 @@ const STATUT_LABELS: Record<string, string> = {
     }
 
     // Autocomplétion d'adresse via la Base Adresse Nationale (gratuite, sans clé, RGPD).
-    function adresseAutocomplete(q: string) {
-      const box = document.getElementById('adresse-suggest');
+    function adresseAutocomplete(q: string, boxId = 'adresse-suggest') {
+      const box = document.getElementById(boxId);
       if (!box) return;
       clearTimeout(adresseTimer);
       if (!q || q.trim().length < 4) { box.hidden = true; box.innerHTML = ''; return; }
@@ -937,7 +950,7 @@ const STATUT_LABELS: Record<string, string> = {
           const feats = data.features || [];
           if (!feats.length) { box.hidden = true; box.innerHTML = ''; return; }
           box.innerHTML = feats.map((f: any) =>
-            `<button type="button" data-adr="${esc(f.properties.label)}" data-cp="${esc(f.properties.postcode || '')}">${esc(f.properties.label)}</button>`
+            `<button type="button" data-adr="${esc(f.properties.label)}" data-cp="${esc(f.properties.postcode || '')}" data-city="${esc(f.properties.city || '')}">${esc(f.properties.label)}</button>`
           ).join('');
           box.hidden = false;
         } catch (e) { /* hors-ligne / API indispo : on ignore, saisie manuelle possible */ }
@@ -1078,6 +1091,115 @@ const STATUT_LABELS: Record<string, string> = {
           `<span class="adm-hist-meta">${etat} · ${esc(STATUT_LABELS[x.statut] || x.statut || 'Nouveau')}${x.estimation ? ' · ' + fmtEUR(x.estimation) : ''}${x.campaign ? ' · ' + esc(x.campaign) : ''}</span></li>`;
       }).join('');
       return `<div class="adm-sec"><h3>Historique du contact (${history.length} demandes)</h3><ul class="adm-hist">${items}</ul></div>`;
+    }
+
+    // ── Saisie manuelle d'un lead (appel entrant, WhatsApp, recommandation…) ──
+    const CANAL_LBL: Record<string, string> = { telephone: 'Appel téléphonique', whatsapp: 'WhatsApp', recommandation: 'Recommandation / apporteur', email: 'Email', autre: 'Autre' };
+
+    function openNewLeadForm() {
+      currentLeadId = null;
+      const panel = document.getElementById('adm-drawer-panel') as HTMLElement;
+      const opts = (m: Record<string, string>, withEmpty = true) =>
+        (withEmpty ? '<option value="">—</option>' : '') + Object.entries(m).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+      panel.innerHTML = `
+        <div class="adm-mhead">
+          <div><h2>Nouveau lead</h2><div class="badges"><span class="adm-pill pill-chan">saisie manuelle</span></div></div>
+          <button type="button" class="adm-x" data-close aria-label="Fermer">×</button>
+        </div>
+        <form id="nl-form" class="adm-newlead" autocomplete="off">
+          <div class="adm-sec"><h3>Contact</h3>
+            <div class="adm-edit">
+              <div><label>Nom <span class="req">*</span></label><input id="nl-nom" required placeholder="Nom Prénom"></div>
+              <div><label>Téléphone</label><input id="nl-tel" type="tel" placeholder="06…"></div>
+              <div><label>Email</label><input id="nl-email" type="email" placeholder="client@…"></div>
+              <div><label>Canal</label><select id="nl-canal">${opts(CANAL_LBL, false)}</select></div>
+              <div class="full" style="grid-column:span 2"><label>Apporteur / via</label><input id="nl-via" placeholder="ex. Israël Teboul, agence X…"></div>
+            </div>
+          </div>
+          <div class="adm-sec"><h3>Bien</h3>
+            <div class="adm-edit">
+              <div><label>Projet</label><select id="nl-demande">${opts(DEMANDE_LBL)}</select></div>
+              <div><label>Type de bien</label><select id="nl-bien">${opts(BIEN_LBL)}</select></div>
+              <div><label>Surface (m²)</label><input id="nl-surface" type="number" min="1" step="0.01"></div>
+              <div><label>Âge du bien</label><select id="nl-age">${opts(AGE_LBL)}</select></div>
+              <div><label>Typologie</label><input id="nl-typo" placeholder="T2, T3…"></div>
+              <div></div>
+              <div class="full" style="position:relative"><label>Adresse</label>
+                <input id="nl-adresse" class="adm-adresse-input" placeholder="Commencez à taper l'adresse…">
+                <div id="nl-suggest" class="adm-suggest" hidden></div>
+              </div>
+              <div><label>Code postal</label><input id="nl-cp" inputmode="numeric" maxlength="5"></div>
+              <div><label>Ville</label><input id="nl-ville"></div>
+            </div>
+          </div>
+          <div class="adm-sec"><h3>Offre</h3>
+            <div class="adm-edit">
+              <div class="full" style="grid-column:span 2"><label>Prestation</label><input id="nl-prestation" placeholder="ex. DPE + électricité"></div>
+              <div><label>Prix convenu TTC (€)</label><input id="nl-prix" type="number" min="0" placeholder="auto si vide"></div>
+              <div><label>Statut</label><select id="nl-statut">${STATUTS.map((s: string) => `<option value="${s}" ${s === 'contacte' ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('')}</select></div>
+              <div class="full"><label>Notes</label><textarea id="nl-notes" placeholder="Contexte de l'appel, disponibilités…"></textarea></div>
+            </div>
+          </div>
+          <div class="adm-devis-actions">
+            <button type="submit" class="adm-btn" id="nl-submit">Créer le lead</button>
+            <button type="button" class="adm-btn adm-btn-ghost" data-close>Annuler</button>
+          </div>
+          <p id="nl-msg" class="muted" style="margin-top:10px"></p>
+        </form>
+      `;
+      (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
+      (document.getElementById('nl-nom') as HTMLInputElement).focus();
+    }
+
+    async function submitNewLead() {
+      const msg = document.getElementById('nl-msg') as HTMLElement;
+      const setMsg = (m: string, err = false) => { msg.textContent = m; msg.className = err ? 'err' : 'muted'; };
+      const v = (id: string) => inputVal(id) || null;
+      const nom = v('nl-nom'); const telephone = v('nl-tel'); const email = v('nl-email');
+      if (!nom) { setMsg('Le nom est requis.', true); return; }
+      if (!telephone && !email) { setMsg('Renseignez au moins un téléphone ou un email.', true); return; }
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setMsg('Email invalide.', true); return; }
+
+      const type_demande = v('nl-demande'); const type_bien = v('nl-bien'); const age_bien = v('nl-age');
+      const surfaceNum = Number(inputVal('nl-surface').replace(',', '.'));
+      const surface = Number.isFinite(surfaceNum) && surfaceNum > 0 ? Math.round(surfaceNum) : null;
+      let estimation: number | null = Number(inputVal('nl-prix')) > 0 ? Math.round(Number(inputVal('nl-prix'))) : null;
+      // Prix vide → grille tarifaire (même source de vérité que le tunnel /devis)
+      if (estimation == null && type_demande && surface) {
+        try { estimation = computePrix({ projet: type_demande as any, typeBien: type_bien, surface, age: (age_bien as any) || null }).prix; } catch { /* */ }
+      }
+      const canal = inputVal('nl-canal') || 'telephone';
+      const via = inputVal('nl-via');
+      const statut = inputVal('nl-statut') || 'contacte';
+
+      const row: any = {
+        source: canal,
+        lead_status: 'complet',
+        statut,
+        nom, telephone, email,
+        type_demande, type_bien, age_bien, surface,
+        typologie: v('nl-typo'),
+        adresse: v('nl-adresse'),
+        secteur: v('nl-cp'),
+        ville: v('nl-ville'),
+        estimation,
+        prix_total_ttc: estimation,
+        prestation: v('nl-prestation'),
+        message: via ? `Via ${via} (${CANAL_LBL[canal] || canal})` : `Saisi manuellement — ${CANAL_LBL[canal] || canal}`,
+        notes: v('nl-notes'),
+        landing_path: 'admin (saisie manuelle)',
+        assigne_a: me ? me.id : null,
+      };
+
+      const btn = document.getElementById('nl-submit') as HTMLButtonElement;
+      btn.disabled = true; setMsg('Enregistrement…');
+      const { data, error } = await supabase.from('leads').insert(row).select('*').single();
+      btn.disabled = false;
+      if (error || !data) { setMsg('Échec : ' + (error?.message || 'inconnu'), true); return; }
+      allLeads.unshift(data);
+      renderStats(allLeads);
+      render();
+      openDrawer(data.id); // enchaîne directement sur RDV / devis
     }
 
     function closeDrawer() {
@@ -1234,6 +1356,10 @@ const STATUT_LABELS: Record<string, string> = {
 
       // Édition dans le drawer (champs commerciaux du lead)
       const panel = document.getElementById('adm-drawer-panel')!;
+      document.getElementById('new-lead-btn')!.addEventListener('click', openNewLeadForm);
+      panel.addEventListener('submit', (e) => {
+        if ((e.target as HTMLElement).id === 'nl-form') { e.preventDefault(); submitNewLead(); }
+      });
       panel.addEventListener('change', (e) => {
         const t = e.target as HTMLElement;
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
@@ -1256,6 +1382,15 @@ const STATUT_LABELS: Record<string, string> = {
         const other = t.closest('[data-open-lead]') as HTMLElement | null;
         if (other) { openDrawer(other.getAttribute('data-open-lead') as string); return; }
         const adr = t.closest('[data-adr]') as HTMLElement | null;
+        if (adr && adr.closest('#nl-suggest')) {
+          // Formulaire « Nouveau lead » : adresse + CP + ville en un clic
+          const set = (id: string, val: string) => { const el = document.getElementById(id) as HTMLInputElement | null; if (el) el.value = val; };
+          set('nl-adresse', adr.getAttribute('data-adr') || '');
+          set('nl-cp', adr.getAttribute('data-cp') || '');
+          set('nl-ville', adr.getAttribute('data-city') || '');
+          (document.getElementById('nl-suggest') as HTMLElement).hidden = true;
+          return;
+        }
         if (adr) {
           const input = document.getElementById('lead-adresse') as HTMLInputElement | null;
           if (input) { input.value = adr.getAttribute('data-adr') || ''; input.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -1275,6 +1410,7 @@ const STATUT_LABELS: Record<string, string> = {
       panel.addEventListener('input', (e) => {
         const t = e.target as HTMLElement;
         if (t.id === 'lead-adresse') { adresseAutocomplete((t as HTMLInputElement).value); return; }
+        if (t.id === 'nl-adresse') { adresseAutocomplete((t as HTMLInputElement).value, 'nl-suggest'); return; }
         if (t.closest('#dv-lignes')) recomputeTotal();
       });
       // Masquer les suggestions d'adresse au clic en dehors
