@@ -24,9 +24,25 @@ const STATUT_LABELS: Record<string, string> = {
     <div class="adm-titlebar">
       <h1 class="adm-h1">Leads</h1>
       <div class="adm-titlebar-actions">
+        <button type="button" class="adm-btn adm-btn--ghost" id="kpi-btn" aria-expanded="false">📊 Tableau de bord</button>
         <button type="button" class="adm-btn adm-btn--ghost" id="rappels-btn" aria-expanded="false">📅 Rappels <span id="rappels-count" class="rappels-badge"></span></button>
+        <button type="button" class="adm-btn adm-btn--ghost" id="export-btn" title="Exporter les leads filtrés en CSV">⬇ Export</button>
         <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
       </div>
+    </div>
+
+    <!-- Tableau de bord KPI (speed-to-lead, funnel, CA pipeline, perf campagne) -->
+    <div id="kpi-panel" class="kpi-panel" hidden>
+      <div class="kpi-head">
+        <h3>Tableau de bord</h3>
+        <select id="kpi-period" class="kpi-period" title="Période">
+          <option value="7">7 jours</option>
+          <option value="30" selected>30 jours</option>
+          <option value="90">90 jours</option>
+          <option value="0">Tout</option>
+        </select>
+      </div>
+      <div id="kpi-body"></div>
     </div>
 
     <!-- Agenda des rappels (leads « à recontacter », groupés par jour) -->
@@ -192,6 +208,36 @@ const STATUT_LABELS: Record<string, string> = {
       background:var(--gold); color:#4a2f00; font-size:11.5px; font-weight:700; align-items:center; justify-content:center; }
 
     /* Agenda des rappels */
+    /* Tableau de bord KPI */
+    .kpi-panel { border:1px solid var(--line); border-left:3px solid var(--blue-light); border-radius:12px; background:#fff; padding:16px 18px; margin-bottom:18px; }
+    .kpi-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .kpi-head h3 { font-family:var(--sora); font-size:16px; color:var(--blue); }
+    .kpi-period { border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; font-family:var(--sora); cursor:pointer; background:#fff; }
+    .kpi-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:8px; }
+    .kpi-card { border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--paper); }
+    .kpi-card .lbl { font-size:11.5px; color:var(--ink-soft); font-family:var(--sora); text-transform:uppercase; letter-spacing:.02em; }
+    .kpi-card .val { font-family:var(--sora); font-weight:700; font-size:23px; color:var(--blue); margin-top:3px; }
+    .kpi-card .val.ok { color:#1d7a48; } .kpi-card .val.warn { color:#9a3322; }
+    .kpi-card .sub { font-size:12px; color:var(--ink-soft); margin-top:3px; }
+    .kpi-sec-title { font-family:var(--sora); font-size:12.5px; color:var(--blue); margin:16px 0 8px; font-weight:600; text-transform:uppercase; letter-spacing:.02em; }
+    .kpi-funnel { display:grid; gap:6px; }
+    .kpi-fstage { display:flex; align-items:center; gap:10px; }
+    .kpi-flabel { width:92px; font-size:13px; font-family:var(--sora); color:var(--ink); flex:none; }
+    .kpi-fbarwrap { flex:1; background:var(--paper); border-radius:6px; overflow:hidden; }
+    .kpi-fbar { height:26px; border-radius:6px; background:linear-gradient(90deg,#6fa0d6,var(--blue)); min-width:28px; display:flex; align-items:center; padding:0 9px; color:#fff; font-family:var(--sora); font-size:12.5px; font-weight:600; }
+    .kpi-frate { width:70px; text-align:right; font-size:12px; color:var(--ink-soft); flex:none; }
+    .kpi-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .kpi-table th, .kpi-table td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+    .kpi-table th { font-family:var(--sora); color:var(--ink-soft); font-size:11px; text-transform:uppercase; }
+    .kpi-table td.num, .kpi-table th.num { text-align:right; font-variant-numeric:tabular-nums; }
+    /* Timeline d'activité */
+    .adm-activity-list { list-style:none; margin:0; padding:0; display:grid; gap:2px; }
+    .adm-activity-list li { display:flex; gap:10px; align-items:baseline; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; }
+    .adm-activity-list li:last-child { border-bottom:0; }
+    .act-when { color:var(--ink-soft); font-size:12px; white-space:nowrap; flex:none; width:118px; }
+    .act-what { color:var(--ink); flex:1; }
+    .act-who { color:var(--ink-soft); font-size:12px; flex:none; }
+
     .rappels-panel { border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:12px; background:var(--paper); padding:10px 14px; margin-bottom:18px; }
     .rappel-day { padding:8px 0; border-top:1px dashed var(--line); }
     .rappel-day:first-child { border-top:0; }
@@ -665,6 +711,26 @@ const STATUT_LABELS: Record<string, string> = {
       return views;
     }
 
+    // Export CSV des leads actuellement filtrés (séparateur ; + BOM = Excel FR)
+    function exportCsv() {
+      const rows = getFiltered();
+      const cols: [string, string][] = [
+        ['Date', 'created_at'], ['Nom', 'nom'], ['Téléphone', 'telephone'], ['Email', 'email'],
+        ['CP', 'secteur'], ['Ville', 'ville'], ['Demande', 'type_demande'], ['Bien', 'type_bien'],
+        ['Surface', 'surface'], ['Estimation', 'estimation'], ['Statut', 'statut'],
+        ['Campagne', 'campaign'], ['Montant devis', 'montant_devis'], ['Montant validé', 'montant_valide'],
+        ['Montant facturé', 'montant'], ['À recontacter le', 'recontacter_le'], ['Motif perte', 'motif_perte'],
+      ];
+      const cell = (v: any) => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const header = cols.map((c) => c[0]).join(';');
+      const lines = rows.map((r) => cols.map((c) => cell(c[1] === 'statut' ? (STATUT_LABELS[r.statut] || r.statut) : r[c[1]])).join(';'));
+      const csv = '﻿' + [header, ...lines].join('\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `soloris-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
     function render() {
       const rows = getFiltered();
       const body = document.getElementById('leads-body') as HTMLElement;
@@ -996,6 +1062,13 @@ const STATUT_LABELS: Record<string, string> = {
       ].filter(Boolean).join('');
     }
 
+    const MOTIF_LABELS: Record<string, string> = {
+      prix: 'Prix', delai: 'Délai', injoignable: 'Injoignable', concurrent: 'Concurrent',
+      pas_decideur: 'Pas décideur', reporte: 'Reporté / plus tard', autre: 'Autre',
+    };
+    function motifOpts(sel: string | null): string {
+      return `<option value="">—</option>` + Object.entries(MOTIF_LABELS).map(([k, v]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    }
     function openDrawer(id: string) {
       const l = allLeads.find((x) => x.id === id);
       if (!l) return;
@@ -1071,6 +1144,7 @@ const STATUT_LABELS: Record<string, string> = {
                 <div><label>Montant devis (€)</label><input type="number" data-id="${l.id}" data-field="montant_devis" value="${l.montant_devis ?? ''}" placeholder="€"></div>
                 <div><label>Montant validé (€)</label><input type="number" data-id="${l.id}" data-field="montant_valide" value="${l.montant_valide ?? ''}" placeholder="€"></div>
                 <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
+                <div><label>Motif de perte</label><select data-id="${l.id}" data-field="motif_perte">${motifOpts(l.motif_perte)}</select></div>
                 <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
               </div>
               <dl class="adm-dl adm-dl--meta">${suiviMeta}</dl>
@@ -1104,6 +1178,7 @@ const STATUT_LABELS: Record<string, string> = {
 
           <div class="adm-pane" data-pane="histo" hidden>
             ${buildHistorySection(l)}
+            <div class="adm-sec"><h3>Activité</h3><div id="lead-activity" class="adm-activity">Chargement…</div></div>
             <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
             <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
@@ -1111,6 +1186,23 @@ const STATUT_LABELS: Record<string, string> = {
       `;
       setTab(drawerTab);
       (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
+      loadActivity(id);
+    }
+
+    /** Timeline : journal d'activité du lead (changements de statut, assignations…). */
+    async function loadActivity(id: string) {
+      const el = document.getElementById('lead-activity'); if (!el) return;
+      const { data, error } = await supabase.from('lead_activity').select('*').eq('lead_id', id).order('ts', { ascending: false }).limit(50);
+      if (el !== document.getElementById('lead-activity')) return; // drawer déjà rechargé
+      if (error) { el.innerHTML = '<p class="muted" style="font-size:13px">Historique indisponible.</p>'; return; }
+      const rows = data || [];
+      if (!rows.length) { el.innerHTML = '<p class="muted" style="font-size:13px">Aucune activité enregistrée pour l\'instant.</p>'; return; }
+      el.innerHTML = '<ul class="adm-activity-list">' + rows.map((a: any) => {
+        const what = a.type === 'statut' ? `Statut → <b>${esc(STATUT_LABELS[a.detail] || a.detail)}</b>`
+          : a.type === 'assignation' ? `Assigné${a.detail ? ' à ' + esc(a.detail) : ''}`
+          : `${esc(a.type)}${a.detail ? ' · ' + esc(a.detail) : ''}`;
+        return `<li><span class="act-when">${fmtDateTime(a.ts)}</span><span class="act-what">${what}</span>${a.par ? `<span class="act-who">par ${esc(a.par)}</span>` : ''}</li>`;
+      }).join('') + '</ul>';
     }
 
     /** Historique du contact : toutes ses demandes (même téléphone / email), la courante en gras. */
@@ -1381,7 +1473,107 @@ const STATUT_LABELS: Record<string, string> = {
       panel.innerHTML = html;
     }
 
-    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); }
+    // ── Tableau de bord KPI ──────────────────────────────────────────────
+    // Rang de statut = étape la plus avancée atteinte (le pipeline est monotone).
+    const KPI_RANK: Record<string, number> = { nouveau: 0, contacte: 1, a_recontacter: 1, rdv_pris: 2, realise: 3, facture: 4, perdu: -1 };
+    function fmtDelay(min: number): string {
+      if (min < 60) return `${Math.round(min)} min`;
+      if (min < 60 * 24) return `${(min / 60).toFixed(1)} h`;
+      return `${(min / 1440).toFixed(1)} j`;
+    }
+    function median(arr: number[]): number | null {
+      if (!arr.length) return null;
+      const s = [...arr].sort((a, b) => a - b); const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+    function renderKpi() {
+      const body = document.getElementById('kpi-body'); if (!body) return;
+      const days = Number((document.getElementById('kpi-period') as HTMLSelectElement)?.value ?? 30);
+      const since = days > 0 ? Date.now() - days * 86400000 : 0;
+      const L = allLeads.filter((l) => new Date(l.created_at).getTime() >= since);
+      const n = L.length;
+      const rk = (l: any) => KPI_RANK[l.statut] ?? 0;
+
+      // Speed-to-lead
+      const delays = L.filter((l) => l.first_contact_at)
+        .map((l) => (new Date(l.first_contact_at).getTime() - new Date(l.created_at).getTime()) / 60000)
+        .filter((d) => d >= 0);
+      const avg = delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null;
+      const med = median(delays);
+      const u5 = delays.filter((d) => d <= 5).length;
+      const u60 = delays.filter((d) => d <= 60).length;
+      const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
+
+      // Funnel (étape atteinte)
+      const reached = (min: number) => L.filter((l) => rk(l) >= min || (min === 1 && l.first_contact_at)).length;
+      const stages = [
+        { label: 'Leads', c: n },
+        { label: 'Contactés', c: reached(1) },
+        { label: 'RDV', c: reached(2) },
+        { label: 'Réalisés', c: reached(3) },
+        { label: 'Facturés', c: reached(4) },
+      ];
+      const lost = L.filter((l) => l.statut === 'perdu').length;
+
+      // CA pipeline
+      const sum = (f: string, rows = L) => rows.reduce((a, l) => a + (Number(l[f]) || 0), 0);
+      const caDevis = sum('montant_devis');
+      const caValide = sum('montant_valide');
+      const caFacture = sum('montant', L.filter((l) => l.statut === 'facture'));
+
+      // Perf par campagne
+      const camps: Record<string, { leads: number; fact: number; ca: number }> = {};
+      L.forEach((l) => {
+        const k = l.campaign || l.gads_campaign_id || '(sans campagne)';
+        (camps[k] = camps[k] || { leads: 0, fact: 0, ca: 0 }).leads++;
+        if (l.statut === 'facture') { camps[k].fact++; camps[k].ca += Number(l.montant) || 0; }
+      });
+      const campRows = Object.entries(camps).sort((a, b) => b[1].leads - a[1].leads).slice(0, 12);
+
+      // Motifs de perte
+      const motifs: Record<string, number> = {};
+      L.filter((l) => l.statut === 'perdu').forEach((l) => { const m = l.motif_perte || '(non renseigné)'; motifs[m] = (motifs[m] || 0) + 1; });
+      const motifRows = Object.entries(motifs).sort((a, b) => b[1] - a[1]);
+
+      const fbar = (label: string, c: number, prev: number | null) => {
+        const w = n ? Math.max(3, Math.round((c / n) * 100)) : 0;
+        const rate = prev != null && prev > 0 ? ` ${pct(c, prev)}%` : '';
+        return `<div class="kpi-fstage"><span class="kpi-flabel">${esc(label)}</span>`
+          + `<span class="kpi-fbarwrap"><span class="kpi-fbar" style="width:${w}%">${c}</span></span>`
+          + `<span class="kpi-frate">${rate}</span></div>`;
+      };
+
+      body.innerHTML = `
+        <div class="kpi-cards">
+          <div class="kpi-card"><div class="lbl">Speed-to-lead (moyen)</div><div class="val ${avg != null && avg <= 60 ? 'ok' : (avg != null ? 'warn' : '')}">${avg != null ? esc(fmtDelay(avg)) : '—'}</div><div class="sub">médiane ${med != null ? esc(fmtDelay(med)) : '—'} · ${pct(u5, delays.length)}% &lt;5 min · ${pct(u60, delays.length)}% &lt;1 h</div></div>
+          <div class="kpi-card"><div class="lbl">CA devisé (pipeline)</div><div class="val">${fmtEUR(caDevis)}</div><div class="sub">sur ${n} leads</div></div>
+          <div class="kpi-card"><div class="lbl">CA validé (gagné)</div><div class="val ok">${fmtEUR(caValide)}</div><div class="sub">${caDevis ? pct(caValide, caDevis) : 0}% du devisé</div></div>
+          <div class="kpi-card"><div class="lbl">CA facturé</div><div class="val">${fmtEUR(caFacture)}</div><div class="sub">${stages[4].c} facturés</div></div>
+        </div>
+
+        <div class="kpi-sec-title">Funnel de conversion <span style="text-transform:none;font-weight:400;color:var(--ink-soft)">(% = passage depuis l'étape précédente)</span></div>
+        <div class="kpi-funnel">
+          ${fbar('Leads', stages[0].c, null)}
+          ${fbar('Contactés', stages[1].c, stages[0].c)}
+          ${fbar('RDV', stages[2].c, stages[1].c)}
+          ${fbar('Réalisés', stages[3].c, stages[2].c)}
+          ${fbar('Facturés', stages[4].c, stages[3].c)}
+        </div>
+        <p class="sub" style="font-size:12px;color:var(--ink-soft);margin-top:8px">Transfo lead→facturé : <b>${pct(stages[4].c, n)}%</b> · Perdus : ${lost} (${pct(lost, n)}%)</p>
+
+        <div class="kpi-sec-title">Performance par campagne</div>
+        <div style="overflow-x:auto"><table class="kpi-table">
+          <thead><tr><th>Campagne</th><th class="num">Leads</th><th class="num">Facturés</th><th class="num">Transfo</th><th class="num">CA facturé</th></tr></thead>
+          <tbody>${campRows.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v.leads}</td><td class="num">${v.fact}</td><td class="num">${pct(v.fact, v.leads)}%</td><td class="num">${fmtEUR(v.ca)}</td></tr>`).join('')}</tbody>
+        </table></div>
+
+        ${lost ? `<div class="kpi-sec-title">Motifs de perte (${lost})</div>
+        <div style="overflow-x:auto"><table class="kpi-table"><thead><tr><th>Motif</th><th class="num">Nb</th><th class="num">%</th></tr></thead>
+        <tbody>${motifRows.map(([k, v]) => `<tr><td>${esc(MOTIF_LABELS[k] || k)}</td><td class="num">${v}</td><td class="num">${pct(v, lost)}%</td></tr>`).join('')}</tbody></table></div>` : ''}
+      `;
+    }
+
+    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); renderKpi(); }
 
     function wireEvents() {
       // Recherche texte : filtrage instantané côté client (sur les données chargées)
@@ -1440,6 +1632,20 @@ const STATUT_LABELS: Record<string, string> = {
       });
 
       // Agenda des rappels : ouvrir/fermer le panneau + clic sur un item → ouvre le lead
+      // Tableau de bord KPI : ouvrir/fermer + changement de période
+      const kb = document.getElementById('kpi-btn');
+      const kp = document.getElementById('kpi-panel');
+      if (kb && kp) {
+        kb.addEventListener('click', () => {
+          const show = kp.hidden;
+          kp.hidden = !show;
+          kb.setAttribute('aria-expanded', String(show));
+          if (show) renderKpi();
+        });
+      }
+      document.getElementById('kpi-period')?.addEventListener('change', renderKpi);
+      document.getElementById('export-btn')?.addEventListener('click', exportCsv);
+
       const rb = document.getElementById('rappels-btn');
       const rp = document.getElementById('rappels-panel');
       if (rb && rp) {
