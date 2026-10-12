@@ -80,9 +80,21 @@ const PHONE_SEND_TO =
     try {
       var name = 'soloris_acq';
       var existing = (document.cookie.split('; ').find(function (c) { return c.indexOf(name + '=') === 0; }) || '').split('=')[1];
-      if (existing) return; // première touche conservée
       var params = new URLSearchParams(window.location.search);
-      var keys = ['gclid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'keyword', 'campaignid', 'adgroupid', 'creative', 'matchtype', 'device', 'network'];
+      // Première touche conservée… SAUF si cette visite arrive d'un clic payant (gclid /
+      // gbraid / wbraid / fbclid) ou d'une campagne taguée (utm_source) : la nouvelle touche
+      // remplace alors l'ancienne. Sinon une 1re visite organique (cookie sans gclid) masquait
+      // pendant 30 j le gclid d'un clic Ads ultérieur → lead non attribué, Enhanced
+      // Conversions / import hors-ligne impossibles à rapprocher du clic.
+      var paidTouch = params.get('gclid') || params.get('gbraid') || params.get('wbraid') || params.get('fbclid') || params.get('utm_source');
+      if (existing && !paidTouch) return;
+      // Un retour sur une URL déjà taguée (ex. rechargement) ne doit pas écraser un gclid
+      // existant par une touche moins riche : on ne remplace que si un clic id est présent
+      // ou si l'ancienne touche n'en avait pas.
+      if (existing && !(params.get('gclid') || params.get('gbraid') || params.get('wbraid') || params.get('fbclid'))) {
+        try { var prev = JSON.parse(decodeURIComponent(existing)); if (prev && (prev.gclid || prev.gbraid || prev.wbraid || prev.fbclid)) return; } catch (e) {}
+      }
+      var keys = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'keyword', 'campaignid', 'adgroupid', 'creative', 'matchtype', 'device', 'network'];
       var acq = {};
       keys.forEach(function (k) { var v = params.get(k); if (v) acq[k] = v.slice(0, 255); });
       // Garde-fou attribution : un clic Google Ads auto-taggé porte TOUJOURS un gclid, mais

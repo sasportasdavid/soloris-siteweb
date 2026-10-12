@@ -199,26 +199,31 @@ const FORM_SEND_TO_DPE =
     <fieldset class="qstep" data-step="5" hidden>
       <legend>Vos coordonnées</legend>
       <div class="qrecap" data-el="qrecap" hidden></div>
+      <!-- CRO (oct. 2026) : ~45-50 % des abandons se font à cette étape. Seuls nom + téléphone
+           restent visibles → le bouton d'envoi tient dans l'écran mobile. Email et message,
+           facultatifs, sont repliés (toujours envoyés s'ils sont remplis). -->
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
-      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78" /><small class="qfield-help">On vous rappelle pour confirmer votre devis, sous 48 h.</small></label>
-      <label class="qfield"><span>Email <span class="qfield-opt">— facultatif</span></span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre devis détaillé par écrit. Sinon, on vous l'explique de vive voix au téléphone.</small></label>
-      <label class="qfield"><span>Message (optionnel)</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">On vous rappelle pour confirmer votre devis, sous 48 h.</small></label>
+      <details class="qmore">
+        <summary>Recevoir le devis par email ou ajouter une précision <span class="qfield-opt">(facultatif)</span></summary>
+        <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
+        <label class="qfield"><span>Message</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
+      </details>
 
       <div class="qhp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
 
       <input type="hidden" name="surface" /><input type="hidden" name="estimation" />
 
-      <p class="qprivacy">Vos informations sont enregistrées pour vous recontacter au sujet de votre demande.</p>
-
       <div class="qreassure">
-        <span>🔒 Sans engagement</span><span>· Vos données restent confidentielles</span><span>· Réponse sous 48 h</span>
+        <span>🔒 Sans engagement</span><span>· Données confidentielles</span><span>· Réponse sous 48 h</span>
       </div>
-      <p class="qconsent">En envoyant ce formulaire, vous acceptez d'être recontacté par Soloris au sujet de votre demande. Vos données sont traitées conformément à notre <a href="/confidentialite">politique de confidentialité</a>.</p>
 
       <div class="qnav">
         <button type="button" class="btn-ghost" data-prev>Retour</button>
         <button type="submit" class="btn-gold" data-el="qsubmit">Obtenir mon devis</button>
       </div>
+      <p class="qcall">Vous préférez en parler&nbsp;? <a href={`tel:${SITE.phone.replace(/\s/g, '')}`}>Appelez le {SITE.phoneDisplay}</a></p>
+      <p class="qconsent">En envoyant ce formulaire, vous acceptez d'être recontacté par Soloris au sujet de votre demande. Vos données sont traitées conformément à notre <a href="/confidentialite">politique de confidentialité</a>.</p>
     </fieldset>
   </form>
 
@@ -285,6 +290,14 @@ const FORM_SEND_TO_DPE =
   .qnav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
   .qnav .btn-blue, .qnav .btn-gold { margin-left: auto; }
   .qreassure { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 18px; font-family: var(--sora); font-size: 12px; font-weight: 500; color: var(--blue-light); }
+  .qmore { margin-top: 14px; }
+  .qmore summary { cursor: pointer; font-family: var(--inter); font-size: 13.5px; color: var(--blue-light); text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+  .qmore summary::-webkit-details-marker { display: none; }
+  .qmore summary::before { content: '+ '; text-decoration: none; display: inline-block; margin-right: 2px; }
+  .qmore[open] summary::before { content: '− '; }
+  .qmore .qfield:first-of-type { margin-top: 12px; }
+  .qcall { margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
+  .qcall a { color: var(--blue); font-weight: 600; white-space: nowrap; }
   .qprivacy { font-size: 11.5px; color: var(--ink-soft); margin-top: 14px; line-height: 1.5; font-style: italic; }
   .qconsent { font-size: 12px; color: var(--ink-soft); margin-top: 10px; line-height: 1.55; }
   .qconsent a { color: var(--blue-light); text-decoration: underline; }
@@ -304,12 +317,24 @@ const FORM_SEND_TO_DPE =
     //    (ex. simulateur dans le hero + formulaire plus bas). On initialise CHAQUE
     //    racine .qform indépendamment ; tous les éléments sont résolus via gid() scopé
     //    à la racine (data-el="…") → plus aucun id global, plus de collision. ──
-    var roots = Array.prototype.slice.call(document.querySelectorAll('.qform'));
+    // ⚠️ Ce script inline est émis UNE FOIS PAR INSTANCE du composant. Chaque copie
+    //    n'initialise donc QUE sa propre racine (l'élément .qform juste avant le script),
+    //    avec SES props (define:vars). Avant : chaque copie initialisait TOUTES les
+    //    racines → écouteurs en double (2 envois « complet », 2 conversions, partiels
+    //    doublés) et props de la 2ᵉ instance ignorées. Garde data-qf-init en filet.
+    var self = document.currentScript;
+    var own = self && self.previousElementSibling;
+    var roots = (own && own.classList && own.classList.contains('qform'))
+      ? [own]
+      : Array.prototype.slice.call(document.querySelectorAll('.qform'));
     if (!roots.length) return;
-    var imprPushed = {}; // experiment_impression : une seule fois par page (pas par instance)
+    // experiment_impression : une seule fois par PAGE (partagé entre les copies du script)
+    var imprPushed = window.__qfImprPushed = window.__qfImprPushed || {};
     roots.forEach(initQuoteForm);
 
     function initQuoteForm(root) {
+    if (root.getAttribute('data-qf-init')) return;
+    root.setAttribute('data-qf-init', '1');
     var form = root.querySelector('form');
     if (!form) return;
     function gid(n) { return root.querySelector('[data-el="' + n + '"]'); }
@@ -408,6 +433,21 @@ const FORM_SEND_TO_DPE =
         if (!/^\d{5}$/.test(cp) || IDF.indexOf(cp.slice(0, 2)) === -1) {
           ok = false;
           var cpEl = gid('cp-input'); if (cpEl) cpEl.style.borderColor = '#b3261e';
+        }
+      }
+      // étape 5 : numéro joignable (FR 10 chiffres, ou international +XX / 00XX).
+      // Sans ce contrôle, une faute de frappe = un lead payé mais impossible à rappeler.
+      if (step.getAttribute('data-step') === '5') {
+        var telEl = form.querySelector('[name="telephone"]');
+        var tel = (val('telephone') || '').replace(/[\s.\-()]/g, '');
+        var telOk = /^0[1-9]\d{8}$/.test(tel) || /^\+\d{8,15}$/.test(tel) || /^00\d{8,15}$/.test(tel);
+        var help = gid('tel-help');
+        if (tel && !telOk) {
+          ok = false;
+          if (telEl) telEl.style.borderColor = '#b3261e';
+          if (help) { help.textContent = 'Vérifiez votre numéro (ex : 06 12 34 56 78) : c’est lui qu’on rappelle.'; help.style.color = '#b3261e'; }
+        } else if (help && help.style.color) {
+          help.textContent = 'On vous rappelle pour confirmer votre devis, sous 48 h.'; help.style.color = '';
         }
       }
       return ok;
@@ -731,8 +771,13 @@ const FORM_SEND_TO_DPE =
               // Routage de la conversion selon le type de demande : « DPE seul » (low-ticket)
               // → action « Soloris - Devis DPE » ; tout le reste (vente/location/audit) →
               // « Soloris - Devis Vente ». Le Smart Bidding distingue ainsi le CA réel.
-              var isDpe = (payload.type_demande === 'dpe');
-              var convSendTo = isDpe ? FORM_SEND_TO_DPE : FORM_SEND_TO;
+              // Routage EXPLICITE (allowlist) : un type absent/inconnu ne déclenche AUCUNE
+              // conversion plutôt que de retomber silencieusement sur « Devis Vente ». Évite
+              // qu'une régression de présélection ne comptabilise des DPE comme des Vente.
+              var demandeType = payload.type_demande || '';
+              var isDpe = (demandeType === 'dpe');
+              var isVente = (demandeType === 'vente' || demandeType === 'location' || demandeType === 'audit');
+              var convSendTo = isDpe ? FORM_SEND_TO_DPE : (isVente ? FORM_SEND_TO : null);
               // Valeur = prix estimé réel (déjà bien plus élevé pour la Vente que pour un DPE) ;
               // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 150 €).
               var convValue = v3 > 0 ? v3 : (isDpe ? 150 : 300);
@@ -813,6 +858,10 @@ const FORM_SEND_TO_DPE =
         var wrap = document.createElement('div'); wrap.className = 'qfield-group';
         var lab = document.createElement('span'); lab.className = 'qgroup-label'; lab.textContent = 'Type de bien';
         wrap.appendChild(lab); wrap.appendChild(bienGrid);
+        // Le bloc « lot annexe seul » (cave/parking/box) vit aussi à l'étape 2 : on le
+        // déplace avec la grille, sinon la variante B supprimait ces choix (étape 2 retirée).
+        var lotBlk = s2.querySelector('[data-el="lot-annexe-block"]');
+        if (lotBlk) wrap.appendChild(lotBlk);
         s3.insertBefore(wrap, s3.querySelector('.qfield')); // avant la surface
         s2.parentNode.removeChild(s2);
         steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
