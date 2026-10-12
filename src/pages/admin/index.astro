@@ -9,9 +9,9 @@
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 
-const STATUTS = ['nouveau', 'contacte', 'rdv_pris', 'realise', 'facture', 'perdu'];
+const STATUTS = ['nouveau', 'contacte', 'a_recontacter', 'rdv_pris', 'realise', 'facture', 'perdu'];
 const STATUT_LABELS: Record<string, string> = {
-  nouveau: 'Nouveau', contacte: 'Contacté', rdv_pris: 'RDV pris', realise: 'Réalisé', facture: 'Facturé', perdu: 'Perdu',
+  nouveau: 'Nouveau', contacte: 'Contacté', a_recontacter: 'À recontacter', rdv_pris: 'RDV pris', realise: 'Réalisé', facture: 'Facturé', perdu: 'Perdu',
 };
 ---
 <AdminLayout title="Tableau de bord" showNav={true}>
@@ -20,8 +20,14 @@ const STATUT_LABELS: Record<string, string> = {
   <div id="admin-app" hidden>
     <div class="adm-titlebar">
       <h1 class="adm-h1">Leads</h1>
-      <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
+      <div class="adm-titlebar-actions">
+        <button type="button" class="adm-btn adm-btn--ghost" id="rappels-btn" aria-expanded="false">📅 Rappels <span id="rappels-count" class="rappels-badge"></span></button>
+        <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
+      </div>
     </div>
+
+    <!-- Agenda des rappels (leads « à recontacter », groupés par jour) -->
+    <div id="rappels-panel" class="rappels-panel" hidden></div>
     <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
     <!-- Mini stats (cartes cliquables = filtres) -->
@@ -140,10 +146,34 @@ const STATUT_LABELS: Record<string, string> = {
     /* Statuts colorés (teinte de fond + bordure selon l'état) */
     .adm-st-nouveau  { border-color:#d7c089; background:rgba(245,166,35,.10); color:#8a5a00; }
     .adm-st-contacte { border-color:#a9c2dd; background:rgba(46,111,174,.08); color:#1f4e7a; }
+    .adm-st-a_recontacter { border-color:#e6b566; background:rgba(245,166,35,.16); color:#8a5300; font-weight:600; }
     .adm-st-rdv_pris { border-color:#8fb6df; background:rgba(46,111,174,.14); color:#174a78; }
     .adm-st-realise  { border-color:#9bd0b3; background:rgba(34,160,90,.10); color:#1d7a48; }
     .adm-st-facture  { border-color:#6fc294; background:rgba(34,160,90,.18); color:#13633a; font-weight:700; }
     .adm-st-perdu    { border-color:#e3a99e; background:rgba(216,80,58,.10); color:#9a3322; }
+
+    /* Barre de titre : groupe d'actions */
+    .adm-titlebar-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .adm-btn--ghost { background:#fff; color:var(--blue); border:1.5px solid var(--line); }
+    .adm-btn--ghost:hover { border-color:var(--blue-light); }
+    .rappels-badge:empty { display:none; }
+    .rappels-badge { display:inline-flex; min-width:18px; height:18px; padding:0 5px; margin-left:4px; border-radius:9px;
+      background:var(--gold); color:#4a2f00; font-size:11.5px; font-weight:700; align-items:center; justify-content:center; }
+
+    /* Agenda des rappels */
+    .rappels-panel { border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:12px; background:var(--paper); padding:10px 14px; margin-bottom:18px; }
+    .rappel-day { padding:8px 0; border-top:1px dashed var(--line); }
+    .rappel-day:first-child { border-top:0; }
+    .rappel-dlabel { font-family:var(--sora); font-weight:600; font-size:13px; color:var(--blue); text-transform:capitalize; margin-bottom:6px; }
+    .rappel-dn { display:inline-block; margin-left:4px; font-size:11.5px; color:var(--ink-soft); }
+    .rappel-day--late .rappel-dlabel { color:#9a3322; }
+    .rappel-day--today .rappel-dlabel { color:#8a5300; }
+    .rappel-item { display:flex; gap:12px; align-items:baseline; width:100%; text-align:left; background:#fff; border:1px solid var(--line); border-radius:9px;
+      padding:8px 12px; margin:4px 0; cursor:pointer; font-family:var(--inter); }
+    .rappel-item:hover { border-color:var(--blue-light); }
+    .rappel-name { font-family:var(--sora); font-weight:600; font-size:14px; color:var(--ink); }
+    .rappel-tel { font-size:13px; color:var(--blue-light); }
+    .rappel-meta { margin-left:auto; font-size:12.5px; color:var(--ink-soft); }
 
     /* Cartes KPI cliquables = filtres */
     .adm-stat--click { cursor:pointer; transition:border-color .12s, box-shadow .12s, transform .12s; }
@@ -831,6 +861,7 @@ const STATUT_LABELS: Record<string, string> = {
               <div class="adm-edit">
                 <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
                 <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
+                <div><label>À recontacter le</label><input type="date" data-id="${l.id}" data-field="recontacter_le" value="${l.recontacter_le || ''}"></div>
                 <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
                 <div></div>
                 <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
@@ -995,6 +1026,7 @@ const STATUT_LABELS: Record<string, string> = {
       }
       renderStats(allLeads);
       render();
+      renderRappels();
       const saved = document.getElementById(dvField && field !== 'adresse' ? 'adm-saved-contact' : 'adm-saved');
       if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
     }
@@ -1014,11 +1046,54 @@ const STATUT_LABELS: Record<string, string> = {
         th.classList.toggle('sort-desc', sortKey === k && sortDir === -1);
       });
     }
-    function rerender() { render(); syncControls(); savePrefs(); }
+    function renderRappels() {
+      const panel = document.getElementById('rappels-panel');
+      const countEl = document.getElementById('rappels-count');
+      const list = allLeads.filter((l) => l.statut === 'a_recontacter');
+      if (countEl) countEl.textContent = list.length ? String(list.length) : '';
+      if (!panel) return;
+      if (!list.length) { panel.innerHTML = '<p class="muted" style="margin:6px 0">Aucun lead à recontacter.</p>'; return; }
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const groups: Record<string, { label: string; order: number; items: any[] }> = {};
+      list.forEach((l) => {
+        let k: string, label: string, order: number;
+        if (!l.recontacter_le) { k = 'zzz'; label = 'Sans date'; order = 9e15; }
+        else {
+          const d = new Date(l.recontacter_le + 'T00:00:00'); d.setHours(0, 0, 0, 0);
+          const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+          if (diff < 0) { k = '000-late'; label = 'En retard'; order = -1; }
+          else if (diff === 0) { k = l.recontacter_le; label = "Aujourd'hui"; order = d.getTime(); }
+          else if (diff === 1) { k = l.recontacter_le; label = 'Demain'; order = d.getTime(); }
+          else { k = l.recontacter_le; label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); order = d.getTime(); }
+        }
+        if (!groups[k]) groups[k] = { label, order, items: [] };
+        groups[k].items.push(l);
+      });
+      const ordered = Object.entries(groups).sort((a, b) => a[1].order - b[1].order);
+      let html = '';
+      ordered.forEach(([k, g]) => {
+        const cls = k === '000-late' ? 'rappel-day rappel-day--late' : (g.label === "Aujourd'hui" ? 'rappel-day rappel-day--today' : 'rappel-day');
+        html += `<div class="${cls}"><div class="rappel-dlabel">${esc(g.label)}<span class="rappel-dn">${g.items.length}</span></div>`;
+        g.items.sort((a, b) => String(a.recontacter_le || '').localeCompare(String(b.recontacter_le || '')));
+        g.items.forEach((l) => {
+          html += `<button type="button" class="rappel-item" data-open-rappel="${l.id}"><span class="rappel-name">${esc(l.nom || 'Lead sans nom')}</span><span class="rappel-tel">${esc(l.telephone || '')}</span><span class="rappel-meta">${esc(l.type_demande || '')}${l.secteur ? ' · ' + esc(l.secteur) : ''}</span></button>`;
+        });
+        html += '</div>';
+      });
+      panel.innerHTML = html;
+    }
+
+    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); }
 
     function wireEvents() {
-      ['search', 'filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
-        document.getElementById(id)!.addEventListener('input', rerender);
+      // Recherche texte : filtrage instantané côté client (sur les données chargées)
+      document.getElementById('search')!.addEventListener('input', rerender);
+      // Changer un filtre recharge les DONNÉES FRAÎCHES depuis la base, puis réaffiche
+      ['filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
+        document.getElementById(id)!.addEventListener('change', async () => {
+          await loadLeads();
+          renderStats(allLeads); rerender(); renderRappels();
+        });
       });
 
       // Cartes KPI cliquables → applique le filtre correspondant
@@ -1050,6 +1125,21 @@ const STATUT_LABELS: Record<string, string> = {
         groupDupes = (e.target as HTMLInputElement).checked;
         rerender();
       });
+
+      // Agenda des rappels : ouvrir/fermer le panneau + clic sur un item → ouvre le lead
+      const rb = document.getElementById('rappels-btn');
+      const rp = document.getElementById('rappels-panel');
+      if (rb && rp) {
+        rb.addEventListener('click', () => {
+          const show = rp.hidden;
+          rp.hidden = !show;
+          rb.setAttribute('aria-expanded', String(show));
+        });
+        rp.addEventListener('click', (e) => {
+          const t = (e.target as HTMLElement).closest('[data-open-rappel]') as HTMLElement | null;
+          if (t) openDrawer(t.getAttribute('data-open-rappel') as string);
+        });
+      }
 
       // Clic sur une ligne → actions rapides, sinon ouvre le détail
       document.getElementById('leads-body')!.addEventListener('click', (e) => {
@@ -1140,19 +1230,23 @@ const STATUT_LABELS: Record<string, string> = {
       });
     }
 
-    async function init() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) { window.location.href = '/admin/login'; return; }
-
+    async function loadLeads(): Promise<boolean> {
       const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-      if (error) { alert('Erreur de chargement : ' + error.message); return; }
+      if (error) { alert('Erreur de chargement : ' + error.message); return false; }
       allLeads = data || [];
-
       // Devis (le plus récent par lead)
       const { data: dv } = await supabase.from('devis').select('*').order('created_at', { ascending: false });
       allDevis = dv || [];
       devisByLead = {};
       allDevis.forEach((d: any) => { if (d.lead_id && !devisByLead[d.lead_id]) devisByLead[d.lead_id] = d; });
+      return true;
+    }
+
+    async function init() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) { window.location.href = '/admin/login'; return; }
+
+      if (!(await loadLeads())) return;
 
       (document.getElementById('admin-loading') as HTMLElement).hidden = true;
       (document.getElementById('admin-app') as HTMLElement).hidden = false;
@@ -1162,6 +1256,7 @@ const STATUT_LABELS: Record<string, string> = {
       restorePrefs();
       renderStats(allLeads);
       render();
+      renderRappels();
       syncControls();
       wireEvents();
     }
