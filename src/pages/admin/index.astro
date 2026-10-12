@@ -22,20 +22,17 @@ const STATUT_LABELS: Record<string, string> = {
 
   <div id="admin-app" hidden>
     <div class="adm-titlebar">
-      <h1 class="adm-h1">Leads</h1>
-      <div class="adm-titlebar-actions">
-        <button type="button" class="adm-btn adm-btn--ghost" id="kpi-btn" aria-expanded="false">📊 Tableau de bord</button>
-        <button type="button" class="adm-btn adm-btn--ghost" id="rappels-btn" aria-expanded="false">📅 Rappels <span id="rappels-count" class="rappels-badge"></span></button>
-        <button type="button" class="adm-btn adm-btn--ghost" id="kanban-btn" aria-pressed="false" title="Vue pipeline (glisser-déposer)">🗂 Pipeline</button>
+      <h1 class="adm-h1" id="adm-view-title">Leads</h1>
+      <div class="adm-titlebar-actions" id="adm-leads-actions">
         <button type="button" class="adm-btn adm-btn--ghost" id="export-btn" title="Exporter les leads filtrés en CSV">⬇ Export</button>
         <button type="button" class="adm-btn" id="new-lead-btn">+ Nouveau lead</button>
       </div>
     </div>
 
-    <!-- Tableau de bord KPI (speed-to-lead, funnel, CA pipeline, perf campagne) -->
-    <div id="kpi-panel" class="kpi-panel" hidden>
+    <!-- Vue : Tableau de bord KPI (speed-to-lead, funnel, CA pipeline, perf campagne) -->
+    <section class="adm-view" data-view="dashboard" hidden>
       <div class="kpi-head">
-        <h3>Tableau de bord</h3>
+        <span class="muted" style="font-size:13px">Speed-to-lead, tunnel de conversion, CA pipeline, performance par campagne.</span>
         <select id="kpi-period" class="kpi-period" title="Période">
           <option value="7">7 jours</option>
           <option value="30" selected>30 jours</option>
@@ -44,11 +41,21 @@ const STATUT_LABELS: Record<string, string> = {
         </select>
       </div>
       <div id="kpi-body"></div>
-    </div>
+    </section>
 
-    <!-- Agenda des rappels (leads « à recontacter », groupés par jour) -->
-    <div id="rappels-panel" class="rappels-panel" hidden></div>
-    <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
+    <!-- Vue : Pipeline (Kanban, glisser-déposer pour changer de statut) -->
+    <section class="adm-view" data-view="pipeline" hidden>
+      <div id="kanban-body" class="kanban-body"></div>
+    </section>
+
+    <!-- Vue : Rappels (agenda des leads « à recontacter », groupés par jour) -->
+    <section class="adm-view" data-view="rappels" hidden>
+      <div id="rappels-panel" class="rappels-panel"></div>
+    </section>
+
+    <!-- Vue : Leads (liste + filtres) -->
+    <section class="adm-view" data-view="leads">
+      <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
     <!-- Outils : boutons des cartes Telegram (webhook). Pas de secret à manipuler : la session admin suffit. -->
     <details class="adm-tools">
@@ -121,9 +128,6 @@ const STATUT_LABELS: Record<string, string> = {
     </div>
 
     <!-- Tableau -->
-    <!-- Vue pipeline (Kanban) — alternative au tableau, glisser-déposer pour changer de statut -->
-    <div id="kanban-panel" class="kanban-panel" hidden><div id="kanban-body" class="kanban-body"></div></div>
-
     <div class="adm-tablewrap">
       <table class="adm-table">
         <thead>
@@ -143,6 +147,7 @@ const STATUT_LABELS: Record<string, string> = {
       </table>
     </div>
     <p id="empty-state" class="muted" style="text-align:center;padding:40px 0" hidden>Aucun lead pour ces critères.</p>
+    </section>
   </div>
 
   <!-- Panneau de détail (drawer) -->
@@ -211,9 +216,11 @@ const STATUT_LABELS: Record<string, string> = {
     .rappels-badge { display:inline-flex; min-width:18px; height:18px; padding:0 5px; margin-left:4px; border-radius:9px;
       background:var(--gold); color:#4a2f00; font-size:11.5px; font-weight:700; align-items:center; justify-content:center; }
 
-    /* Agenda des rappels */
+    /* Vues routées (chaque entrée du menu latéral = une page) */
+    .adm-view[hidden] { display:none !important; }
+    .adm-view { animation:adm-fade .14s ease; }
+    @keyframes adm-fade { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:none; } }
     /* Tableau de bord KPI */
-    .kpi-panel { border:1px solid var(--line); border-left:3px solid var(--blue-light); border-radius:12px; background:#fff; padding:16px 18px; margin-bottom:18px; }
     .kpi-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
     .kpi-head h3 { font-family:var(--sora); font-size:16px; color:var(--blue); }
     .kpi-period { border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; font-family:var(--sora); cursor:pointer; background:#fff; }
@@ -1620,9 +1627,27 @@ const STATUT_LABELS: Record<string, string> = {
           </div>
         </div>`).join('');
     }
-    const kanbanOpen = () => !(document.getElementById('kanban-panel') as HTMLElement)?.hidden;
+    // ── Routeur de vues (menu latéral → sections .adm-view via le hash) ──
+    const ADM_VIEWS = ['leads', 'dashboard', 'pipeline', 'rappels'];
+    const ADM_VIEW_TITLES: Record<string, string> = { leads: 'Leads', dashboard: 'Tableau de bord', pipeline: 'Pipeline', rappels: 'Rappels' };
+    function currentView(): string {
+      const h = (location.hash || '').replace('#', '');
+      return ADM_VIEWS.includes(h) ? h : 'leads';
+    }
+    function showView(name: string) {
+      if (!ADM_VIEWS.includes(name)) name = 'leads';
+      document.querySelectorAll('.adm-view').forEach((v) => {
+        (v as HTMLElement).hidden = (v as HTMLElement).getAttribute('data-view') !== name;
+      });
+      const title = document.getElementById('adm-view-title'); if (title) title.textContent = ADM_VIEW_TITLES[name];
+      const acts = document.getElementById('adm-leads-actions'); if (acts) (acts as HTMLElement).hidden = name !== 'leads';
+      document.querySelectorAll('.adm-sidenav a[data-nav]').forEach((a) => a.classList.toggle('active', a.getAttribute('data-nav') === name));
+      if (name === 'dashboard') renderKpi();
+      else if (name === 'pipeline') renderKanban();
+      else if (name === 'rappels') renderRappels();
+    }
 
-    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); renderKpi(); if (kanbanOpen()) renderKanban(); }
+    function rerender() { render(); syncControls(); savePrefs(); renderRappels(); renderKpi(); if (currentView() === 'pipeline') renderKanban(); }
 
     function wireEvents() {
       // Recherche texte : filtrage instantané côté client (sur les données chargées)
@@ -1680,39 +1705,19 @@ const STATUT_LABELS: Record<string, string> = {
         rerender();
       });
 
-      // Agenda des rappels : ouvrir/fermer le panneau + clic sur un item → ouvre le lead
-      // Tableau de bord KPI : ouvrir/fermer + changement de période
-      const kb = document.getElementById('kpi-btn');
-      const kp = document.getElementById('kpi-panel');
-      if (kb && kp) {
-        kb.addEventListener('click', () => {
-          const show = kp.hidden;
-          kp.hidden = !show;
-          kb.setAttribute('aria-expanded', String(show));
-          if (show) renderKpi();
-        });
-      }
+      // Tableau de bord : changement de période + export CSV
       document.getElementById('kpi-period')?.addEventListener('change', renderKpi);
       document.getElementById('export-btn')?.addEventListener('click', exportCsv);
 
-      // Vue Kanban : bascule tableau ↔ pipeline + glisser-déposer pour changer de statut
-      const kanbanBtn = document.getElementById('kanban-btn');
-      const kanbanPanel = document.getElementById('kanban-panel') as HTMLElement | null;
-      const tableWrap = document.querySelector('.adm-tablewrap') as HTMLElement | null;
-      if (kanbanBtn && kanbanPanel && tableWrap) {
-        kanbanBtn.addEventListener('click', () => {
-          const show = kanbanPanel.hidden;
-          kanbanPanel.hidden = !show; tableWrap.hidden = show;
-          kanbanBtn.setAttribute('aria-pressed', String(show));
-          if (show) renderKanban();
-        });
-        const kb = document.getElementById('kanban-body')!;
+      // Pipeline (Kanban) : glisser-déposer pour changer de statut, clic → ouvre le lead
+      const kbBody = document.getElementById('kanban-body');
+      if (kbBody) {
         let dragId: string | null = null;
-        kb.addEventListener('dragstart', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) { dragId = c.getAttribute('data-id'); (e as DragEvent).dataTransfer!.effectAllowed = 'move'; c.classList.add('kb-dragging'); } });
-        kb.addEventListener('dragend', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) c.classList.remove('kb-dragging'); dragId = null; });
-        kb.addEventListener('dragover', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) { e.preventDefault(); col.classList.add('kb-over'); } });
-        kb.addEventListener('dragleave', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) col.classList.remove('kb-over'); });
-        kb.addEventListener('drop', async (e) => {
+        kbBody.addEventListener('dragstart', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) { dragId = c.getAttribute('data-id'); (e as DragEvent).dataTransfer!.effectAllowed = 'move'; c.classList.add('kb-dragging'); } });
+        kbBody.addEventListener('dragend', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) c.classList.remove('kb-dragging'); dragId = null; });
+        kbBody.addEventListener('dragover', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) { e.preventDefault(); col.classList.add('kb-over'); } });
+        kbBody.addEventListener('dragleave', (e) => { const col = (e.target as HTMLElement).closest('.kb-cards'); if (col) col.classList.remove('kb-over'); });
+        kbBody.addEventListener('drop', async (e) => {
           const col = (e.target as HTMLElement).closest('.kb-cards'); if (!col) return;
           e.preventDefault(); col.classList.remove('kb-over');
           const id = dragId; const newStatut = col.getAttribute('data-statut');
@@ -1720,22 +1725,17 @@ const STATUT_LABELS: Record<string, string> = {
           const lead = allLeads.find((l) => l.id === id);
           if (lead && lead.statut !== newStatut) { await update(id, 'statut', newStatut); renderKanban(); }
         });
-        kb.addEventListener('click', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) openDrawer(c.getAttribute('data-open') as string); });
+        kbBody.addEventListener('click', (e) => { const c = (e.target as HTMLElement).closest('.kb-card'); if (c) openDrawer(c.getAttribute('data-open') as string); });
       }
 
-      const rb = document.getElementById('rappels-btn');
-      const rp = document.getElementById('rappels-panel');
-      if (rb && rp) {
-        rb.addEventListener('click', () => {
-          const show = rp.hidden;
-          rp.hidden = !show;
-          rb.setAttribute('aria-expanded', String(show));
-        });
-        rp.addEventListener('click', (e) => {
-          const t = (e.target as HTMLElement).closest('[data-open-rappel]') as HTMLElement | null;
-          if (t) openDrawer(t.getAttribute('data-open-rappel') as string);
-        });
-      }
+      // Rappels : clic sur un item → ouvre la fiche du lead
+      document.getElementById('rappels-panel')?.addEventListener('click', (e) => {
+        const t = (e.target as HTMLElement).closest('[data-open-rappel]') as HTMLElement | null;
+        if (t) openDrawer(t.getAttribute('data-open-rappel') as string);
+      });
+
+      // Navigation : le menu latéral change le hash → on affiche la vue correspondante
+      window.addEventListener('hashchange', () => showView(currentView()));
 
       // Clic sur une ligne → actions rapides, sinon ouvre le détail
       document.getElementById('leads-body')!.addEventListener('click', (e) => {
@@ -1923,6 +1923,7 @@ const STATUT_LABELS: Record<string, string> = {
       renderRappels();
       syncControls();
       wireEvents();
+      showView(currentView()); // affiche la vue demandée par le hash (défaut : leads)
     }
 
     init();
