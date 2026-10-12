@@ -97,6 +97,7 @@ export function statusLines(lead: Record<string, any>, at: Date = new Date()): s
   const par = lead.traite_par ? ` · par ${lead.traite_par}` : '';
   const quand = ` · ${fmtDateHeure(at)}`;
   if (st === 'contacte') out.push(`📞 Contacté${par}${quand}`);
+  else if (st === 'a_recontacter') out.push(`🔁 À recontacter${lead.recontacter_le ? ` · le ${lead.recontacter_le}` : ''}${par}${quand}`);
   else if (st === 'rdv_pris') {
     const d = lead.rdv_at ? toDate(lead.rdv_at, at) : null;
     const prix = lead.prix_total_ttc != null ? fmtEur(lead.prix_total_ttc) : '';
