@@ -28,16 +28,31 @@ const { title, showNav = false } = Astro.props;
       <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
         <a href="/admin" aria-label="Tableau de bord"><Logo variant="dark" size={20} /></a>
         {showNav && (
-          <nav style="display:flex;align-items:center;gap:14px">
-            <a href="/admin" style="color:#fff;opacity:.85;font-family:var(--sora);font-size:13px;text-decoration:none">Leads</a>
-            <a href="/admin/analytics" style="color:#fff;opacity:.85;font-family:var(--sora);font-size:13px;text-decoration:none">Analytics</a>
+          <nav class="adm-nav">
+            <a href="/admin">Leads</a>
+            <a href="/admin/equipe">Équipe</a>
+            <a href="/admin/analytics">Analytics</a>
             <button id="logout-btn" class="btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)">Déconnexion</button>
           </nav>
         )}
       </div>
     </header>
-    <main class="wrap" style="padding-top:32px;padding-bottom:64px">
+    <main class="wrap adm-main">
       <slot />
     </main>
+    <style is:global>
+      .adm-nav { display:flex; align-items:center; gap:14px; }
+      .adm-nav a { color:#fff; opacity:.85; font-family:var(--sora); font-size:13px; text-decoration:none; padding:6px 0; }
+      .adm-nav a:hover { opacity:1; text-decoration:none; }
+      .adm-main { padding-top:32px; padding-bottom:64px; }
+      /* Mobile : gouttières réduites, navigation compacte et tactile */
+      @media (max-width:760px) {
+        body .wrap { padding-left:16px; padding-right:16px; }
+        .adm-main { padding-top:18px; padding-bottom:40px; }
+        .adm-nav { gap:10px; }
+        .adm-nav a { font-size:14px; padding:8px 4px; }
+        .adm-nav .btn-sm { padding:8px 10px; font-size:12px; }
+      }
+    </style>
   </body>
 </html>

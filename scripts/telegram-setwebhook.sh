@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # ─── Enregistre le webhook Telegram (à lancer UNE fois après déploiement) ───
 # Pré-requis (dans l'environnement) : TELEGRAM_BOT_TOKEN et TELEGRAM_WEBHOOK_SECRET.
+# ⚠️ Telegram n'accepte comme secret_token que [A-Za-z0-9_-] (1 à 256 car.). Si le secret
+#    contient d'autres caractères, ce script échoue (« secret token contains illegal
+#    characters ») : préférer /admin → « Outils · boutons Telegram » (ou /api/telegram/setup),
+#    qui transmet le jeton dérivé que le webhook vérifie.
 # Optionnel : SITE_URL (défaut https://www.soloris.fr).
 #
 #   TELEGRAM_BOT_TOKEN=123:ABC TELEGRAM_WEBHOOK_SECRET=monsecret ./scripts/telegram-setwebhook.sh

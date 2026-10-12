@@ -6,6 +6,9 @@
  *   éditable (statut, RDV, montant, notes) et traçabilité d'acquisition complète
  *   (UTM, ValueTrack Google Ads, gclid/fbclid, page d'entrée, référent, appareil, réseau…).
  * - Mini-stats du mois (volume, part publicité, à rappeler, conversion, CA facturé).
+ * - Vue CRM par défaut : UNE ligne par contact (téléphone > email), triée par dernière
+ *   activité, du plus récent au plus ancien. Un contact regroupe ses demandes (doublons) :
+ *   détails de la dernière demande, statut le plus avancé, historique dans le panneau.
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 
@@ -30,6 +33,19 @@ const STATUT_LABELS: Record<string, string> = {
     <div id="rappels-panel" class="rappels-panel" hidden></div>
     <p class="muted adm-sub">Suivi commercial — de la demande à la facturation. Cliquez un lead pour voir tous ses détails.</p>
 
+    <!-- Outils : boutons des cartes Telegram (webhook). Pas de secret à manipuler : la session admin suffit. -->
+    <details class="adm-tools">
+      <summary>Outils · boutons Telegram</summary>
+      <div class="adm-tools-body">
+        <p class="muted">Si les boutons sous les cartes Telegram (Contacté · Caler le RDV · Perdu) ne réagissent pas, ré-enregistrez le webhook ici, puis recliquez un bouton sur une carte.</p>
+        <div class="adm-tools-actions">
+          <button type="button" class="adm-btn" id="tg-setup-run">Ré-enregistrer le webhook Telegram</button>
+          <button type="button" class="adm-btn adm-btn-ghost" id="tg-setup-info">Diagnostic seul</button>
+        </div>
+        <div id="tg-setup-result" class="adm-tools-result" hidden></div>
+      </div>
+    </details>
+
     <!-- Mini stats (cartes cliquables = filtres) -->
     <div class="adm-stats">
       <div class="adm-stat adm-stat--click" data-card="reset" title="Voir tous les leads"><div class="lbl">Leads ce mois</div><div class="val" id="stat-month">—</div></div>
@@ -41,8 +57,10 @@ const STATUT_LABELS: Record<string, string> = {
     </div>
 
     <!-- Filtres -->
-    <div class="adm-filters">
+    <div class="adm-filters" id="adm-filters">
       <input id="search" type="search" placeholder="Rechercher (nom, email, tél, code postal, campagne, mot-clé…)" />
+      <button type="button" id="filters-toggle" class="adm-filters-btn" aria-expanded="false">Filtres</button>
+      <div class="adm-filters-adv">
       <select id="filter-statut">
         <option value="">Tous les statuts</option>
         {STATUTS.map((s) => <option value={s}>{STATUT_LABELS[s]}</option>)}
@@ -66,8 +84,21 @@ const STATUT_LABELS: Record<string, string> = {
         <option value="parking">Parking</option>
         <option value="box">Box</option>
       </select>
-      <label class="adm-toggle" title="Regrouper les visites d'un même contact (téléphone / email)">
-        <input type="checkbox" id="group-dupes" /> Regrouper les doublons
+      <select id="filter-op" title="Opérateur en charge">
+        <option value="">Toute l'équipe</option>
+        <option value="me">Mes leads</option>
+        <option value="none">Non assignés</option>
+      </select>
+      </div>
+      <select id="sort-mobile" class="adm-sort-mobile" title="Tri">
+        <option value="date:-1">Plus récents d'abord</option>
+        <option value="date:1">Plus anciens d'abord</option>
+        <option value="estimation:-1">Estimation ↓</option>
+        <option value="statut:-1">Statut : les plus avancés</option>
+        <option value="statut:1">Statut : nouveaux d'abord</option>
+      </select>
+      <label class="adm-toggle" title="Une ligne par contact (téléphone / email) : ses demandes sont regroupées. Décocher pour voir chaque lead séparément.">
+        <input type="checkbox" id="group-dupes" /> Une ligne par contact
       </label>
       <span class="adm-count" id="adm-count"></span>
     </div>
@@ -77,7 +108,7 @@ const STATUT_LABELS: Record<string, string> = {
       <table class="adm-table">
         <thead>
           <tr>
-            <th class="adm-sortable" data-sort="date">Date <span class="adm-caret"></span></th>
+            <th class="adm-sortable" data-sort="date" title="Dernière activité du contact">Date <span class="adm-caret"></span></th>
             <th>Lead</th>
             <th>Contact</th>
             <th>CP</th>
@@ -185,6 +216,14 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-row--stale .adm-aging { color:#b3261e; font-weight:600; }
     .adm-aging { font-size:11px; color:var(--ink-soft); }
     .adm-dupes { display:inline-block; margin-left:6px; font-family:var(--sora); font-size:10px; font-weight:600; color:var(--ink-soft); background:var(--paper); border:1px solid var(--line); border-radius:100px; padding:1px 7px; vertical-align:middle; }
+    /* Historique du contact (panneau) */
+    .adm-hist { list-style:none; margin:0; padding:0; font-size:13px; }
+    .adm-hist li { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); }
+    .adm-hist li:first-child { border-top:none; }
+    .adm-hist li.cur { font-weight:600; }
+    .adm-hist button { background:none; border:1px solid var(--line); border-radius:8px; padding:3px 8px; font-size:12px; color:var(--blue); cursor:pointer; font-family:var(--sora); }
+    .adm-hist button[disabled] { color:var(--ink-soft); cursor:default; background:var(--paper); }
+    .adm-hist .adm-hist-meta { color:var(--ink-soft); }
 
     /* Actions rapides sur la ligne contact */
     .adm-iact { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
@@ -204,16 +243,65 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-sortable.sort-asc .adm-caret::after { content:'▲'; opacity:1; }
     .adm-sortable.sort-desc .adm-caret::after { content:'▼'; opacity:1; }
 
-    /* Vue mobile : tableau en cartes empilées */
+    /* Assignation (ligne + panneau) */
+    .adm-assign { display:block; margin-top:6px; max-width:170px; border:1px solid var(--line); border-radius:8px; padding:4px 6px; font-size:12px; font-family:var(--sora); color:var(--ink-soft); background:#fff; cursor:pointer; }
+    .adm-assign.on { color:#1f4e7a; border-color:#a9c2dd; background:rgba(46,111,174,.06); }
+    .adm-sort-mobile, .adm-filters-btn { display:none; }
+    .adm-filters-adv { display:contents; }
+    .adm-mrow { display:none; }
+
+    /* ── Mobile : carte compacte par lead (4 lignes), KPI en bandeau, filtres repliés ── */
     @media (max-width:760px) {
+      .adm-h1 { font-size:22px; margin-bottom:10px; }
+      .adm-sub { display:none; }
+      .adm-tools { margin:0 0 12px; font-size:12px; }
+      /* KPI : bandeau horizontal défilant */
+      .adm-stats { display:flex; overflow-x:auto; gap:8px; margin:0 -16px 12px; padding:0 16px 6px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .adm-stats::-webkit-scrollbar { display:none; }
+      .adm-stat { flex:0 0 124px; scroll-snap-align:start; padding:8px 10px; border-radius:12px; }
+      .adm-stat .lbl { font-size:9.5px; letter-spacing:.05em; }
+      .adm-stat .val { font-size:19px; margin-top:2px; }
+      .adm-stat .sub { font-size:10.5px; }
+      /* Filtres : recherche + bouton Filtres + tri ; sélecteurs repliés */
+      .adm-filters { gap:8px; margin-bottom:10px; }
+      .adm-filters input[type="search"] { flex:1 1 100%; min-width:0; }
+      .adm-filters input, .adm-filters select { font-size:16px; padding:10px 12px; } /* 16px : pas de zoom iOS */
+      .adm-filters-btn { display:inline-flex; align-items:center; gap:6px; flex:1 1 calc(50% - 4px); justify-content:center; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; font-family:var(--sora); font-weight:600; color:var(--blue); background:#fff; cursor:pointer; }
+      .adm-filters.open .adm-filters-btn, .adm-filters-btn.active { border-color:var(--blue-light); background:rgba(46,111,174,.06); }
+      .adm-sort-mobile { display:block; flex:1 1 calc(50% - 4px); min-width:0; }
+      .adm-filters-adv { display:none; flex:1 1 100%; grid-template-columns:1fr 1fr; gap:8px; }
+      .adm-filters.open .adm-filters-adv { display:grid; }
+      .adm-filters-adv select { min-width:0; width:100%; }
+      .adm-toggle { font-size:12.5px; }
+      .adm-count { margin-left:auto; flex:0 1 auto; font-size:12px; }
+      /* Tableau → cartes compactes : seules les cellules .adm-mrow sont visibles */
       .adm-tablewrap { border:none; background:transparent; overflow:visible; }
       .adm-table thead { display:none; }
-      .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display:block; width:100%; }
-      .adm-table tr.adm-row { background:#fff; border:1px solid var(--line); border-radius:14px; margin-bottom:12px; padding:6px 4px; position:relative; }
-      .adm-table td { border:none; padding:6px 14px; }
-      .adm-table td.adm-chev { display:none; }
-      .adm-table td::before { content:attr(data-th); display:block; font-family:var(--sora); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px; }
-      .adm-table td:first-child::before { content:''; margin:0; }
+      .adm-table, .adm-table tbody, .adm-table tr { display:block; width:100%; }
+      .adm-table td { display:none; }
+      .adm-table td.adm-mrow { display:block; padding:10px 12px 10px 14px; border:none; }
+      .adm-table tr.adm-row { background:#fff; border:1px solid var(--line); border-radius:12px; margin-bottom:8px; padding:0; position:relative; }
+      .adm-row--stale { box-shadow: inset 4px 0 0 #d8503a; }
+      .mr-l1 { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+      .mr-title { min-width:0; font-size:14px; color:var(--blue); line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .mr-title .adm-pill { font-size:9px; padding:1px 6px; vertical-align:middle; margin-right:4px; }
+      .mr-bien { color:var(--ink-soft); font-size:12.5px; font-weight:400; }
+      .mr-price { font-family:var(--sora); font-weight:600; font-size:15px; color:var(--blue); white-space:nowrap; flex-shrink:0; }
+      .mr-l2 { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-top:3px; font-size:13px; }
+      .mr-who { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .mr-who b { color:var(--ink); }
+      .mr-who .muted2 { color:var(--ink-soft); }
+      .mr-when { color:var(--ink-soft); font-size:11.5px; white-space:nowrap; flex-shrink:0; }
+      .mr-when.stale { color:#b3261e; font-weight:600; }
+      .mr-l3 { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+      .mr-l3 a, .mr-l3 button, .mr-l3 .adm-dupes, .mr-l3 .adm-devis-link { display:inline-flex; align-items:center; gap:4px; font-family:var(--sora); font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--blue-light); text-decoration:none; line-height:1.2; margin:0; }
+      .mr-l3 .mr-tel { color:var(--ink); font-weight:600; }
+      .mr-l3 .ia-wa { color:#1d7a48; border-color:#9bd0b3; }
+      .mr-l3 .ia-rappel { color:#8a5a00; border-color:#e3cf9a; background:rgba(245,166,35,.10); }
+      .mr-l3 .adm-dupes { color:var(--ink-soft); background:var(--paper); font-weight:600; }
+      .mr-l4 { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
+      .mr-l4 .adm-statut, .mr-l4 .adm-assign { display:block; width:100%; max-width:none; margin:0; font-size:14px; padding:8px 10px; border-radius:8px; }
+      .adm-edit input, .adm-edit select, .adm-edit textarea, .adm-adresse-input { font-size:16px; }
     }
 
     /* Drawer */
@@ -231,11 +319,40 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-mhead { position:sticky; top:0; z-index:3; background:#fff; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:22px 30px 16px; border-bottom:1px solid var(--line); }
     .adm-mhead h2 { font-family:var(--sora); font-weight:600; font-size:22px; color:var(--blue); }
     .adm-mhead .badges { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
-    /* Corps 2 colonnes : infos (gauche) · actions (droite) */
-    .adm-mbody { display:grid; grid-template-columns:1fr 1fr; gap:0 36px; padding:6px 30px 34px; align-items:start; }
-    .adm-mbody .adm-col { min-width:0; }
-    .adm-mbody .adm-col > .adm-sec:first-child { margin-top:18px; }
-    @media (max-width:760px){ .adm-mbody{ grid-template-columns:1fr; gap:0; padding:6px 18px 30px; } .adm-mbody .adm-col:last-child{ order:-1; } }
+    /* Fiche lead : en-tête résumé (nom, demande, pastilles) · actions rapides · onglets */
+    .adm-mhead-main { min-width:0; flex:1; }
+    .adm-sum { margin-top:4px; font-size:13.5px; color:var(--ink-soft); line-height:1.4; }
+    .adm-sum b { color:var(--blue); font-family:var(--sora); }
+    .adm-stpill { border:1px solid transparent; }
+    .adm-quick { display:flex; gap:8px; flex-wrap:wrap; padding:14px 30px 0; }
+    .adm-qa { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--sora); font-weight:600; font-size:13px; padding:9px 14px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--blue); text-decoration:none; cursor:pointer; line-height:1.2; }
+    .adm-qa:hover { border-color:var(--blue-light); background:var(--paper); text-decoration:none; }
+    .adm-qa-wa { color:#1d7a48; border-color:#9bd0b3; }
+    .adm-qa-primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .adm-qa-primary:hover { background:#0d3358; color:#fff; }
+    .adm-tabs { display:flex; gap:2px; padding:14px 30px 0; border-bottom:1px solid var(--line); }
+    .adm-tabs button { flex:1; font-family:var(--sora); font-weight:600; font-size:13px; padding:10px 6px; background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-1px; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+    .adm-tabs button:hover { color:var(--blue); }
+    .adm-tabs button.on { color:var(--blue); border-bottom-color:var(--blue); }
+    .adm-panes { padding:0 30px 34px; }
+    .adm-pane { padding:0; margin:0; }
+    .adm-pane[hidden] { display:none; }
+    .adm-pane > .adm-sec:first-child { margin-top:18px; }
+    .adm-dl--meta { margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); font-size:12.5px; }
+    @media (max-width:760px) {
+      .adm-mhead { padding:14px 16px 10px; }
+      .adm-mhead h2 { font-size:18px; }
+      .adm-sum { font-size:13px; }
+      .adm-mhead .badges { margin-top:6px; }
+      .adm-quick { padding:10px 16px 0; gap:6px; }
+      .adm-qa { flex:1 1 auto; padding:11px 8px; font-size:13px; }
+      .adm-tabs { padding:10px 16px 0; }
+      .adm-tabs button { font-size:12.5px; padding:10px 2px; }
+      .adm-panes { padding:0 16px 30px; }
+      .adm-dl { grid-template-columns:112px 1fr; gap:7px 10px; font-size:13px; }
+      .adm-edit { gap:10px; }
+      .adm-drawer-panel input[type="date"], .adm-drawer-panel input[type="time"], .adm-drawer-panel input[type="datetime-local"] { min-height:46px; font-size:16px; }
+    }
     .adm-x { background:none; border:none; cursor:pointer; color:var(--ink-soft); font-size:26px; line-height:1; padding:0 4px; }
     .adm-x:hover { color:var(--blue); }
 
@@ -252,7 +369,16 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-edit { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; }
     .adm-edit .full { grid-column:1 / -1; }
     .adm-edit label { display:block; font-size:11.5px; font-family:var(--sora); color:var(--ink-soft); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
-    .adm-edit input, .adm-edit select, .adm-edit textarea { width:100%; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    .adm-edit > div { min-width:0; } /* une cellule de grille ne s'élargit jamais au-delà de sa colonne */
+    .adm-edit input, .adm-edit select, .adm-edit textarea { width:100%; max-width:100%; min-width:0; box-sizing:border-box; border:1.5px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:var(--inter); color:var(--ink); background:#fff; }
+    /* iOS / Safari : les champs date / heure ont une largeur et une hauteur intrinsèques qui
+       débordaient de la colonne (chevauchement avec le champ voisin). On neutralise l'apparence
+       native et on impose la taille de la cellule. */
+    .adm-drawer-panel input[type="date"], .adm-drawer-panel input[type="time"], .adm-drawer-panel input[type="datetime-local"] {
+      -webkit-appearance:none; appearance:none; display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+      height:auto; min-height:42px; line-height:1.3; text-align:left; background:#fff;
+    }
+    .adm-drawer-panel input[type="date"]::-webkit-date-and-time-value, .adm-drawer-panel input[type="time"]::-webkit-date-and-time-value, .adm-drawer-panel input[type="datetime-local"]::-webkit-date-and-time-value { text-align:left; min-height:1.3em; }
     .adm-edit select { font-family:var(--sora); }
     .adm-edit input:focus, .adm-edit select:focus, .adm-edit textarea:focus { outline:none; border-color:var(--blue-light); }
     .adm-edit textarea { resize:vertical; min-height:64px; }
@@ -265,6 +391,13 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-btn-ghost { background:#fff; color:var(--blue); border:1.5px solid var(--line); }
     .adm-btn-ghost:hover { border-color:var(--blue); background:var(--paper); }
     .adm-btn-sm { background:none; border:1px dashed var(--line); color:var(--blue-light); cursor:pointer; font-size:12px; padding:6px 10px; border-radius:8px; margin-top:8px; }
+    /* Outils (webhook Telegram) */
+    .adm-tools { margin:-6px 0 18px; border:1px dashed var(--line); border-radius:10px; padding:8px 12px; font-size:13px; }
+    .adm-tools summary { cursor:pointer; font-family:var(--sora); font-weight:600; color:var(--blue); }
+    .adm-tools-body { padding-top:8px; }
+    .adm-tools-actions { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 8px; }
+    .adm-tools-result { background:var(--paper); border-radius:8px; padding:8px 10px; line-height:1.5; white-space:pre-line; }
+    .adm-tools-result pre { margin:6px 0 0; font-size:11px; white-space:pre-wrap; word-break:break-all; color:var(--ink-soft); }
     .adm-devis-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
     .adm-lig { display:grid; grid-template-columns:1fr 92px 26px; gap:8px; margin-bottom:8px; align-items:center; }
     .adm-lig input { width:100%; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-size:13px; font-family:var(--inter); }
@@ -316,6 +449,23 @@ const STATUT_LABELS: Record<string, string> = {
 
     let allLeads: any[] = [];
     let allDevis: any[] = [];
+    let allOps: any[] = [];      // opérateurs (équipe), actifs en tête
+    let me: any = null;          // fiche opérateur de l'utilisateur connecté (si elle existe)
+    let meEmail = '';
+    const opName = (id: any): string => { const o = allOps.find((x) => x.id === id); return o ? o.nom : ''; };
+    // Onglet courant de la fiche lead (mémorisé pour les ré-affichages : devis, RDV…)
+    let drawerTab = 'suivi';
+    function setTab(name: string) {
+      drawerTab = name;
+      const panel = document.getElementById('adm-drawer-panel') as HTMLElement;
+      panel.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+      panel.querySelectorAll<HTMLElement>('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+    }
+    /** Options du sélecteur « Assigné à » (actifs + l'opérateur courant même désactivé). */
+    function opsOptions(selected: any): string {
+      const opts = allOps.filter((o) => o.actif || o.id === selected);
+      return `<option value="">— Non assigné —</option>` + opts.map((o) => `<option value="${o.id}" ${o.id === selected ? 'selected' : ''}>${esc(o.nom)}</option>`).join('');
+    }
     let devisByLead: Record<string, any> = {}; // lead_id → devis le plus récent
     let currentLeadId: string | null = null;
     let adresseTimer: any = null; // debounce autocomplétion adresse
@@ -370,14 +520,43 @@ const STATUT_LABELS: Record<string, string> = {
       if (l.lead_uid) return 'u:' + l.lead_uid;
       return 'i:' + l.id;
     }
-    // Le « représentant » d'un groupe : complet d'abord, puis le plus récent.
+    // Avancement dans le pipeline (pour le tri par statut et le statut d'un contact).
+    const STATUT_RANK: Record<string, number> = { perdu: -1, nouveau: 0, contacte: 1, rdv_pris: 2, realise: 3, facture: 4 };
+    function statutRank(st: any): number { return STATUT_RANK[st] ?? 0; }
     function leadScore(l: any): number { return (l.lead_status === 'complet' ? 1e15 : 0) + new Date(l.created_at || 0).getTime(); }
+    function byDateDesc(a: any, b: any): number { return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); }
 
-    // État de tri / regroupement (persistés en localStorage)
-    let sortKey = 'default'; // 'date' | 'estimation' | 'statut' | 'default'
+    /**
+     * Vue « contact » : fusionne les demandes d'un même contact en UNE ligne.
+     * - détails (projet, bien, CP, estimation, acquisition, date) = la DERNIÈRE demande ;
+     * - nom / téléphone / email = première valeur renseignée parmi les demandes ;
+     * - statut = le plus avancé (lead « pipeline »), éditable via _statutId ;
+     * - devis = premier devis trouvé parmi les demandes (_devisId) ;
+     * - _dupes = nombre de demandes, _firstAt = première demande.
+     */
+    function contactView(leads: any[]): any {
+      const sorted = leads.slice().sort(byDateDesc);
+      const latest = sorted[0];
+      const pick = (f: string) => { for (const x of sorted) if (val(x[f])) return x[f]; return latest[f]; };
+      const pipeline = sorted.slice().sort((a, b) => (statutRank(b.statut) - statutRank(a.statut)) || (leadScore(b) - leadScore(a)))[0];
+      const devisLead = sorted.find((x) => devisByLead[x.id]) || latest;
+      return Object.assign({}, latest, {
+        nom: pick('nom'), telephone: pick('telephone'), email: pick('email'),
+        secteur: pick('secteur'), ville: pick('ville'),
+        estimation: val(latest.estimation) ? latest.estimation : pick('estimation'),
+        statut: pipeline.statut || 'nouveau', rdv_date: pipeline.rdv_date, montant: pipeline.montant,
+        assigne_a: pipeline.assigne_a || pick('assigne_a') || null,
+        _statutId: pipeline.id, _devisId: devisLead.id,
+        _dupes: sorted.length, _firstAt: sorted[sorted.length - 1].created_at,
+      });
+    }
+
+    // État de tri / regroupement (persistés en localStorage). Défauts CRM : une ligne par
+    // contact, dernière activité en premier.
+    let sortKey = 'date';    // 'date' | 'estimation' | 'statut'
     let sortDir = -1;        // 1 = asc, -1 = desc
-    let groupDupes = false;
-    const PREFS_KEY = 'soloris_admin_prefs_v1';
+    let groupDupes = true;
+    const PREFS_KEY = 'soloris_admin_prefs_v2';
     function savePrefs() {
       try {
         localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -386,6 +565,7 @@ const STATUT_LABELS: Record<string, string> = {
           so: (document.getElementById('filter-source') as HTMLSelectElement).value,
           ld: (document.getElementById('filter-lead') as HTMLSelectElement).value,
           bn: (document.getElementById('filter-bien') as HTMLSelectElement).value,
+          op: (document.getElementById('filter-op') as HTMLSelectElement).value,
           sortKey, sortDir, groupDupes,
         }));
       } catch { /* quota / mode privé : ignoré */ }
@@ -394,10 +574,10 @@ const STATUT_LABELS: Record<string, string> = {
       let p: any = {};
       try { p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { p = {}; }
       const set = (id: string, v: any) => { const el = document.getElementById(id) as HTMLInputElement | null; if (el && v != null) el.value = v; };
-      set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn);
-      if (p.sortKey) sortKey = p.sortKey;
+      set('search', p.q); set('filter-statut', p.st); set('filter-source', p.so); set('filter-lead', p.ld); set('filter-bien', p.bn); set('filter-op', p.op);
+      if (p.sortKey && ['date', 'estimation', 'statut'].includes(p.sortKey)) sortKey = p.sortKey;
       if (p.sortDir === 1 || p.sortDir === -1) sortDir = p.sortDir;
-      groupDupes = !!p.groupDupes;
+      groupDupes = p.groupDupes === undefined ? true : !!p.groupDupes;
       (document.getElementById('group-dupes') as HTMLInputElement).checked = groupDupes;
     }
 
@@ -438,7 +618,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     function statutSelect(lead: any): string {
       const opts = STATUTS.map((s: string) => `<option value="${s}" ${lead.statut === s ? 'selected' : ''}>${STATUT_LABELS[s]}</option>`).join('');
-      return `<select class="adm-statut adm-st-${lead.statut || 'nouveau'}" data-id="${lead.id}" data-field="statut">${opts}</select>`;
+      return `<select class="adm-statut adm-st-${lead.statut || 'nouveau'}" data-id="${lead._statutId || lead.id}" data-field="statut">${opts}</select>`;
     }
 
     function getFiltered(): any[] {
@@ -447,9 +627,13 @@ const STATUT_LABELS: Record<string, string> = {
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
       const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
       const fBien = (document.getElementById('filter-bien') as HTMLSelectElement).value;
+      const fOp = (document.getElementById('filter-op') as HTMLSelectElement).value;
 
       let rows = allLeads.slice();
       if (fBien) rows = rows.filter((l) => l.type_bien === fBien);
+      if (fOp === 'me') rows = rows.filter((l) => me && l.assigne_a === me.id);
+      else if (fOp === 'none') rows = rows.filter((l) => !l.assigne_a);
+      else if (fOp) rows = rows.filter((l) => l.assigne_a === fOp);
       if (fStatut) rows = rows.filter((l) => l.statut === fStatut);
       if (fSource === 'ads') rows = rows.filter(isAds);
       if (fSource === 'organique') rows = rows.filter((l) => !isAds(l));
@@ -458,29 +642,25 @@ const STATUT_LABELS: Record<string, string> = {
       else if (fLead === 'complet') rows = rows.filter((l) => l.lead_status === 'complet');
       if (q) rows = rows.filter((l) => [l.nom, l.email, l.secteur, l.telephone, l.campaign, l.gads_keyword, l.message].some((v) => String(v ?? '').toLowerCase().includes(q)));
 
-      // Regroupement des doublons : une ligne par contact (le « représentant »),
-      // avec le nombre de visites. Sinon, une vue par lead.
+      // Une ligne par contact (téléphone > email > session) : les demandes d'un même
+      // contact sont fusionnées (contactView). Sinon, une ligne par lead.
       let views: any[];
       if (groupDupes) {
-        const map = new Map<string, { p: any; n: number }>();
-        for (const l of rows) {
-          const k = groupKey(l); const g = map.get(k);
-          if (!g) map.set(k, { p: l, n: 1 });
-          else { g.n++; if (leadScore(l) > leadScore(g.p)) g.p = l; }
-        }
-        views = Array.from(map.values()).map((g) => Object.assign({}, g.p, { _dupes: g.n }));
+        const map = new Map<string, any[]>();
+        for (const l of rows) { const k = groupKey(l); const g = map.get(k); if (g) g.push(l); else map.set(k, [l]); }
+        views = Array.from(map.values()).map(contactView);
       } else {
-        views = rows.map((l) => Object.assign({}, l, { _dupes: 1 }));
+        views = rows.map((l) => Object.assign({}, l, { _dupes: 1, _statutId: l.id, _devisId: l.id, _firstAt: l.created_at }));
       }
 
+      // Tri : date (défaut, = dernière activité du contact), estimation, ou avancement du
+      // statut ; à égalité, toujours du plus récent au plus ancien.
       views.sort((a, b) => {
-        if (sortKey === 'estimation') return sortDir * ((Number(a.estimation) || 0) - (Number(b.estimation) || 0));
-        if (sortKey === 'statut') return sortDir * (STATUTS.indexOf(a.statut) - STATUTS.indexOf(b.statut));
-        if (sortKey === 'date') return sortDir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        // défaut : les « à rappeler » en tête, puis du plus récent au plus ancien
-        const ra = isRappel(a) ? 1 : 0, rb = isRappel(b) ? 1 : 0;
-        if (ra !== rb) return rb - ra;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        let c = 0;
+        if (sortKey === 'estimation') c = sortDir * ((Number(a.estimation) || 0) - (Number(b.estimation) || 0));
+        else if (sortKey === 'statut') c = sortDir * (statutRank(a.statut) - statutRank(b.statut));
+        else c = sortDir * (new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+        return c || byDateDesc(a, b);
       });
       return views;
     }
@@ -489,14 +669,17 @@ const STATUT_LABELS: Record<string, string> = {
       const rows = getFiltered();
       const body = document.getElementById('leads-body') as HTMLElement;
       (document.getElementById('empty-state') as HTMLElement).hidden = rows.length > 0;
-      const noun = groupDupes ? 'contact' : 'lead';
-      (document.getElementById('adm-count') as HTMLElement).textContent = `${rows.length} ${noun}${rows.length > 1 ? 's' : ''} affiché${rows.length > 1 ? 's' : ''}`;
+      const totalLeads = rows.reduce((n, r) => n + (r._dupes || 1), 0);
+      const plural = (n: number) => (n > 1 ? 's' : '');
+      (document.getElementById('adm-count') as HTMLElement).textContent = groupDupes && totalLeads !== rows.length
+        ? `${rows.length} contact${plural(rows.length)} · ${totalLeads} lead${plural(totalLeads)}`
+        : `${rows.length} ${groupDupes ? 'contact' : 'lead'}${plural(rows.length)} affiché${plural(rows.length)}`;
 
       body.innerHTML = rows.map((l) => {
         const leadBadge = l.lead_status === 'partiel'
           ? `<span class="adm-pill pill-partiel">🟠 partiel</span> `
           : l.lead_status === 'complet' ? `<span class="adm-pill pill-complet">🟢 complet</span> ` : '';
-        const dupesBadge = l._dupes > 1 ? `<span class="adm-dupes" title="${l._dupes} visites du même contact, regroupées">${l._dupes} visites</span>` : '';
+        const dupesBadge = l._dupes > 1 ? `<span class="adm-dupes" title="${l._dupes} demandes du même contact (téléphone / email), regroupées · première le ${fmtDate(l._firstAt)}">${l._dupes} demandes</span>` : '';
         const sourceTag = isAds(l) ? `<span class="adm-pill pill-pub">Pub</span>` : `<span class="adm-pill pill-orga">Organique</span>`;
         const annexeTag = l.annexe
           ? `<div style="margin-top:4px"><span class="adm-pill pill-annexe">🔧 ${l.annexe_type === 'garage_dependance' ? 'garage/dépendance' : 'cave/parking'} +99 €</span></div>`
@@ -505,7 +688,7 @@ const STATUT_LABELS: Record<string, string> = {
         if (l.gads_keyword) acqBits.push('🎯 <b>' + esc(l.gads_keyword) + '</b>');
         if (l.campaign) acqBits.push(esc(l.campaign));
         const acq = acqBits.length ? `<div class="adm-cell-sub">${acqBits.join('<br>')}</div>` : (l.gclid ? '<div class="adm-cell-sub">gclid ✓</div>' : '');
-        const dv = devisByLead[l.id];
+        const dv = devisByLead[l._devisId || l.id];
         const devisCell = dv
           ? `<a class="adm-devis-link" href="/api/devis/${dv.sign_token}.pdf" target="_blank" rel="noopener" title="Télécharger le PDF du devis ${esc(dv.numero)}">${statutDevisBadge(dv.statut)} 📄</a>`
           : `<button type="button" class="adm-btn-sm" data-quick-devis="${l.id}">+ Devis</button>`;
@@ -513,13 +696,28 @@ const STATUT_LABELS: Record<string, string> = {
         // Actions rapides (n'ouvrent pas le drawer : le clic ignore boutons/liens)
         const wa = l.telephone ? `<a class="ia-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener" title="WhatsApp">WhatsApp</a>` : '';
         const cpEmail = l.email ? `<button type="button" data-copy-email="${esc(l.email)}" title="Copier l'email">Copier l'email</button>` : '';
-        const mkRappel = isRappel(l) && l.statut === 'nouveau' ? `<button type="button" class="ia-rappel" data-mark-rappel="${l.id}" title="Marquer comme rappelé (passe en Contacté)">✓ Rappelé</button>` : '';
+        const mkRappel = isRappel(l) && l.statut === 'nouveau' ? `<button type="button" class="ia-rappel" data-mark-rappel="${l._statutId || l.id}" title="Marquer comme rappelé (passe en Contacté)">✓ Rappelé</button>` : '';
         const iact = (wa || cpEmail || mkRappel) ? `<div class="adm-iact">${wa}${cpEmail}${mkRappel}</div>` : '';
 
         const stale = isStale(l);
         const aging = `<div class="adm-cell-sub adm-aging">${fmtTime(l.created_at)} · ${relTime(l.created_at)}${stale ? ' ⏱' : ''}</div>`;
 
+        // Carte mobile compacte (seule cellule visible ≤ 760px) : 4 lignes, pas de libellés.
+        const mPrix = l.estimation ? fmtEUR(l.estimation) : '';
+        const mBien = bienLine(l);
+        const mWho = `<b>${esc(l.nom || '—')}</b>${l.secteur ? `<span class="muted2"> · ${esc(l.secteur)}${l.ville ? ' ' + esc(l.ville) : ''}</span>` : ''}${isAds(l) ? '<span class="muted2"> · Pub</span>' : ''}`;
+        const mTel = l.telephone ? `<a class="mr-tel" href="tel:${esc(l.telephone)}">📞 ${esc(l.telephone)}</a>` : '';
+        const mDevis = dv ? `<a class="adm-devis-link" href="/api/devis/${dv.sign_token}.pdf" target="_blank" rel="noopener">${statutDevisBadge(dv.statut)} 📄</a>` : '';
+        const mAssign = allOps.length ? `<select class="adm-assign${l.assigne_a ? ' on' : ''}" data-id="${l._statutId || l.id}" data-field="assigne_a" title="Opérateur en charge">${opsOptions(l.assigne_a)}</select>` : '';
+        const mobileCell = `<td class="adm-mrow">
+            <div class="mr-l1"><span class="mr-title">${leadBadge}<b>${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b>${mBien ? `<span class="mr-bien"> · ${esc(mBien)}</span>` : ''}</span>${mPrix ? `<span class="mr-price">${mPrix}</span>` : ''}</div>
+            <div class="mr-l2"><span class="mr-who">${mWho}</span><span class="mr-when${stale ? ' stale' : ''}">${hoursSince(l.created_at) < 24 * 7 ? relTime(l.created_at) : fmtDate(l.created_at)}${stale ? ' ⏱' : ''}</span></div>
+            ${(mTel || wa || mkRappel || mDevis || dupesBadge) ? `<div class="mr-l3">${mTel}${wa}${mkRappel}${mDevis}${dupesBadge}</div>` : ''}
+            <div class="mr-l4">${statutSelect(l)}${mAssign}</div>
+          </td>`;
+
         return `<tr class="adm-row${stale ? ' adm-row--stale' : ''}" data-open="${l.id}">
+          ${mobileCell}
           <td data-th="Date">${fmtDate(l.created_at)}${aging}</td>
           <td data-th="Lead">${leadBadge}<b class="adm-name">${esc(DEMANDE_LBL[l.type_demande] || l.type_demande || '—')}</b>${dupesBadge}<div class="adm-cell-sub">${esc(bienLine(l))}</div>${annexeTag}</td>
           <td data-th="Contact"><b>${esc(l.nom || '—')}</b>${l.telephone ? `<div><a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a></div>` : ''}${l.email ? `<div class="adm-cell-sub"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></div>` : ''}${iact}</td>
@@ -527,7 +725,7 @@ const STATUT_LABELS: Record<string, string> = {
           <td data-th="Estim." class="price">${l.estimation ? fmtEUR(l.estimation) : '—'}</td>
           <td data-th="Acquisition">${sourceTag}${acq}</td>
           <td data-th="Devis">${devisCell}</td>
-          <td data-th="Statut">${statutSelect(l)}</td>
+          <td data-th="Statut">${statutSelect(l)}${allOps.length ? `<select class="adm-assign${l.assigne_a ? ' on' : ''}" data-id="${l._statutId || l.id}" data-field="assigne_a" title="Opérateur en charge">${opsOptions(l.assigne_a)}</select>` : ''}</td>
           <td class="adm-chev">›</td>
         </tr>`;
       }).join('');
@@ -789,6 +987,15 @@ const STATUT_LABELS: Record<string, string> = {
       }, 250);
     }
 
+    function quickHtml(l: any): string {
+      return [
+        l.telephone ? `<a class="adm-qa" href="tel:${esc(l.telephone)}">📞 Appeler</a>` : '',
+        l.telephone ? `<a class="adm-qa adm-qa-wa" href="https://wa.me/${waNumber(l.telephone)}" target="_blank" rel="noopener">WhatsApp</a>` : '',
+        l.email ? `<a class="adm-qa" href="mailto:${esc(l.email)}">✉️ Email</a>` : '',
+        `<button type="button" class="adm-qa adm-qa-primary" data-goto-tab="rdv">📅 ${l.confirmation_rdv_envoyee_at ? 'RDV confirmé' : 'Caler le RDV'}</button>`,
+      ].filter(Boolean).join('');
+    }
+
     function openDrawer(id: string) {
       const l = allLeads.find((x) => x.id === id);
       if (!l) return;
@@ -815,34 +1022,70 @@ const STATUT_LABELS: Record<string, string> = {
       const metaRows = [
         dlRow('Reçu le', fmtDateTime(l.created_at)),
         dlRow('Mis à jour', l.updated_at ? fmtDateTime(l.updated_at) : ''),
+        dlRow('Traité par', esc(l.traite_par)),
         dlRow('Notif. partiel', l.notified_partial ? '✓ envoyée' : '—'),
         dlRow('Notif. complet', l.notified_complete ? '✓ envoyée' : '—'),
         dlRow('ID session', l.lead_uid ? esc(l.lead_uid) : ''),
       ].filter(Boolean).join('');
 
+      // Résumé d'en-tête : projet · bien · lieu · estimation ; pastilles statut / assigné / demandes
+      const sumBits = [DEMANDE_LBL[l.type_demande] || l.type_demande, bienLine(l), [l.secteur, l.ville].filter(Boolean).join(' ')].filter(Boolean).map(esc);
+      const stKey = l.statut || 'nouveau';
+      const statutPill = `<span class="adm-pill adm-stpill adm-st-${stKey}">${esc(STATUT_LABELS[stKey] || stKey)}</span>`;
+      const opPill = l.assigne_a ? `<span class="adm-pill pill-chan">👷 ${esc(opName(l.assigne_a) || 'assigné')}</span>` : '';
+      const histCount = allLeads.filter((x) => groupKey(x) === groupKey(l)).length;
+      const quick = quickHtml(l);
+      const suiviMeta = [
+        dlRow('Reçu le', fmtDateTime(l.created_at)),
+        dlRow('Traité par', esc(l.traite_par)),
+        dlRow('Mis à jour', l.updated_at ? fmtDateTime(l.updated_at) : ''),
+      ].filter(Boolean).join('');
+
       panel.innerHTML = `
         <div class="adm-mhead">
-          <div>
+          <div class="adm-mhead-main">
             <h2>${esc(l.nom || 'Lead sans nom')}</h2>
-            <div class="badges">${badges.join('')}</div>
+            <div class="adm-sum">${sumBits.join(' · ')}${l.estimation ? ` · <b>${fmtEUR(l.estimation)}</b>` : ''}</div>
+            <div class="badges">${badges.join('')}${statutPill}${opPill}${histCount > 1 ? `<span class="adm-dupes" title="Demandes du même contact">${histCount} demandes</span>` : ''}</div>
           </div>
           <button type="button" class="adm-x" data-close aria-label="Fermer">×</button>
         </div>
 
-        <div class="adm-mbody">
-          <div class="adm-col">
-            <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
+        <div class="adm-quick">${quick}</div>
 
+        <nav class="adm-tabs" role="tablist" aria-label="Sections de la fiche">
+          <button type="button" data-tab="suivi">Suivi</button>
+          <button type="button" data-tab="demande">Demande</button>
+          <button type="button" data-tab="rdv">RDV & devis</button>
+          <button type="button" data-tab="histo">Historique</button>
+        </nav>
+
+        <div class="adm-panes">
+          <div class="adm-pane" data-pane="suivi">
+            <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
+              <div class="adm-edit">
+                <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
+                <div><label>Assigné à</label><select data-id="${l.id}" data-field="assigne_a">${opsOptions(l.assigne_a)}</select></div>
+                <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
+                <div><label>À recontacter le</label><input type="date" data-id="${l.id}" data-field="recontacter_le" value="${l.recontacter_le || ''}"></div>
+                <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
+                <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
+              </div>
+              <dl class="adm-dl adm-dl--meta">${suiviMeta}</dl>
+            </div>
+          </div>
+
+          <div class="adm-pane" data-pane="demande" hidden>
+            <div class="adm-sec"><h3>Demande</h3><dl class="adm-dl">${demandeRows}</dl></div>
             <div class="adm-sec"><h3>Contact <span class="adm-saved" id="adm-saved-contact">enregistré ✓</span></h3>
               <div class="adm-edit">
                 <div class="full"><label>Nom</label><input type="text" data-id="${l.id}" data-field="nom" value="${esc(l.nom || '')}" placeholder="Nom Prénom"></div>
-                <div><label>Téléphone${l.telephone ? ` · <a href="tel:${esc(l.telephone)}">appeler</a>` : ''}</label><input type="tel" data-id="${l.id}" data-field="telephone" value="${esc(l.telephone || '')}" placeholder="06…"></div>
-                <div><label>Email${l.email ? ` · <a href="mailto:${esc(l.email)}">écrire</a>` : ''}</label><input type="email" data-id="${l.id}" data-field="email" value="${esc(l.email || '')}" placeholder="client@…"></div>
+                <div><label>Téléphone</label><input type="tel" data-id="${l.id}" data-field="telephone" value="${esc(l.telephone || '')}" placeholder="06…"></div>
+                <div><label>Email</label><input type="email" data-id="${l.id}" data-field="email" value="${esc(l.email || '')}" placeholder="client@…"></div>
                 <div><label>Code postal</label><input type="text" inputmode="numeric" maxlength="5" data-id="${l.id}" data-field="secteur" value="${esc(l.secteur || '')}"></div>
               </div>
               ${val(l.message) ? `<div class="adm-msg" style="margin-top:10px">${esc(l.message)}</div>` : ''}
             </div>
-
             <div class="adm-sec"><h3>Adresse exacte (pour le devis)</h3>
               <div style="position:relative">
                 <input type="text" id="lead-adresse" class="adm-adresse-input" data-id="${l.id}" data-field="adresse" value="${esc(l.adresse || '')}" placeholder="Commencez à taper l'adresse…" autocomplete="off">
@@ -850,31 +1093,37 @@ const STATUT_LABELS: Record<string, string> = {
               </div>
               <p class="muted" style="font-size:12px;margin-top:6px">Autocomplétion (Base Adresse Nationale). Le formulaire public ne demande que le code postal ; l'adresse saisie ici figure sur le devis PDF.</p>
             </div>
-
-            <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
-
-            <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
 
-          <div class="adm-col">
-            <div class="adm-sec"><h3>Suivi commercial <span class="adm-saved" id="adm-saved">enregistré ✓</span></h3>
-              <div class="adm-edit">
-                <div><label>Statut</label><select data-id="${l.id}" data-field="statut">${statutOpts}</select></div>
-                <div><label>Date de RDV</label><input type="date" data-id="${l.id}" data-field="rdv_date" value="${l.rdv_date || ''}"></div>
-                <div><label>À recontacter le</label><input type="date" data-id="${l.id}" data-field="recontacter_le" value="${l.recontacter_le || ''}"></div>
-                <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
-                <div></div>
-                <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
-              </div>
-            </div>
-
+          <div class="adm-pane" data-pane="rdv" hidden>
             ${buildRdvSection(l)}
-
             ${buildDevisSection(l)}
+          </div>
+
+          <div class="adm-pane" data-pane="histo" hidden>
+            ${buildHistorySection(l)}
+            <div class="adm-sec"><h3>Traçabilité d'acquisition</h3>${buildAcq(l)}</div>
+            <div class="adm-sec"><h3>Informations techniques</h3><dl class="adm-dl">${metaRows}</dl></div>
           </div>
         </div>
       `;
+      setTab(drawerTab);
       (document.getElementById('adm-drawer') as HTMLElement).hidden = false;
+    }
+
+    /** Historique du contact : toutes ses demandes (même téléphone / email), la courante en gras. */
+    function buildHistorySection(l: any): string {
+      const k = groupKey(l);
+      const history = allLeads.filter((x) => groupKey(x) === k).sort(byDateDesc);
+      if (history.length < 2) return '';
+      const items = history.map((x) => {
+        const cur = x.id === l.id;
+        const etat = x.lead_status === 'complet' ? '🟢 complet' : '🟠 partiel';
+        return `<li class="${cur ? 'cur' : ''}"><button type="button" data-open-lead="${x.id}" ${cur ? 'disabled' : ''}>${fmtDateTime(x.created_at)}</button>` +
+          `<span>${esc(DEMANDE_LBL[x.type_demande] || x.type_demande || '—')}</span>` +
+          `<span class="adm-hist-meta">${etat} · ${esc(STATUT_LABELS[x.statut] || x.statut || 'Nouveau')}${x.estimation ? ' · ' + fmtEUR(x.estimation) : ''}${x.campaign ? ' · ' + esc(x.campaign) : ''}</span></li>`;
+      }).join('');
+      return `<div class="adm-sec"><h3>Historique du contact (${history.length} demandes)</h3><ul class="adm-hist">${items}</ul></div>`;
     }
 
     // ── Saisie manuelle d'un lead (appel entrant, WhatsApp, recommandation…) ──
@@ -972,6 +1221,7 @@ const STATUT_LABELS: Record<string, string> = {
         message: via ? `Via ${via} (${CANAL_LBL[canal] || canal})` : `Saisi manuellement — ${CANAL_LBL[canal] || canal}`,
         notes: v('nl-notes'),
         landing_path: 'admin (saisie manuelle)',
+        assigne_a: me ? me.id : null,
       };
 
       const btn = document.getElementById('nl-submit') as HTMLButtonElement;
@@ -989,10 +1239,38 @@ const STATUT_LABELS: Record<string, string> = {
       (document.getElementById('adm-drawer') as HTMLElement).hidden = true;
     }
 
+    /** Statut et assignation passent par l'API : traçabilité (« par X ») + carte Telegram réécrite. */
+    async function updateViaApi(id: string, field: string, value: any): Promise<boolean> {
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess.session && sess.session.access_token;
+      if (!tok) { alert('Session expirée, reconnectez-vous.'); return false; }
+      try {
+        const res = await fetch('/api/admin/lead-update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+          body: JSON.stringify({ lead_id: id, field, value: value === '' ? null : value }),
+        });
+        const j: any = await res.json().catch(() => null);
+        if (!res.ok || !j || !j.ok) { alert('Échec de la mise à jour : ' + ((j && j.error) || ('HTTP ' + res.status))); return false; }
+        const lead = allLeads.find((l) => l.id === id);
+        if (lead) { lead[field] = j.value; if (j.traite_par) lead.traite_par = j.traite_par; lead.updated_at = new Date().toISOString(); }
+        return true;
+      } catch (e: any) { alert('Échec de la mise à jour : ' + String((e && e.message) || e)); return false; }
+    }
+
     // Champs contact du lead → colonnes recopiées sur le devis (PDF, envoi email)
     const CONTACT_DEVIS_FIELD: Record<string, string> = { nom: 'client_nom', email: 'client_email', telephone: 'client_tel', secteur: 'client_cp', adresse: 'client_adresse' };
 
     async function update(id: string, field: string, value: any) {
+      if (field === 'statut' || field === 'assigne_a') {
+        const done = await updateViaApi(id, field, value);
+        if (!done) { render(); return; }
+        renderStats(allLeads);
+        render();
+        renderRappels();
+        const saved = document.getElementById('adm-saved');
+        if (saved) { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 1400); }
+        return;
+      }
       const patch: any = {};
       if (typeof value === 'string') value = value.trim();
       if (field === 'email' && value) value = value.toLowerCase();
@@ -1021,8 +1299,10 @@ const STATUT_LABELS: Record<string, string> = {
           if (dvu) syncDevis(dvu);
         } catch (e) { /* non bloquant */ }
       }
-      if (field === 'nom' && currentLeadId === id) {
-        const h = document.querySelector('#adm-drawer-panel .adm-mhead h2'); if (h) h.textContent = patch.nom || 'Lead sans nom';
+      // En-tête de la fiche (nom, boutons Appeler / WhatsApp / Email) à jour
+      if (dvField && currentLeadId === id && lead) {
+        const h = document.querySelector('#adm-drawer-panel .adm-mhead h2'); if (h) h.textContent = lead.nom || 'Lead sans nom';
+        const q = document.querySelector('#adm-drawer-panel .adm-quick'); if (q) q.innerHTML = quickHtml(lead);
       }
       renderStats(allLeads);
       render();
@@ -1033,6 +1313,17 @@ const STATUT_LABELS: Record<string, string> = {
 
     // Reflète l'état (filtres actifs sur les cartes, sens de tri sur les en-têtes)
     function syncControls() {
+      const sm = document.getElementById('sort-mobile') as HTMLSelectElement | null;
+      if (sm) { const v = `${sortKey}:${sortDir}`; if ([...sm.options].some((o) => o.value === v)) sm.value = v; }
+      // Bouton « Filtres » (mobile) : nombre de filtres actifs, ouvert d'office s'il y en a
+      const nActive = ['filter-statut', 'filter-source', 'filter-lead', 'filter-bien', 'filter-op']
+        .filter((id) => (document.getElementById(id) as HTMLSelectElement | null)?.value).length;
+      const fb = document.getElementById('filters-toggle') as HTMLButtonElement | null;
+      if (fb) {
+        fb.textContent = nActive ? `Filtres · ${nActive}` : 'Filtres';
+        fb.classList.toggle('active', nActive > 0);
+        if (nActive && !fb.dataset.touched) { (document.getElementById('adm-filters') as HTMLElement).classList.add('open'); fb.setAttribute('aria-expanded', 'true'); }
+      }
       const fSource = (document.getElementById('filter-source') as HTMLSelectElement).value;
       const fLead = (document.getElementById('filter-lead') as HTMLSelectElement).value;
       const fStatut = (document.getElementById('filter-statut') as HTMLSelectElement).value;
@@ -1089,8 +1380,9 @@ const STATUT_LABELS: Record<string, string> = {
       // Recherche texte : filtrage instantané côté client (sur les données chargées)
       document.getElementById('search')!.addEventListener('input', rerender);
       // Changer un filtre recharge les DONNÉES FRAÎCHES depuis la base, puis réaffiche
-      ['filter-statut', 'filter-source', 'filter-lead', 'filter-bien'].forEach((id) => {
-        document.getElementById(id)!.addEventListener('change', async () => {
+      ['filter-statut', 'filter-source', 'filter-lead', 'filter-bien', 'filter-op'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', async () => {
           await loadLeads();
           renderStats(allLeads); rerender(); renderRappels();
         });
@@ -1121,6 +1413,20 @@ const STATUT_LABELS: Record<string, string> = {
       });
 
       // Regroupement des doublons
+      // Mobile : les sélecteurs de filtre sont repliés derrière « Filtres » (ouvert si un filtre est actif)
+      const filtersBox = document.getElementById('adm-filters') as HTMLElement;
+      const filtersBtn = document.getElementById('filters-toggle') as HTMLButtonElement;
+      filtersBtn.addEventListener('click', () => {
+        filtersBtn.dataset.touched = '1';
+        const open = !filtersBox.classList.contains('open');
+        filtersBox.classList.toggle('open', open);
+        filtersBtn.setAttribute('aria-expanded', String(open));
+      });
+      document.getElementById('sort-mobile')!.addEventListener('change', (e) => {
+        const [k, d] = String((e.target as HTMLSelectElement).value).split(':');
+        sortKey = k; sortDir = d === '1' ? 1 : -1;
+        rerender();
+      });
       document.getElementById('group-dupes')!.addEventListener('change', (e) => {
         groupDupes = (e.target as HTMLInputElement).checked;
         rerender();
@@ -1176,9 +1482,22 @@ const STATUT_LABELS: Record<string, string> = {
         const id = t.getAttribute('data-id'); const field = t.getAttribute('data-field');
         if (id && field) update(id, field, (t as HTMLInputElement).value);
       });
-      // Actions Devis
+      // Actions Devis (+ onglets, bouton RDV de l'en-tête, navigation dans l'historique)
       panel.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
+        const tab = t.closest('[data-tab]') as HTMLElement | null;
+        if (tab) { setTab(tab.dataset.tab as string); return; }
+        const go = t.closest('[data-goto-tab]') as HTMLElement | null;
+        if (go) {
+          setTab(go.dataset.gotoTab as string);
+          const lead = allLeads.find((x) => x.id === currentLeadId);
+          const wrap = document.getElementById('rdv-form-wrap');
+          if (go.dataset.gotoTab === 'rdv' && lead && !lead.confirmation_rdv_envoyee_at && wrap && !wrap.innerHTML.trim()) openRdvForm(lead);
+          (document.getElementById('adm-rdv') || panel).scrollIntoView({ block: 'start', behavior: 'smooth' });
+          return;
+        }
+        const other = t.closest('[data-open-lead]') as HTMLElement | null;
+        if (other) { openDrawer(other.getAttribute('data-open-lead') as string); return; }
         const adr = t.closest('[data-adr]') as HTMLElement | null;
         if (adr && adr.closest('#nl-suggest')) {
           // Formulaire « Nouveau lead » : adresse + CP + ville en un clic
@@ -1224,6 +1543,46 @@ const STATUT_LABELS: Record<string, string> = {
       });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
+      // Outils Telegram : (ré)enregistre le webhook des boutons avec la session admin,
+      // puis affiche un diagnostic lisible (+ JSON brut). Texte seul : rien d'injecté en HTML.
+      async function tgSetup(infoOnly: boolean) {
+        const out = document.getElementById('tg-setup-result') as HTMLElement;
+        out.hidden = false;
+        out.textContent = infoOnly ? 'Diagnostic en cours…' : 'Enregistrement du webhook…';
+        const { data: sess } = await supabase.auth.getSession();
+        const tok = sess.session && sess.session.access_token;
+        if (!tok) { out.textContent = 'Session expirée, reconnectez-vous.'; return; }
+        try {
+          const res = await fetch('/api/telegram/setup' + (infoOnly ? '?info=1' : ''), { headers: { Authorization: 'Bearer ' + tok } });
+          const j: any = await res.json().catch(() => null);
+          if (!res.ok || !j) { out.textContent = 'Échec : ' + (j && j.error ? j.error : 'HTTP ' + res.status); return; }
+          const d = j.diagnostics || {};
+          const ic = (ok: boolean) => (ok ? '✅' : '❌');
+          const setOk = !!(j.set_webhook && j.set_webhook.ok);
+          const lines = [
+            infoOnly ? '' : `${ic(setOk)} Enregistrement du webhook : ${setOk ? 'réussi' : (j.set_webhook && j.set_webhook.description) || 'échec'}`,
+            `${ic(!!d.url_ok)} URL du webhook : ${d.url_ok ? 'correcte' : 'différente (' + (d.url_enregistree || 'aucune') + ')'}`,
+            `${d.last_error_message ? '⚠️' : '✅'} Dernière erreur Telegram : ${d.last_error_message || 'aucune'}`,
+            `ℹ️ Mises à jour en attente : ${d.pending_update_count ?? '—'}`,
+            `${ic(!!d.chat_match)} Chats identiques (cartes / groupe RDV) : ${d.chat_match ? 'oui' : 'non — les deux sont acceptés par le webhook'}`,
+            d.jeton_derive ? 'ℹ️ Jeton Telegram dérivé du secret (le secret contient des caractères que Telegram refuse) : aucune action requise.' : '',
+          ].filter(Boolean);
+          out.textContent = '';
+          const summary = document.createElement('div');
+          summary.textContent = lines.join('\n');
+          const hint = document.createElement('div');
+          hint.className = 'muted';
+          hint.textContent = 'Cliquez maintenant un bouton sous une carte Telegram pour tester.';
+          const pre = document.createElement('pre');
+          pre.textContent = JSON.stringify(j, null, 2);
+          out.append(summary, hint, pre);
+        } catch (e: any) {
+          out.textContent = 'Échec : ' + String((e && e.message) || e);
+        }
+      }
+      document.getElementById('tg-setup-run')?.addEventListener('click', () => tgSetup(false));
+      document.getElementById('tg-setup-info')?.addEventListener('click', () => tgSetup(true));
+
       document.getElementById('logout-btn')?.addEventListener('click', async () => {
         await supabase.auth.signOut();
         window.location.href = '/admin/login';
@@ -1247,6 +1606,21 @@ const STATUT_LABELS: Record<string, string> = {
       if (!sessionData.session) { window.location.href = '/admin/login'; return; }
 
       if (!(await loadLeads())) return;
+
+      // Équipe (opérateurs) : actifs d'abord, puis par nom. Table absente (migration non
+      // appliquée) → liste vide, l'assignation est simplement masquée.
+      meEmail = String(sessionData.session.user?.email || '').toLowerCase();
+      try {
+        const { data: ops } = await supabase.from('operateurs').select('*').order('actif', { ascending: false }).order('nom');
+        allOps = ops || [];
+      } catch { allOps = []; }
+      const uid = sessionData.session.user?.id;
+      me = allOps.find((o) => o.auth_user_id === uid) || allOps.find((o) => String(o.email || '').toLowerCase() === meEmail) || null;
+      const fop = document.getElementById('filter-op') as HTMLSelectElement | null;
+      if (fop) {
+        allOps.filter((o) => o.actif).forEach((o) => { const opt = document.createElement('option'); opt.value = o.id; opt.textContent = o.nom; fop.appendChild(opt); });
+        if (!allOps.length) fop.hidden = true;
+      }
 
       (document.getElementById('admin-loading') as HTMLElement).hidden = true;
       (document.getElementById('admin-app') as HTMLElement).hidden = false;
