@@ -24,38 +24,60 @@ const { title, showNav = false } = Astro.props;
     <title>{title} · Soloris Admin</title>
   </head>
   <body style="background:var(--paper)">
-    <header style="background:var(--blue);padding:14px 0">
-      <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
-        <a href="/admin" aria-label="Tableau de bord"><Logo variant="dark" size={20} /></a>
-        {showNav && (
-          <nav class="adm-nav">
-            <a href="/admin">Leads</a>
-            <a href="/admin/equipe">Équipe</a>
-            <a href="/admin/analytics">Analytics</a>
-            <button id="logout-btn" class="btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)">Déconnexion</button>
+    <div class={showNav ? 'adm-shell' : ''}>
+      {showNav && (
+        <aside class="adm-sidebar">
+          <a href="/admin" class="adm-brand" aria-label="Accueil"><Logo variant="dark" size={20} /></a>
+          <nav class="adm-sidenav">
+            <a href="/admin#dashboard" data-nav="dashboard"><span class="ic">📊</span> Tableau de bord</a>
+            <a href="/admin#leads" data-nav="leads"><span class="ic">📇</span> Leads</a>
+            <a href="/admin#pipeline" data-nav="pipeline"><span class="ic">🗂️</span> Pipeline</a>
+            <a href="/admin#rappels" data-nav="rappels"><span class="ic">📅</span> Rappels <span id="rappels-count" class="adm-nav-badge"></span></a>
+            <a href="/admin/equipe" data-nav="equipe"><span class="ic">👥</span> Équipe</a>
+            <a href="/admin/analytics" data-nav="analytics"><span class="ic">📈</span> Analytics</a>
           </nav>
-        )}
-      </div>
-    </header>
-    <main class="wrap adm-main">
-      <slot />
-    </main>
+          <button id="logout-btn" class="adm-logout">Déconnexion</button>
+        </aside>
+      )}
+      <main class="adm-content"><slot /></main>
+    </div>
     <style is:global>
-      .adm-nav { display:flex; align-items:center; gap:14px; }
-      .adm-nav a { color:#fff; opacity:.85; font-family:var(--sora); font-size:13px; text-decoration:none; padding:6px 0; }
-      .adm-nav a:hover { opacity:1; text-decoration:none; }
-      /* Admin en pleine largeur (paysage) : on sort du conteneur centré du site
-         pour que toutes les vues (tableau, dashboard, Kanban) utilisent tout l'écran. */
-      .adm-main { padding-top:32px; padding-bottom:64px; max-width:none; padding-left:28px; padding-right:28px; }
-      header .wrap { max-width:none; padding-left:28px; padding-right:28px; }
-      /* Mobile : gouttières réduites, navigation compacte et tactile */
-      @media (max-width:760px) {
-        body .wrap { padding-left:16px; padding-right:16px; }
-        .adm-main { padding-top:18px; padding-bottom:40px; }
-        .adm-nav { gap:10px; }
-        .adm-nav a { font-size:14px; padding:8px 4px; }
-        .adm-nav .btn-sm { padding:8px 10px; font-size:12px; }
+      .adm-shell { display:flex; min-height:100vh; align-items:stretch; }
+      .adm-sidebar { width:226px; flex:none; background:var(--blue); color:#fff; display:flex; flex-direction:column; padding:18px 14px; position:sticky; top:0; height:100vh; }
+      .adm-brand { display:block; margin:4px 8px 22px; }
+      .adm-sidenav { display:flex; flex-direction:column; gap:3px; flex:1; }
+      .adm-sidenav a { display:flex; align-items:center; gap:10px; color:rgba(255,255,255,.82); font-family:var(--sora); font-size:14px; text-decoration:none; padding:10px 12px; border-radius:9px; transition:background .12s, color .12s; }
+      .adm-sidenav a:hover { background:rgba(255,255,255,.08); color:#fff; text-decoration:none; }
+      .adm-sidenav a.active { background:rgba(255,255,255,.14); color:#fff; font-weight:600; box-shadow:inset 3px 0 0 var(--gold); }
+      .adm-sidenav .ic { font-size:15px; width:20px; text-align:center; flex:none; }
+      .adm-nav-badge:empty { display:none; }
+      .adm-nav-badge { margin-left:auto; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--gold); color:#4a2f00; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+      .adm-logout { margin-top:12px; background:transparent; border:1px solid rgba(255,255,255,.25); color:#fff; border-radius:9px; padding:9px; font-family:var(--sora); font-size:13px; cursor:pointer; }
+      .adm-logout:hover { background:rgba(255,255,255,.08); }
+      .adm-content { flex:1; min-width:0; padding:28px 30px 64px; }
+      @media (max-width:860px) {
+        .adm-shell { flex-direction:column; }
+        .adm-sidebar { width:auto; height:auto; position:sticky; top:0; z-index:20; flex-direction:row; align-items:center; gap:6px; padding:10px 12px; overflow-x:auto; }
+        .adm-brand { margin:0 6px 0 0; }
+        .adm-sidenav { flex-direction:row; gap:4px; }
+        .adm-sidenav a { padding:8px 10px; white-space:nowrap; font-size:13px; }
+        .adm-logout { margin-top:0; padding:8px 10px; font-size:12px; }
+        .adm-content { padding:16px 14px 40px; }
       }
     </style>
+    <script is:inline>
+      (function () {
+        function setActive() {
+          var path = location.pathname.replace(/\/$/, '');
+          var hash = (location.hash || '').replace('#', '');
+          var view = path === '/admin' ? (hash || 'leads') : path.split('/').pop();
+          document.querySelectorAll('.adm-sidenav a').forEach(function (a) {
+            a.classList.toggle('active', a.getAttribute('data-nav') === view);
+          });
+        }
+        setActive();
+        window.addEventListener('hashchange', setActive);
+      })();
+    </script>
   </body>
 </html>
