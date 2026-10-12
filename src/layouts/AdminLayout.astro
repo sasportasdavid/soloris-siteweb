@@ -44,7 +44,10 @@ const { title, showNav = false } = Astro.props;
       .adm-nav { display:flex; align-items:center; gap:14px; }
       .adm-nav a { color:#fff; opacity:.85; font-family:var(--sora); font-size:13px; text-decoration:none; padding:6px 0; }
       .adm-nav a:hover { opacity:1; text-decoration:none; }
-      .adm-main { padding-top:32px; padding-bottom:64px; }
+      /* Admin en pleine largeur (paysage) : on sort du conteneur centré du site
+         pour que toutes les vues (tableau, dashboard, Kanban) utilisent tout l'écran. */
+      .adm-main { padding-top:32px; padding-bottom:64px; max-width:none; padding-left:28px; padding-right:28px; }
+      header .wrap { max-width:none; padding-left:28px; padding-right:28px; }
       /* Mobile : gouttières réduites, navigation compacte et tactile */
       @media (max-width:760px) {
         body .wrap { padding-left:16px; padding-right:16px; }
