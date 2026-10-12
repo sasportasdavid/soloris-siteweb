@@ -10,10 +10,14 @@
 <div id="consent-banner" class="consent" role="dialog" aria-modal="false" aria-label="Gestion du consentement aux cookies" hidden>
   <div class="consent-inner">
     <div class="consent-text">
-      <p>
+      <p class="consent-full">
         <b>Aidez-nous à améliorer Soloris.</b> Avec votre accord, nous analysons la navigation
         pour simplifier le site et mieux vous accompagner (statistiques détaillées, mesure de nos campagnes).
         Une mesure d'audience anonyme, sans cookie, est déjà active. <a href="/confidentialite">En savoir plus</a>.
+      </p>
+      <p class="consent-short">
+        <b>Cookies.</b> Mesure d'audience et de nos campagnes pour améliorer le site.
+        <a href="/confidentialite">En savoir plus</a>.
       </p>
 
       <div id="consent-options" class="consent-options" hidden>
@@ -59,6 +63,7 @@
   }
   .consent-text { flex: 1; min-width: 240px; }
   .consent-text p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .consent-short { display: none; } /* version courte réservée au mobile */
   .consent-text a { color: var(--blue-light); text-decoration: underline; }
   .consent-options { margin-top: 10px; display: grid; gap: 8px; }
   .consent-opt { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--ink); cursor: pointer; }
@@ -75,10 +80,11 @@
      l'accès « Gérer les cookies » passe par le lien du footer (data-consent-open). */
   @media (max-width: 920px) { .consent-reopen { display: none; } }
   @media (max-width: 620px) {
-    .consent-inner { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
-    .consent-text p { font-size: 12.5px; }
+    .consent-inner { padding: 9px 14px calc(9px + env(safe-area-inset-bottom)); gap: 8px; }
+    .consent-full { display: none; }      /* compact : on masque le texte long */
+    .consent-short { display: block; font-size: 12.5px; }
     .consent-actions { width: 100%; }
-    .consent-actions button { flex: 1; }
+    .consent-actions button { flex: 1; padding-top: 9px; padding-bottom: 9px; }
   }
 </style>
 

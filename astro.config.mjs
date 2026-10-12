@@ -18,10 +18,12 @@ export default defineConfig({
   }),
   integrations: [
     sitemap({
-      // On exclut du sitemap les pages non indexables : back-office et pages de
-      // signature de devis (tokenisées, noindex). Mentions légales & confidentialité
+      // On exclut du sitemap les pages non indexables : back-office, pages de
+      // signature de devis (tokenisées, noindex) et landing pages Ads (/lp/*,
+      // noindex via LandingLayout). Mentions légales & confidentialité
       // sont désormais indexées → elles RESTENT dans le sitemap.
-      filter: (page) => !page.includes('/admin') && !page.includes('/devis/signer'),
+      filter: (page) =>
+        !page.includes('/admin') && !page.includes('/devis/signer') && !page.includes('/lp/'),
     }),
   ],
   prefetch: {

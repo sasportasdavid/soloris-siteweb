@@ -31,3 +31,13 @@ export const RDV_LINK_SECRET = pick(P.RDV_LINK_SECRET, import.meta.env.RDV_LINK_
 
 /** URL publique du site (liens dans les emails / PDF). */
 export const SITE_URL = (pick(P.SITE_URL, import.meta.env.SITE_URL) || 'https://www.soloris.fr').replace(/\/$/, '');
+
+/** Secret du cron Vercel (en-tête Authorization: Bearer) ET jeton des RPC OCI. */
+export const CRON_SECRET = pick(P.CRON_SECRET, import.meta.env.CRON_SECRET);
+/**
+ * Google Ads API — import de conversions hors-ligne « RDV pris ».
+ * Lus directement dans src/lib/googleAds.ts (process.env). Rappel des clés à
+ * définir dans Vercel : GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_CLIENT_ID,
+ * GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REFRESH_TOKEN, GOOGLE_ADS_CUSTOMER_ID,
+ * GOOGLE_ADS_LOGIN_CUSTOMER_ID (optionnel), GADS_RDV_CONVERSION_ACTION_ID.
+ */

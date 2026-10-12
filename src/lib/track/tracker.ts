@@ -45,6 +45,8 @@ let lastTouchedField = '';
 let formViewed = false;
 let formStarted = false;
 let formSubmitted = false;
+let currentStep = 0; // étape visible la plus avancée du simulateur (robuste, multi-instances)
+let maxStep = 0;     // étape la plus loin atteinte pendant la vue de page (pour l'abandon)
 let flushTimer: number | null = null;
 let bound = false;
 let stopReplay: (() => void) | null = null;
@@ -239,19 +241,31 @@ function onSubmit() {
   flush(false);
 }
 
-// Funnel /devis : étapes (anonyme OK) ; le « dernier champ » reste full uniquement
+// Funnel du simulateur : étapes (anonyme OK) — suivi sur TOUTES les pages où le
+// simulateur est présent (LP, /dpe, /tarifs, /devis…), pas seulement /devis.
+// Robuste aux 2 instances (hero + bas de page) : on prend l'étape visible la plus avancée.
 function setupDevisStepObserver() {
-  if (!location.pathname.startsWith('/devis')) return;
-  const form = document.getElementById('quote-form'); if (!form) return;
-  let lastStep = '';
+  const steps = Array.from(document.querySelectorAll('.qstep'));
+  if (!steps.length) return;
+  let first = true;
   const emitStep = () => {
-    const visible = form.querySelector('.qstep:not([hidden])') as HTMLElement | null;
-    const step = visible ? (visible.getAttribute('data-step') || '') : '';
-    if (step && step !== lastStep) { lastStep = step; push('form_step', undefined, { step_index: Number(step) }); }
+    let cur = 0;
+    document.querySelectorAll('.qstep:not([hidden])').forEach((el) => {
+      const n = Number((el as HTMLElement).getAttribute('data-step') || 0);
+      if (n > cur) cur = n;
+    });
+    if (!cur) return;
+    if (first) { first = false; currentStep = cur; if (cur > maxStep) maxStep = cur; return; }
+    if (cur !== currentStep) {
+      currentStep = cur;
+      if (cur > maxStep) maxStep = cur;
+      if (cur > 1) formStarted = true; // avancer d'étape = engagement (même sans focus champ)
+      push('form_step', undefined, { step_index: cur });
+    }
   };
   emitStep();
   const mo = new MutationObserver(emitStep);
-  form.querySelectorAll('.qstep').forEach((s) => mo.observe(s, { attributes: true, attributeFilter: ['hidden'] }));
+  steps.forEach((s) => mo.observe(s, { attributes: true, attributeFilter: ['hidden'] }));
 }
 function setupFormView() {
   const form = document.querySelector('form#quote-form, form#contact-form, form'); if (!form) return;
@@ -268,8 +282,7 @@ function setupFormView() {
 }
 
 function getDevisStep(): number | null {
-  const visible = document.querySelector('#quote-form .qstep:not([hidden])') as HTMLElement | null;
-  return visible ? Number(visible.getAttribute('data-step')) : null;
+  return currentStep || null;
 }
 function emitPageView() {
   pageViews += 1; pageStart = Date.now(); maxScroll = 0; scrollMilestones.clear();
@@ -278,8 +291,9 @@ function emitPageView() {
 function emitPageLeave(useBeacon: boolean) {
   push('page_leave', undefined, { time_on_page_s: Math.round((Date.now() - pageStart) / 1000), max_scroll: maxScroll });
   if ((formViewed || formStarted) && !formSubmitted) {
-    const meta: Record<string, unknown> = { step: getDevisStep() };
-    if (full) meta.last_field = lastTouchedField;
+    // step = étape visible au départ ; max_step = plus loin atteint ; started = a vraiment interagi
+    const meta: Record<string, unknown> = { step: getDevisStep(), max_step: maxStep || null, started: formStarted };
+    if (full) meta.last_field = lastTouchedField || null;
     push('form_abandon', undefined, meta);
   }
   flush(useBeacon);
@@ -331,6 +345,7 @@ function bindOnce() {
 }
 function setupPage() {
   formViewed = false; formStarted = false; formSubmitted = false; lastTouchedField = '';
+  currentStep = 0; maxStep = 0;
   setupFormView();
   setupDevisStepObserver();
 }

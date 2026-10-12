@@ -8,7 +8,6 @@
  * aucune obligation datée sans marqueur [À VÉRIFIER].
  */
 import type { Demande } from './pricing';
-import { prixDes, DPE_FROM, DPE_TO, AUDIT_FROM } from './pricing';
 
 export interface Offer {
   slug: string;
@@ -85,7 +84,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack vente ?',
-        a: `À partir de ${prixDes('vente')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient) — estimation immédiate via notre formulaire de devis.`,
+        a: "Un tarif tout compris, déplacement inclus, qui dépend de la surface et de l'âge du bien (les diagnostics obligatoires varient). Estimation immédiate via notre formulaire de devis, sans engagement.",
       },
     ],
   },
@@ -139,7 +138,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Combien coûte le pack location ?',
-        a: `À partir de ${prixDes('location')} € tout compris, déplacement inclus. Le prix dépend de la surface et de l'âge du bien — estimation immédiate via le formulaire de devis.`,
+        a: "Un tarif tout compris, déplacement inclus, qui dépend de la surface et de l'âge du bien. Estimation immédiate via le formulaire de devis.",
       },
     ],
   },
@@ -150,10 +149,10 @@ export const OFFERS: Offer[] = [
     nav: 'DPE seul',
     navDesc: 'Rapide, sous 48 h',
     shortLabel: 'DPE',
-    h1: `DPE à Paris & Île-de-France dès ${DPE_FROM} €`,
-    title: `DPE Paris & Île-de-France dès ${DPE_FROM} € | Soloris`,
+    h1: `DPE à Paris & Île-de-France — certifié, opposable, sous 48 h`,
+    title: `DPE à Paris & Île-de-France — certifié, sous 48 h | Soloris`,
     metaDesc:
-      `Faites réaliser votre DPE dès ${DPE_FROM} € par un diagnostiqueur certifié. Rendez-vous rapide, prix clair, rapport sous 48 h à Paris et en Île-de-France.`,
+      `Faites réaliser votre DPE par un diagnostiqueur certifié COFRAC. Rendez-vous rapide, tarif tout compris, rapport opposable sous 48 h à Paris et en Île-de-France.`,
     tagline: "Faites réaliser votre diagnostic de performance énergétique par un diagnostiqueur certifié, avec rapport transmis sous 48 h.",
     intro:
       "Le DPE évalue la performance énergétique de votre logement et lui attribue une étiquette de A à G. Soloris le réalise rapidement et vous remet un rapport pédagogique : vous comprenez votre étiquette et les pistes d'amélioration, sans jargon.",
@@ -175,7 +174,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Quel est le prix d\'un DPE ?',
-        a: `À partir de ${DPE_FROM} € tout compris, déplacement inclus. Le prix varie selon la surface (${DPE_FROM} à ${DPE_TO} €). Estimation immédiate via le formulaire.`,
+        a: "Un tarif tout compris, déplacement inclus, qui dépend de la surface de votre logement. Vous obtenez votre estimation immédiate via le formulaire de devis.",
       },
       {
         q: 'Pouvez-vous me garantir une bonne étiquette ?',
@@ -222,7 +221,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: "Combien coûte un audit énergétique ?",
-        a: `À partir d'environ ${AUDIT_FROM} € tout compris, déplacement inclus, selon le bien. Estimation indicative via le formulaire de devis.`,
+        a: "Un tarif tout compris, déplacement inclus, qui dépend de votre bien. Estimation indicative via le formulaire de devis.",
       },
       {
         q: 'Vendez-vous les travaux que vous préconisez ?',
