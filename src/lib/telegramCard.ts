@@ -9,7 +9,7 @@
  */
 import { prixDes } from './pricing';
 import { formatDateFr, formatHeureFr } from './rdvEmail';
-import { leadKeyboard } from './telegram';
+import { leadKeyboard, rappelLabel, MOTIFS_PERTE } from './telegram';
 
 export type CardKind = 'partiel' | 'complet' | 'contact' | 'chat';
 
@@ -97,7 +97,7 @@ export function statusLines(lead: Record<string, any>, at: Date = new Date()): s
   const par = lead.traite_par ? ` · par ${lead.traite_par}` : '';
   const quand = ` · ${fmtDateHeure(at)}`;
   if (st === 'contacte') out.push(`📞 Contacté${par}${quand}`);
-  else if (st === 'a_recontacter') out.push(`🔁 À recontacter${lead.recontacter_le ? ` · le ${lead.recontacter_le}` : ''}${par}${quand}`);
+  else if (st === 'a_recontacter') out.push(`🔁 À recontacter${lead.recontacter_le ? ` · le ${rappelLabel(String(lead.recontacter_le).slice(0, 10))}` : ''}${par}${quand}`);
   else if (st === 'rdv_pris') {
     const d = lead.rdv_at ? toDate(lead.rdv_at, at) : null;
     const prix = lead.prix_total_ttc != null ? fmtEur(lead.prix_total_ttc) : '';
@@ -106,7 +106,10 @@ export function statusLines(lead: Record<string, any>, at: Date = new Date()): s
   }
   else if (st === 'realise') out.push(`🏁 Réalisé${par}${quand}`);
   else if (st === 'facture') out.push(`💶 Facturé${lead.montant ? ' · ' + fmtEur(lead.montant) : ''}${par}${quand}`);
-  else if (st === 'perdu') out.push(`❌ Perdu${par}${quand}`);
+  else if (st === 'perdu') {
+    out.push(`❌ Perdu${lead.motif_perte ? ' · ' + (MOTIFS_PERTE[lead.motif_perte] || lead.motif_perte) : ''}${par}${quand}`);
+    if (lead.perte_commentaire) out.push(`💬 « ${lead.perte_commentaire} »`);
+  }
   if (lead.assigne_nom) out.push(`👷 Assigné à ${lead.assigne_nom}`);
   return out;
 }
@@ -119,8 +122,9 @@ export function cardText(lead: Record<string, any>): string {
   return (status.length ? body.concat(['──────────', ...status]) : body).join('\n');
 }
 
-/** Clavier : actions tant que le lead est ouvert ; retiré une fois RDV pris / réalisé / facturé / perdu. */
+/** Clavier : actions tant que le lead est ouvert (nouveau / contacté / à recontacter) ;
+ *  retiré une fois RDV pris / réalisé / facturé / perdu. */
 export function cardKeyboard(lead: Record<string, any>) {
   const st = lead.statut || 'nouveau';
-  return st === 'nouveau' || st === 'contacte' ? leadKeyboard(String(lead.id)) : { inline_keyboard: [] as any[] };
+  return st === 'nouveau' || st === 'contacte' || st === 'a_recontacter' ? leadKeyboard(String(lead.id)) : { inline_keyboard: [] as any[] };
 }
