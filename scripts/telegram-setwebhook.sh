@@ -17,7 +17,7 @@ SITE="${SITE_URL:-https://www.soloris.fr}"
 echo "→ setWebhook vers ${SITE}/api/telegram/webhook"
 curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
   -H "Content-Type: application/json" \
-  -d "{\"url\":\"${SITE}/api/telegram/webhook\",\"secret_token\":\"${TELEGRAM_WEBHOOK_SECRET}\",\"allowed_updates\":[\"callback_query\"]}"
+  -d "{\"url\":\"${SITE}/api/telegram/webhook\",\"secret_token\":\"${TELEGRAM_WEBHOOK_SECRET}\",\"allowed_updates\":[\"callback_query\",\"message\"]}"
 echo
 echo "→ getWebhookInfo"
 curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"

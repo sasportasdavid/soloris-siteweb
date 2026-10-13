@@ -33,7 +33,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     // Déjà connecté → tableau de bord
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = '/admin';
+      if (data.session) window.location.href = '/admin' + location.search;
     });
 
     form.addEventListener('submit', async (e) => {
@@ -53,7 +53,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         submit.textContent = 'Se connecter';
         return;
       }
-      window.location.href = '/admin';
+      window.location.href = '/admin' + location.search;
     });
   </script>
 </AdminLayout>

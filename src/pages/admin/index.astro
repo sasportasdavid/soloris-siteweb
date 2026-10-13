@@ -208,6 +208,16 @@ const STATUT_LABELS: Record<string, string> = {
     .adm-st-facture  { border-color:#6fc294; background:rgba(34,160,90,.18); color:#13633a; font-weight:700; }
     .adm-st-perdu    { border-color:#e3a99e; background:rgba(216,80,58,.10); color:#9a3322; }
 
+    /* Fenêtre « Passer en perdu » : motif + commentaire obligatoire */
+    .adm-perdu-dlg { border:none; border-radius:14px; padding:0; width:min(440px, calc(100vw - 32px)); box-shadow:0 18px 50px rgba(11,42,74,.28); }
+    .adm-perdu-dlg::backdrop { background:rgba(11,42,74,.35); }
+    .adm-perdu-dlg form { padding:20px 20px 16px; }
+    .adm-perdu-dlg h3 { font-family:var(--sora); font-size:17px; color:var(--blue); margin:0 0 4px; }
+    .adm-perdu-dlg p { font-size:13px; color:var(--ink-soft); margin:0 0 14px; }
+    .adm-perdu-dlg .adm-edit { grid-template-columns:1fr; }
+    .adm-perdu-dlg .err { color:#9a3322; font-size:12.5px; min-height:16px; margin-top:6px; }
+    .adm-perdu-dlg .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
+
     /* Barre de titre : groupe d'actions */
     .adm-titlebar-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .adm-btn--ghost { background:#fff; color:var(--blue); border:1.5px solid var(--line); }
@@ -743,6 +753,7 @@ const STATUT_LABELS: Record<string, string> = {
         ['Surface', 'surface'], ['Estimation', 'estimation'], ['Statut', 'statut'],
         ['Campagne', 'campaign'], ['Montant devis', 'montant_devis'], ['Montant validé', 'montant_valide'],
         ['Montant facturé', 'montant'], ['À recontacter le', 'recontacter_le'], ['Motif perte', 'motif_perte'],
+        ['Commentaire perte', 'perte_commentaire'],
       ];
       const cell = (v: any) => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       const header = cols.map((c) => c[0]).join(';');
@@ -1092,6 +1103,39 @@ const STATUT_LABELS: Record<string, string> = {
     function motifOpts(sel: string | null): string {
       return `<option value="">—</option>` + Object.entries(MOTIF_LABELS).map(([k, v]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${esc(v)}</option>`).join('');
     }
+    /** Passage en « perdu » : motif + commentaire obligatoire. null si l'opérateur annule. */
+    function askPerdu(lead: any): Promise<{ motif: string; commentaire: string } | null> {
+      return new Promise((resolve) => {
+        const dlg = document.createElement('dialog');
+        dlg.className = 'adm-perdu-dlg';
+        dlg.innerHTML = `<form method="dialog">
+          <h3>Passer en perdu</h3>
+          <p>${esc(lead?.nom || 'Lead sans nom')} — expliquez pourquoi, le commentaire est obligatoire.</p>
+          <div class="adm-edit">
+            <div><label>Motif</label><select name="motif">${Object.entries(MOTIF_LABELS).map(([k, v]) => `<option value="${k}" ${(lead?.motif_perte || 'autre') === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+            <div><label>Commentaire</label><textarea name="commentaire" rows="3" placeholder="Ex. : a trouvé moins cher, rappeler en janvier…">${esc(lead?.perte_commentaire || '')}</textarea></div>
+          </div>
+          <div class="err" aria-live="polite"></div>
+          <div class="acts">
+            <button type="button" class="adm-btn adm-btn--ghost" data-act="cancel">Annuler</button>
+            <button type="submit" class="adm-btn">Marquer perdu</button>
+          </div>
+        </form>`;
+        document.body.appendChild(dlg);
+        const form = dlg.querySelector('form') as HTMLFormElement;
+        const ta = form.elements.namedItem('commentaire') as HTMLTextAreaElement;
+        let out: { motif: string; commentaire: string } | null = null;
+        form.addEventListener('submit', (e) => {
+          const commentaire = ta.value.trim();
+          if (commentaire.length < 3) { e.preventDefault(); (dlg.querySelector('.err') as HTMLElement).textContent = 'Le commentaire est obligatoire (3 caractères minimum).'; ta.focus(); return; }
+          out = { motif: (form.elements.namedItem('motif') as HTMLSelectElement).value, commentaire };
+        });
+        (dlg.querySelector('[data-act="cancel"]') as HTMLElement).addEventListener('click', () => dlg.close());
+        dlg.addEventListener('close', () => { dlg.remove(); resolve(out); });
+        dlg.showModal();
+        ta.focus();
+      });
+    }
     function openDrawer(id: string) {
       const l = allLeads.find((x) => x.id === id);
       if (!l) return;
@@ -1168,6 +1212,7 @@ const STATUT_LABELS: Record<string, string> = {
                 <div><label>Montant validé (€)</label><input type="number" data-id="${l.id}" data-field="montant_valide" value="${l.montant_valide ?? ''}" placeholder="€"></div>
                 <div><label>Montant facturé (€)</label><input type="number" data-id="${l.id}" data-field="montant" value="${l.montant ?? ''}" placeholder="€"></div>
                 <div><label>Motif de perte</label><select data-id="${l.id}" data-field="motif_perte">${motifOpts(l.motif_perte)}</select></div>
+                ${l.statut === 'perdu' || l.perte_commentaire ? `<div class="full"><label>Commentaire de perte</label><textarea data-id="${l.id}" data-field="perte_commentaire" placeholder="Pourquoi ce lead est perdu ?">${esc(l.perte_commentaire || '')}</textarea></div>` : ''}
                 <div class="full"><label>Notes</label><textarea data-id="${l.id}" data-field="notes" placeholder="Notes internes…">${esc(l.notes || '')}</textarea></div>
               </div>
               <dl class="adm-dl adm-dl--meta">${suiviMeta}</dl>
@@ -1356,20 +1401,23 @@ const STATUT_LABELS: Record<string, string> = {
       (document.getElementById('adm-drawer') as HTMLElement).hidden = true;
     }
 
-    /** Statut et assignation passent par l'API : traçabilité (« par X ») + carte Telegram réécrite. */
-    async function updateViaApi(id: string, field: string, value: any): Promise<boolean> {
+    /** Statut, assignation et date de rappel passent par l'API : traçabilité (« par X ») + carte Telegram réécrite. */
+    async function updateViaApi(id: string, field: string, value: any, extra: Record<string, any> = {}): Promise<boolean> {
       const { data: sess } = await supabase.auth.getSession();
       const tok = sess.session && sess.session.access_token;
       if (!tok) { alert('Session expirée, reconnectez-vous.'); return false; }
       try {
         const res = await fetch('/api/admin/lead-update', {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
-          body: JSON.stringify({ lead_id: id, field, value: value === '' ? null : value }),
+          body: JSON.stringify({ lead_id: id, field, value: value === '' ? null : value, ...extra }),
         });
         const j: any = await res.json().catch(() => null);
         if (!res.ok || !j || !j.ok) { alert('Échec de la mise à jour : ' + ((j && j.error) || ('HTTP ' + res.status))); return false; }
         const lead = allLeads.find((l) => l.id === id);
-        if (lead) { lead[field] = j.value; if (j.traite_par) lead.traite_par = j.traite_par; lead.updated_at = new Date().toISOString(); }
+        if (lead) {
+          lead[field] = j.value; if (j.traite_par) lead.traite_par = j.traite_par; lead.updated_at = new Date().toISOString();
+          if (j.perte_commentaire) { lead.motif_perte = j.motif_perte; lead.perte_commentaire = j.perte_commentaire; }
+        }
         return true;
       } catch (e: any) { alert('Échec de la mise à jour : ' + String((e && e.message) || e)); return false; }
     }
@@ -1378,9 +1426,21 @@ const STATUT_LABELS: Record<string, string> = {
     const CONTACT_DEVIS_FIELD: Record<string, string> = { nom: 'client_nom', email: 'client_email', telephone: 'client_tel', secteur: 'client_cp', adresse: 'client_adresse' };
 
     async function update(id: string, field: string, value: any) {
-      if (field === 'statut' || field === 'assigne_a') {
-        const done = await updateViaApi(id, field, value);
+      if (field === 'statut' || field === 'assigne_a' || field === 'recontacter_le') {
+        let extra: Record<string, any> = {};
+        // Perdu : motif + commentaire obligatoire (fenêtre), sinon on annule le changement
+        if (field === 'statut' && value === 'perdu') {
+          const info = await askPerdu(allLeads.find((x) => x.id === id));
+          if (!info) {
+            const cur = allLeads.find((x) => x.id === id)?.statut || 'nouveau';
+            document.querySelectorAll(`[data-id="${id}"][data-field="statut"]`).forEach((el) => { (el as HTMLSelectElement).value = cur; });
+            render(); return;
+          }
+          extra = info;
+        }
+        const done = await updateViaApi(id, field, value, extra);
         if (!done) { render(); return; }
+        if (field === 'statut' && value === 'perdu' && currentLeadId === id) openDrawer(id);
         renderStats(allLeads);
         render();
         renderRappels();
@@ -1893,7 +1953,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     async function init() {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) { window.location.href = '/admin/login'; return; }
+      if (!sessionData.session) { window.location.href = '/admin/login' + location.search; return; }
 
       if (!(await loadLeads())) return;
 
@@ -1924,6 +1984,9 @@ const STATUT_LABELS: Record<string, string> = {
       syncControls();
       wireEvents();
       showView(currentView()); // affiche la vue demandée par le hash (défaut : leads)
+      // Lien profond /admin?lead=<id> (bouton « ✏️ Modifier » des aperçus de devis Telegram)
+      const deepLead = new URLSearchParams(location.search).get('lead');
+      if (deepLead && allLeads.some((l) => l.id === deepLead)) openDrawer(deepLead);
     }
 
     init();

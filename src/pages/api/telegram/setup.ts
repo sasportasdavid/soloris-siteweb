@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ url, request }) => {
     setResult = await tg('setWebhook', {
       url: webhookUrl,
       secret_token: TELEGRAM_WEBHOOK_TOKEN,
-      allowed_updates: ['callback_query'],
+      allowed_updates: ['callback_query', 'message'], // message : réponses au bot (commentaire « Perdu »)
     });
   }
   const infoRaw = await tg('getWebhookInfo');
