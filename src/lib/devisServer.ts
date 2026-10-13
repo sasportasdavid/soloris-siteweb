@@ -17,7 +17,7 @@ function headers(extra: Record<string, string> = {}): Record<string, string> {
   return h;
 }
 
-async function rest(method: string, path: string, body?: unknown, prefer?: string): Promise<any[] | null> {
+export async function rest(method: string, path: string, body?: unknown, prefer?: string): Promise<any[] | null> {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       method, headers: headers(prefer ? { Prefer: prefer } : {}), body: body ? JSON.stringify(body) : undefined,

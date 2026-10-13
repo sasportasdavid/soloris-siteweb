@@ -91,6 +91,38 @@ export async function rewriteLeadCard(lead: Record<string, any>, opts: RewriteOp
   return null;
 }
 
+export interface CardEditResult {
+  ok: boolean;
+  /** Carte déjà identique à la base : rien à écrire. */
+  unchanged?: boolean;
+  /** Pas de carte éditable (jamais postée ou message supprimé) : rien à resynchroniser. */
+  gone?: boolean;
+  /** Limite de débit Telegram (429) : secondes à attendre avant de réessayer. */
+  retryAfter?: number;
+  error?: string;
+}
+
+/**
+ * Édite la carte EXISTANTE du lead à partir de l'état de la base, sans jamais en poster une
+ * nouvelle. Renvoie le détail du résultat (limite de débit, carte disparue…) pour la
+ * resynchronisation par lots (cardResync.ts).
+ */
+export async function editLeadCardOnly(lead: Record<string, any>): Promise<CardEditResult> {
+  const chatId = TELEGRAM_CHAT_ID ?? TELEGRAM_LEADS_CHAT_ID;
+  if (!TELEGRAM_BOT_TOKEN || !chatId) return { ok: false, error: 'Telegram non configuré' };
+  const messageId = lead.telegram_message_id ? Number(lead.telegram_message_id) : null;
+  if (!messageId) return { ok: true, gone: true };
+  const r = await tg('editMessageText', {
+    chat_id: chatId, message_id: messageId, text: cardText(lead), disable_web_page_preview: true, reply_markup: cardKeyboard(lead),
+  });
+  if (r?.ok) return { ok: true };
+  const desc = String(r?.description || '').toLowerCase();
+  if (desc.includes('not modified')) return { ok: true, unchanged: true };
+  if (r?.error_code === 429) return { ok: false, retryAfter: Number(r?.parameters?.retry_after) || 5 };
+  if (desc.includes('message to edit not found') || desc.includes("can't be edited") || desc.includes('message_id_invalid')) return { ok: true, gone: true };
+  return { ok: false, error: String(r?.description || 'erreur Telegram') };
+}
+
 /** Relit le lead en base et réécrit sa carte. Vrai si une carte a été écrite. */
 export async function refreshLeadCard(leadId: string, opts: RewriteOpts = {}): Promise<boolean> {
   const lead = await fetchLeadForCard(leadId);
