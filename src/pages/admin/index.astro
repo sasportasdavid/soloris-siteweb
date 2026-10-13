@@ -1960,12 +1960,13 @@ const STATUT_LABELS: Record<string, string> = {
     let syncing = false, lastSyncAt = 0, hiddenAt = 0;
     const maxTs = (rows: any[]): string => { let m = ''; for (const r of rows) { const t = String(r.updated_at || r.created_at || ''); if (t > m) m = t; } return m; };
     const byCreatedDesc = (a: any, b: any) => (String(a.created_at) < String(b.created_at) ? 1 : -1);
-    function syncToast(n: number) {
+    function infoToast(text: string) {
       const el = document.createElement('div');
-      el.textContent = `↻ ${n} mise${n > 1 ? 's' : ''} à jour`;
+      el.textContent = text;
       el.setAttribute('style', 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--blue);color:#fff;font:600 12.5px var(--sora);padding:8px 14px;border-radius:100px;z-index:300;pointer-events:none;box-shadow:0 8px 24px -8px rgba(11,42,74,.6)');
       document.body.appendChild(el); setTimeout(() => el.remove(), 2400);
     }
+    function syncToast(n: number) { infoToast(`↻ ${n} mise${n > 1 ? 's' : ''} à jour`); }
     function userBusy(): boolean {
       const drawer = document.getElementById('adm-drawer') as HTMLElement | null;
       if (drawer && !drawer.hidden) return true;
@@ -2019,6 +2020,31 @@ const STATUT_LABELS: Record<string, string> = {
       window.addEventListener('online', () => deltaRefresh(true));
     }
 
+    // Cartes Telegram : à l'ouverture, réaligne en arrière-plan celles qui sont en retard sur la base
+    // (lots courts côté serveur, limite de débit Telegram respectée). Une fois par jour et par
+    // navigateur une fois tout traité ; sans effet visible quand tout est déjà à jour.
+    async function autoResyncCartes(): Promise<void> {
+      const day = new Date().toISOString().slice(0, 10);
+      try { if (localStorage.getItem('soloris_resync_day') === day) return; } catch { /* stockage indisponible : on continue */ }
+      let modifiees = 0;
+      for (let i = 0; i < 40; i++) {
+        let j: any = null;
+        try {
+          const { data } = await supabase.auth.getSession();
+          const jwt = data.session?.access_token;
+          if (!jwt) return;
+          const r = await fetch('/api/admin/resync-cartes', { method: 'POST', headers: { Authorization: 'Bearer ' + jwt } });
+          if (!r.ok) break;
+          j = await r.json();
+        } catch { break; }
+        modifiees += j.traitees || 0;
+        if (!j.restantes) { try { localStorage.setItem('soloris_resync_day', day); } catch { /* ignoré */ } break; }
+        if (j.limite_debit || !(j.traitees || j.inchangees || j.disparues)) break;
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+      if (modifiees) infoToast(`↻ ${modifiees} carte${modifiees > 1 ? 's' : ''} Telegram remise${modifiees > 1 ? 's' : ''} à jour`);
+    }
+
     async function init() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) { window.location.href = '/admin/login' + location.search; return; }
@@ -2053,6 +2079,7 @@ const STATUT_LABELS: Record<string, string> = {
       wireEvents();
       showView(currentView()); // affiche la vue demandée par le hash (défaut : leads)
       startAutoSync();
+      setTimeout(autoResyncCartes, 4000);
       // Lien profond /admin?lead=<id> (bouton « ✏️ Modifier » des aperçus de devis Telegram)
       const deepLead = new URLSearchParams(location.search).get('lead');
       if (deepLead && allLeads.some((l) => l.id === deepLead)) openDrawer(deepLead);

@@ -3,11 +3,13 @@
  *   #8 Rappels actifs    : leads « à recontacter » dont la date est échue (<= aujourd'hui).
  *   #7 Relances devis    : devis « envoyé » non signé depuis > N jours.
  * Lecture via la clé service Supabase (RLS contournée côté serveur). Auth : CRON_SECRET.
- * Un seul cron pour les deux (limite de crons Vercel).
+ * Un seul cron pour les deux (limite de crons Vercel). Termine par un court lot de resynchronisation
+ * des cartes Telegram (lib/cardResync.ts).
  */
 import type { APIRoute } from 'astro';
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE } from '../../../lib/serverEnv';
 import { sendTelegramMessage } from '../../../lib/telegramPush';
+import { resyncCards } from '../../../lib/cardResync';
 
 export const prerender = false;
 
@@ -60,6 +62,9 @@ export const GET: APIRoute = async ({ request }) => {
     ).join('\n');
     out.relances_tg = await sendTelegramMessage(`📄 Devis en attente de signature depuis > ${RELANCE_JOURS} j (${devis.length})\n\n${l}${devis.length > 30 ? `\n… +${devis.length - 30} autres` : ''}`);
   }
+
+  // ── Filet de sécurité : cartes Telegram réalignées sur la base (lot court, reprise le lendemain) ──
+  try { out.cartes = await resyncCards({ max: 10, budgetMs: 5000 }); } catch (e) { console.error('[cron-crm] resync cartes', e); out.cartes = 'erreur'; }
 
   return json(out);
 };
