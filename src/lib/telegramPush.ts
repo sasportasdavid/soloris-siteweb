@@ -5,6 +5,7 @@
  */
 import { SUPABASE_URL, SUPABASE_ANON, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_LEADS_CHAT_ID } from './serverEnv';
 import { cardText, cardKeyboard } from './telegramCard';
+import { getLatestDevisForLead } from './devisServer';
 
 async function tg(method: string, body: unknown): Promise<any> {
   try {
@@ -25,7 +26,7 @@ export async function sendTelegramMessage(text: string, chatId?: string | number
   return !!(j && j.ok);
 }
 
-/** Lead complet (+ nom de l'opérateur assigné) pour sa carte, ou null. */
+/** Lead complet (+ opérateur assigné + dernier devis) pour sa carte, ou null. */
 export async function fetchLeadForCard(leadId: string): Promise<Record<string, any> | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON) return null;
   try {
@@ -35,7 +36,11 @@ export async function fetchLeadForCard(leadId: string): Promise<Record<string, a
     });
     if (!r.ok) { console.error('[tg-card] RPC get_lead_for_card', r.status, (await r.text().catch(() => '')).slice(0, 200)); return null; }
     const j = await r.json();
-    return j?.found ? j.lead : null;
+    if (!j?.found) return null;
+    const lead = j.lead;
+    // Devis : table réservée au back-office (RLS) → clé service côté serveur ; sans clé, pas de ligne devis.
+    try { lead.devis = await getLatestDevisForLead(leadId); } catch { lead.devis = null; }
+    return lead;
   } catch (e) { console.error('[tg-card] RPC get_lead_for_card injoignable :', e); return null; }
 }
 
@@ -52,7 +57,12 @@ async function storeMessageId(leadId: string, messageId: number): Promise<void> 
 export interface RewriteOpts {
   /** Chat / message à éditer (clic sur une carte précise) ; sinon la carte mémorisée du lead. */
   chatId?: string | number; messageId?: number;
-  /** Si l'édition est impossible (carte supprimée, id inconnu), poste une carte à jour. Défaut : true. */
+  /**
+   * Carte introuvable : true = poste une carte à jour ; false = ne rien poster.
+   * Défaut : poste seulement si une carte existait (id mémorisé) mais n'est plus éditable
+   * (message supprimé). Un lead SANS carte (partiel sans contact, ancien lead) n'en reçoit pas
+   * de nouvelle sur un simple changement de statut ; passer true pour forcer (ex. RDV confirmé).
+   */
   postIfMissing?: boolean;
 }
 
@@ -74,6 +84,7 @@ export async function rewriteLeadCard(lead: Record<string, any>, opts: RewriteOp
     if (String(r?.description || '').toLowerCase().includes('not modified')) return messageId;
   }
   if (opts.postIfMissing === false) return null;
+  if (!messageId && opts.postIfMissing !== true) return null;
   const r = await tg('sendMessage', { chat_id: chatId, text, disable_web_page_preview: true, reply_markup });
   const mid = r?.result?.message_id;
   if (typeof mid === 'number') { await storeMessageId(String(lead.id), mid); return mid; }
