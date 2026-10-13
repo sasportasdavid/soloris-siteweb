@@ -75,7 +75,7 @@ export async function runRdvConfirm(opts: { leadId: string; fields: RdvFields; t
   if (emailSent) { stampedAt = new Date().toISOString(); await rpc('rdv_mark_sent', { p_id: opts.leadId }); }
 
   // d) Réécriture de la carte Telegram (source unique : détails + « ✅ RDV pris · date · par X »)
-  try { await refreshLeadCard(lead.id); } catch (e) { console.error('[rdv] réécriture carte Telegram échouée (RDV enregistré):', e); }
+  try { await refreshLeadCard(lead.id, { postIfMissing: true }); } catch (e) { console.error('[rdv] réécriture carte Telegram échouée (RDV enregistré):', e); }
 
   return { ok: true, emailSent, emailError, reason, to: lead.email || undefined, confirmation_rdv_envoyee_at: stampedAt };
 }

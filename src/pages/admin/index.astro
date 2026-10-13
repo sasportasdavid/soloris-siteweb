@@ -1399,6 +1399,7 @@ const STATUT_LABELS: Record<string, string> = {
 
     function closeDrawer() {
       (document.getElementById('adm-drawer') as HTMLElement).hidden = true;
+      setTimeout(() => deltaRefresh(true), 150); // rattrape les changements faits ailleurs pendant l'édition
     }
 
     /** Statut, assignation et date de rappel passent par l'API : traçabilité (« par X ») + carte Telegram réécrite. */
@@ -1939,9 +1940,9 @@ const STATUT_LABELS: Record<string, string> = {
       });
     }
 
-    async function loadLeads(): Promise<boolean> {
+    async function loadLeads(quiet = false): Promise<boolean> {
       const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
-      if (error) { alert('Erreur de chargement : ' + error.message); return false; }
+      if (error) { if (!quiet) alert('Erreur de chargement : ' + error.message); return false; }
       allLeads = data || [];
       // Devis (le plus récent par lead)
       const { data: dv } = await supabase.from('devis').select('*').order('created_at', { ascending: false });
@@ -1949,6 +1950,73 @@ const STATUT_LABELS: Record<string, string> = {
       devisByLead = {};
       allDevis.forEach((d: any) => { if (d.lead_id && !devisByLead[d.lead_id]) devisByLead[d.lead_id] = d; });
       return true;
+    }
+
+    // ── Synchro automatique ───────────────────────────────────────────────
+    // Ce qui est fait ailleurs (boutons Telegram, autre opérateur, signature d'un devis par le
+    // client) apparaît ici sans recharger la page : toutes les 30 s et au retour sur l'onglet,
+    // on ne récupère que les lignes modifiées (leads et devis `updated_at` plus récent), puis on
+    // réaffiche. On ne touche à rien pendant qu'une fiche est ouverte ou qu'un champ est actif.
+    let syncing = false, lastSyncAt = 0, hiddenAt = 0;
+    const maxTs = (rows: any[]): string => { let m = ''; for (const r of rows) { const t = String(r.updated_at || r.created_at || ''); if (t > m) m = t; } return m; };
+    const byCreatedDesc = (a: any, b: any) => (String(a.created_at) < String(b.created_at) ? 1 : -1);
+    function syncToast(n: number) {
+      const el = document.createElement('div');
+      el.textContent = `↻ ${n} mise${n > 1 ? 's' : ''} à jour`;
+      el.setAttribute('style', 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--blue);color:#fff;font:600 12.5px var(--sora);padding:8px 14px;border-radius:100px;z-index:300;pointer-events:none;box-shadow:0 8px 24px -8px rgba(11,42,74,.6)');
+      document.body.appendChild(el); setTimeout(() => el.remove(), 2400);
+    }
+    function userBusy(): boolean {
+      const drawer = document.getElementById('adm-drawer') as HTMLElement | null;
+      if (drawer && !drawer.hidden) return true;
+      const ae = document.activeElement as HTMLElement | null;
+      return !!(ae && /^(SELECT|INPUT|TEXTAREA)$/.test(ae.tagName) && ae.closest('#admin-app'));
+    }
+    async function deltaRefresh(force = false): Promise<void> {
+      if (syncing || document.visibilityState !== 'visible' || userBusy()) return;
+      if (!force && Date.now() - lastSyncAt < 10000) return;
+      syncing = true;
+      try {
+        // Longue absence : rechargement complet (détecte aussi les suppressions)
+        if (hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) {
+          hiddenAt = 0;
+          if (await loadLeads(true)) { renderStats(allLeads); rerender(); }
+          return;
+        }
+        hiddenAt = 0;
+        const [l, d] = await Promise.all([
+          supabase.from('leads').select('*').gt('updated_at', maxTs(allLeads)).order('updated_at', { ascending: true }).limit(500),
+          supabase.from('devis').select('*').gt('updated_at', maxTs(allDevis)).order('updated_at', { ascending: true }).limit(500),
+        ]);
+        if (l.error || d.error) return; // silencieux : nouvel essai au prochain passage
+        const dl = l.data || [], dd = d.data || [];
+        if (!dl.length && !dd.length) return;
+        if (userBusy()) return; // l'utilisateur a ouvert un champ pendant la requête
+        if (dl.length) {
+          const m = new Map(allLeads.map((x) => [x.id, x]));
+          dl.forEach((x: any) => m.set(x.id, x));
+          allLeads = Array.from(m.values()).sort(byCreatedDesc);
+        }
+        if (dd.length) {
+          const m = new Map(allDevis.map((x) => [x.id, x]));
+          dd.forEach((x: any) => m.set(x.id, x));
+          allDevis = Array.from(m.values()).sort(byCreatedDesc);
+          devisByLead = {};
+          allDevis.forEach((x: any) => { if (x.lead_id && !devisByLead[x.lead_id]) devisByLead[x.lead_id] = x; });
+        }
+        renderStats(allLeads); rerender();
+        syncToast(dl.length || dd.length);
+      } catch { /* réseau : on réessaiera */ }
+      finally { syncing = false; lastSyncAt = Date.now(); }
+    }
+    function startAutoSync() {
+      setInterval(() => deltaRefresh(false), 30000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') hiddenAt = hiddenAt || Date.now();
+        else deltaRefresh(true);
+      });
+      window.addEventListener('focus', () => deltaRefresh(true));
+      window.addEventListener('online', () => deltaRefresh(true));
     }
 
     async function init() {
@@ -1984,6 +2052,7 @@ const STATUT_LABELS: Record<string, string> = {
       syncControls();
       wireEvents();
       showView(currentView()); // affiche la vue demandée par le hash (défaut : leads)
+      startAutoSync();
       // Lien profond /admin?lead=<id> (bouton « ✏️ Modifier » des aperçus de devis Telegram)
       const deepLead = new URLSearchParams(location.search).get('lead');
       if (deepLead && allLeads.some((l) => l.id === deepLead)) openDrawer(deepLead);

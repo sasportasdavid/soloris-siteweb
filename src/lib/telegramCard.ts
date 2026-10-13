@@ -90,7 +90,18 @@ export function buildLeadCard(lead: Record<string, any>, kind: CardKind, receive
   return lines.filter(Boolean);
 }
 
-/** Lignes de statut : vides pour un lead « nouveau » non assigné. */
+/** Ligne « devis » de la carte (dernier devis du lead), ou chaîne vide. */
+export function devisLine(d: Record<string, any> | null | undefined): string {
+  if (!d || !d.statut) return '';
+  const num = d.numero || 'devis';
+  const montant = d.montant != null && d.montant !== '' ? ` · ${fmtEur(d.montant)}` : '';
+  if (d.statut === 'signe') return `✍️ Devis ${num} signé${d.signed_nom ? ' par ' + d.signed_nom : ''}${montant}${d.signed_at ? ' · ' + fmtDateHeure(toDate(d.signed_at, new Date())) : ''}`;
+  if (d.statut === 'refuse') return `🔴 Devis ${num} refusé${montant}`;
+  if (d.statut === 'envoye') return `📄 Devis ${num} envoyé${montant}${d.sent_at ? ' · ' + fmtDateHeure(toDate(d.sent_at, new Date())) : ''}`;
+  return `📝 Devis ${num} en brouillon${montant}`;
+}
+
+/** Lignes de statut : vides pour un lead « nouveau » non assigné et sans devis. */
 export function statusLines(lead: Record<string, any>, at: Date = new Date()): string[] {
   const out: string[] = [];
   const st = lead.statut || 'nouveau';
@@ -110,6 +121,8 @@ export function statusLines(lead: Record<string, any>, at: Date = new Date()): s
     out.push(`❌ Perdu${lead.motif_perte ? ' · ' + (MOTIFS_PERTE[lead.motif_perte] || lead.motif_perte) : ''}${par}${quand}`);
     if (lead.perte_commentaire) out.push(`💬 « ${lead.perte_commentaire} »`);
   }
+  const dl = devisLine(lead.devis);
+  if (dl) out.push(dl);
   if (lead.assigne_nom) out.push(`👷 Assigné à ${lead.assigne_nom}`);
   return out;
 }

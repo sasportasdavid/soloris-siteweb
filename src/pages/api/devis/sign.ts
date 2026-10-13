@@ -1,10 +1,13 @@
 /**
  * POST /api/devis/sign — signature « bon pour accord » (ou refus) d'un devis par
  * son token. Enregistre nom + horodatage + IP via la fonction SECURITY DEFINER
- * sign_devis (anti-rejeu). Notifie l'équipe sur Telegram. Aucune donnée marketing.
+ * sign_devis (anti-rejeu). Notifie l'équipe sur Telegram, puis synchronise le lead (journal,
+ * « Nouveau » → « Contacté », carte Telegram avec la ligne devis). Aucune donnée marketing.
  */
 import type { APIRoute } from 'astro';
 import { SUPABASE_URL, SUPABASE_ANON, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from '../../../lib/serverEnv';
+import { getDevisByToken } from '../../../lib/devisServer';
+import { syncAfterDevisEvent, withTimeout } from '../../../lib/devisSync';
 
 export const prerender = false;
 
@@ -62,6 +65,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     notify(`🔴 Devis REFUSÉ — Soloris\nN° ${r.numero || '?'}`);
   } else if (!r.already) {
     notify(`✍️ Devis SIGNÉ — Soloris\nN° ${r.numero}\n👤 ${r.client_nom || nom}\n💶 ${r.montant || '?'} €\n📋 ${r.objet || ''}`);
+  }
+
+  // Synchro du lead (≤ 4 s : on ne fait pas patienter le client ; le devis est déjà enregistré)
+  if (refuse || !r.already) {
+    const dv = await withTimeout(getDevisByToken(token), 2500);
+    if (dv?.lead_id) {
+      await withTimeout(syncAfterDevisEvent({
+        leadId: dv.lead_id, kind: refuse ? 'refuse' : 'signe',
+        detail: refuse ? `refusé ${dv.numero || r.numero || ''}`.trim() : `signé ${dv.numero || r.numero || ''} par ${nom}`.trim(),
+        par: 'Client (signature)',
+      }), 4000);
+    }
   }
 
   return json({ ok: true, already: !!r.already, refused: refuse, numero: r.numero, montant: r.montant });

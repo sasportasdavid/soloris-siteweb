@@ -18,7 +18,8 @@
  *   tg_set_perdu + carte réécrite. Nécessite allowed_updates ['callback_query','message'].
  * - Devis (comme « Créer / Envoyer le devis » dans /admin) :
  *   dv|{leadId} → dernier devis du lead (ou brouillon créé) posté en aperçu, en réponse à la carte ;
- *   dvs|{devisId} → envoie l'email au client (PDF + lien de signature), marque « envoyé », journalise ;
+ *   dvs|{devisId} → envoie l'email au client (PDF + lien de signature), marque « envoyé », puis
+ *   synchronise (journal, « Nouveau » → « Contacté », carte du lead réécrite avec la ligne devis) ;
  *   dvx → ferme l'aperçu. Accès devis via la clé service Supabase (RLS authenticated).
  * - Journalise chaque clic (action, lead, chat) et chaque erreur Telegram / RPC pour
  *   le diagnostic dans les logs Vercel. Aucun secret n'est journalisé.
@@ -35,7 +36,8 @@ import {
   MOTIFS_PERTE, perduKeyboard, perduPromptText, parsePerduRef,
 } from '../../../lib/telegram';
 import { cardKeyboard } from '../../../lib/telegramCard';
-import { devisServerReady, getOrCreateDevisForLead, getDevis, patchDevis, logLeadActivity } from '../../../lib/devisServer';
+import { devisServerReady, getOrCreateDevisForLead, getDevis, patchDevis } from '../../../lib/devisServer';
+import { syncAfterDevisEvent } from '../../../lib/devisSync';
 import { sendDevisEmail, sentPatch } from '../../../lib/devisSend';
 import { devisBlockers, devisPreviewText, devisPreviewKeyboard, devisSentText } from '../../../lib/telegramDevis';
 import { signRdvToken } from '../../../lib/rdvToken';
@@ -125,6 +127,13 @@ async function handlePerduReply(msg: any): Promise<Response> {
   return ok();
 }
 
+/**
+ * Statuts avancés qu'un clic « Contacté » / « À recontacter » ne doit jamais rétrograder : une carte
+ * périmée (affichée avant que le lead ait avancé depuis /admin) garde ses boutons ; on resynchronise
+ * la carte avec la base au lieu d'écraser le statut.
+ */
+const PROTEGES = new Set(['rdv_pris', 'realise', 'facture', 'perdu']);
+
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
 export const POST: APIRoute = async ({ request }) => {
@@ -168,6 +177,13 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (action === 'ct') {
     const statut = 'contacte';
+    const before = await fetchLeadForCard(leadId);
+    if (before && PROTEGES.has(before.statut)) {
+      console.log(`[tg-webhook] ct ignoré : lead ${leadId} déjà « ${before.statut} » — carte resynchronisée`);
+      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: `Déjà « ${STATUT_LABELS_TG[before.statut] || before.statut} » — carte mise à jour.` });
+      if (messageId) await rewriteLeadCard(before, { chatId, messageId, postIfMissing: false });
+      return ok();
+    }
     const r = await rpc('tg_set_status', { p_id: leadId, p_statut: statut, p_traite_par: from });
     await tg('answerCallbackQuery', { callback_query_id: cq.id, text: r?.ok ? `Statut : ${STATUT_LABELS_TG[statut]}` : 'Action impossible' });
     if (r?.ok && messageId) {
@@ -225,6 +241,13 @@ export const POST: APIRoute = async ({ request }) => {
   if (action === 'rcd') {
     if (!rappelDateOk(arg)) {
       await tg('answerCallbackQuery', { callback_query_id: cq.id, text: 'Date invalide ou passée.', show_alert: true });
+      return ok();
+    }
+    const before = await fetchLeadForCard(leadId);
+    if (before && PROTEGES.has(before.statut)) {
+      console.log(`[tg-webhook] rcd ignoré : lead ${leadId} déjà « ${before.statut} » — carte resynchronisée`);
+      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: `Déjà « ${STATUT_LABELS_TG[before.statut] || before.statut} » — carte mise à jour.`, show_alert: true });
+      if (messageId) await rewriteLeadCard(before, { chatId, messageId, postIfMissing: false });
       return ok();
     }
     const r = await rpc('tg_set_recontacter', { p_id: leadId, p_date: arg, p_traite_par: from });
@@ -297,7 +320,7 @@ export const POST: APIRoute = async ({ request }) => {
       return ok();
     }
     await patchDevis(d.id, sentPatch(d));
-    if (d.lead_id) await logLeadActivity(d.lead_id, 'devis', `envoyé ${d.numero} à ${sent.to}`, from);
+    await syncAfterDevisEvent({ leadId: d.lead_id, kind: 'envoye', detail: `envoyé ${d.numero} à ${sent.to}`, par: from });
     console.log(`[tg-webhook] devis ${d.numero} envoyé à ${sent.to} · par ${from}`);
     if (messageId) await tg('editMessageText', { chat_id: chatId, message_id: messageId, text: devisSentText(d, sent.to, from) });
     return ok();

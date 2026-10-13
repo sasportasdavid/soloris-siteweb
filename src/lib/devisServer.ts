@@ -28,6 +28,20 @@ async function rest(method: string, path: string, body?: unknown, prefer?: strin
   } catch (e) { console.error('[devis-server] Supabase injoignable :', e); return null; }
 }
 
+/** Dernier devis du lead (tous statuts, refusé compris) pour la carte Telegram, ou null. */
+export async function getLatestDevisForLead(leadId: string): Promise<any | null> {
+  if (!devisServerReady()) return null;
+  const a = await rest('GET', `devis?lead_id=eq.${leadId}&select=id,numero,statut,montant,sent_at,signed_at,signed_nom&order=created_at.desc&limit=1`);
+  return a?.[0] ?? null;
+}
+
+/** Devis par jeton de signature (page publique /devis/signer) : { id, lead_id, numero } ou null. */
+export async function getDevisByToken(token: string): Promise<any | null> {
+  if (!devisServerReady()) return null;
+  const a = await rest('GET', `devis?sign_token=eq.${token}&select=id,lead_id,numero&limit=1`);
+  return a?.[0] ?? null;
+}
+
 export async function getDevis(devisId: string): Promise<any | null> {
   const a = await rest('GET', `devis?id=eq.${devisId}&select=*`);
   return a?.[0] ?? null;
