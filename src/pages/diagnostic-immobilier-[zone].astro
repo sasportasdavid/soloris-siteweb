@@ -16,6 +16,7 @@ import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
 import { prixDes } from '../lib/pricing';
 import { ZONES, type Zone } from '../lib/zones';
+import { getZoneStats, fmtPct, fmtInt, fmtSurface, fmtDateFr, listFr, DPE_COLORS } from '../lib/zoneData';
 import { localBusinessArea, faqPage, breadcrumb } from '../lib/jsonld';
 
 export function getStaticPaths() {
@@ -26,6 +27,15 @@ interface Props { zone: Zone }
 const { zone } = Astro.props;
 const url = `/diagnostic-immobilier-${zone.slug}`;
 const where = `${zone.prep} ${zone.name}`;
+
+// Chiffres publics de la commune (ADEME, Géorisques) : absents pour les zones sans données.
+const stats = getZoneStats(zone.slug);
+const nearby = ZONES.filter((z) => z.dept === zone.dept && z.slug !== zone.slug);
+const radonLabel: Record<string, string> = {
+  '1': 'classe 1 sur 3 (faible)',
+  '2': 'classe 2 sur 3 (faible, avec des facteurs géologiques qui peuvent faciliter le transfert vers les bâtiments)',
+  '3': 'classe 3 sur 3 (significatif)',
+};
 
 const title = `Diagnostic immobilier ${where} | Soloris`;
 
@@ -47,6 +57,13 @@ const faq = [
     a: `Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas ${where} et en Île-de-France.`,
   },
 ];
+
+if (stats) {
+  faq.push({
+    q: `Quels diagnostics pour un logement ancien ${where} ?`,
+    a: `${fmtPct(stats.shareAvant1948)} des logements ayant fait l'objet d'un DPE ${where} datent d'avant 1948 : le diagnostic plomb (CREP) est alors requis, ainsi que l'amiante pour les permis de construire antérieurs au 1er juillet 1997. Nous établissons la liste exacte applicable à votre bien au moment du devis.`,
+  });
+}
 
 const jsonLd = [
   localBusinessArea(zone.name),
@@ -90,6 +107,81 @@ const jsonLd = [
     </div>
   </section>
 
+  {stats && (
+    <section class="section-line" id="chiffres">
+      <div class="wrap">
+        <div class="eyebrow">Données publiques</div>
+        <h2 class="sec-title">Le parc immobilier {where} en chiffres</h2>
+        <p class="sec-intro">Sur {fmtInt(stats.dpeTotal)} DPE enregistrés {where} depuis juillet 2021, l'étiquette la plus fréquente est la {stats.topEtiquette.label} ({fmtPct(stats.topEtiquette.pct)}) et l'époque de construction dominante, {stats.topPeriode.label.toLowerCase()} ({fmtPct(stats.topPeriode.pct)}). Voici ce que cela change pour vos diagnostics.</p>
+
+        <div class="grid grid-3 mt-5">
+          <div class="card zcard">
+            <h3>Étiquettes DPE</h3>
+            <ul class="zbars" aria-label={`Répartition des étiquettes DPE ${where}`}>
+              {stats.etiquettes.map((e) => (
+                <li>
+                  <span class="zl">{e.label}</span>
+                  <span class="zbar" aria-hidden="true"><i style={`width:${Math.max(e.pct, 1.5)}%;background:${DPE_COLORS[e.label]}`}></i></span>
+                  <span class="zv">{fmtPct(e.pct)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div class="card zcard">
+            <h3>Époque de construction</h3>
+            <ul class="zbars" aria-label={`Répartition par époque de construction ${where}`}>
+              {stats.periodes.map((p) => (
+                <li class="wide">
+                  <span class="zl">{p.label}</span>
+                  <span class="zbar" aria-hidden="true"><i style={`width:${Math.max(p.pct, 1.5)}%;background:var(--blue)`}></i></span>
+                  <span class="zv">{fmtPct(p.pct)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div class="card zcard">
+            <h3>Appartements et maisons</h3>
+            <p class="zbig"><strong>{fmtPct(stats.shareAppartement)}</strong> d'appartements</p>
+            <p class="zbig"><strong>{fmtPct(stats.shareMaison)}</strong> de maisons</p>
+            <p class="muted" style="font-size:14px;margin-top:10px">
+              {stats.surfaceAppartement != null && <>Surface moyenne d'un appartement : {fmtSurface(stats.surfaceAppartement)}.</>}
+              {stats.surfaceMaison != null && stats.nMaison >= 150 && <> Pour une maison : {fmtSurface(stats.surfaceMaison)}.</>}
+            </p>
+          </div>
+        </div>
+
+        <div class="zlist mt-5">
+          <h3>Ce que cela change pour vos diagnostics {where}</h3>
+          <ul>
+            <li>
+              <strong>Plomb et amiante.</strong> {fmtPct(stats.shareAvant1948)} des logements datent d'avant 1948 : le diagnostic plomb (CREP) concerne les logements construits avant 1949.
+              Au moins {fmtPct(stats.sharePre1989)} ont été construits avant 1989 : tous les logements dont le permis de construire date d'avant le 1er juillet 1997 entrent dans le champ du diagnostic amiante.
+            </li>
+            <li>
+              <strong>Passoires thermiques.</strong> {fmtPct(stats.shareFG)} des DPE {where} sont classés F ou G. Un logement classé G ne peut plus être loué depuis le 1er janvier 2025, et la classe F le sera à partir du 1er janvier 2028
+              (<a href="/guides/reforme-dpe">détail de la réforme du DPE</a>). Les étiquettes établies avant 2026 reposent sur l'ancien coefficient de conversion de l'électricité : certains logements ont pu gagner une classe depuis.
+            </li>
+            <li>
+              <strong>Risques (ERP).</strong> L'état des risques et pollutions, obligatoire dans un dossier de vente ou de location, est établi pour l'adresse exacte du bien.
+              {stats.risques.length > 0 ? <> {where.charAt(0).toUpperCase() + where.slice(1)}, Géorisques recense au niveau de la commune : {listFr(stats.risques)}.</> : <> {where.charAt(0).toUpperCase() + where.slice(1)}, Géorisques ne recense pas de risque majeur de premier niveau au niveau de la commune.</>}
+              {stats.radonClasse && <> Potentiel radon : {radonLabel[stats.radonClasse] || `classe ${stats.radonClasse}`}.</>}
+              {stats.sismicite && <> Zone de sismicité : {stats.sismicite}.</>}
+              {stats.catnat.total > 0 && <> {stats.catnat.total} arrêtés de catastrophe naturelle sont recensés depuis {stats.catnat.depuis}{stats.catnat.principal ? <>, principalement pour « {stats.catnat.principal.toLowerCase()} »</> : null}.</>}
+            </li>
+            <li>
+              <strong>Tarif.</strong> Le prix d'un DPE dépend de la surface du logement et du type de bien : retrouvez la grille sur la page <a href="/tarifs">tarifs</a>.
+            </li>
+          </ul>
+        </div>
+
+        <p class="muted mt-3" style="font-size:13px;max-width:none">
+          Sources : ADEME (Observatoire DPE-Audit, DPE des logements existants établis depuis juillet 2021), Géorisques (BRGM), Etalab. Données extraites le {fmtDateFr(stats.generatedAt)}.
+          Les chiffres portent sur les DPE enregistrés, qui ne couvrent pas l'ensemble des logements de la commune.
+        </p>
+      </div>
+    </section>
+  )}
+
   <!-- Nos prestations -->
   <section class="section-line">
     <div class="wrap">
@@ -130,6 +222,18 @@ const jsonLd = [
   <!-- FAQ locale -->
   <Faq items={faq} title={`Questions fréquentes ${where}`} eyebrow="FAQ" />
 
+  <!-- Maillage interne : autres secteurs du même département + page hub -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Autour de {zone.name}</div>
+      <h2 class="sec-title" style="font-size:26px">Nos autres secteurs en {zone.dept}</h2>
+      <ul class="zchips">
+        {nearby.map((z) => <li><a href={`/diagnostic-immobilier-${z.slug}`}>{z.name}</a></li>)}
+        <li><a href="/zones-desservies" class="all">Toutes les zones desservies</a></li>
+      </ul>
+    </div>
+  </section>
+
   <!-- CTA final -->
   <section class="cta-final">
     <div class="wrap">
@@ -142,3 +246,23 @@ const jsonLd = [
     </div>
   </section>
 </Base>
+
+<style>
+  .zcard { padding: 22px 24px; }
+  .zcard h3 { font-family: var(--sora); font-size: 16px; color: var(--blue); margin: 0 0 12px; }
+  .zbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  .zbars li { display: grid; grid-template-columns: 22px 1fr 52px; align-items: center; gap: 8px; font-size: 14px; }
+  .zbars li.wide { grid-template-columns: 96px 1fr 52px; }
+  .zl { font-weight: 600; color: var(--ink); }
+  .zbar { display: block; height: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .zbar i { display: block; height: 100%; border-radius: 6px; }
+  .zv { text-align: right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .zbig { margin: 4px 0; font-size: 16px; color: var(--ink); }
+  .zbig strong { font-family: var(--sora); font-size: 26px; color: var(--blue); }
+  .zlist h3 { font-family: var(--sora); font-size: 19px; color: var(--blue); margin: 0 0 10px; }
+  .zlist ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; line-height: 1.6; }
+  .zchips { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .zchips a { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--blue); text-decoration: none; font-size: 14.5px; }
+  .zchips a:hover { border-color: var(--blue); }
+  .zchips a.all { background: var(--paper); font-weight: 600; }
+</style>

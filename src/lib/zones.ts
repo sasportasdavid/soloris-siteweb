@@ -285,6 +285,177 @@ export const ZONES: Zone[] = [
       "À Sarcelles, où Soloris est implanté, le parc immobilier va des grands ensembles aux pavillons et copropriétés. Cet ancrage local nous permet d'intervenir très rapidement pour vos diagnostics de vente ou de location, avec un tarif tout compris et un rapport pédagogique.",
     geo: { latitude: 48.9956, longitude: 2.3786 },
   },
+  // ── Vague 2 — Hauts-de-Seine (92) : nouvelle zone des campagnes Ads, + Versailles (78). ──
+  //    Données chiffrées par commune : src/data/zones-data.json (script : scripts/build-zone-data.mjs).
+  {
+    slug: 'nanterre',
+    name: "Nanterre",
+    prep: 'à',
+    longName: "Nanterre",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92000'],
+    metaDesc:
+      "Diagnostic immobilier à Nanterre (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Préfecture des Hauts-de-Seine, Nanterre s'étend de La Défense à la Seine et mêle grands ensembles des années 1960 et 1970, pavillons et quartiers neufs comme Seine-Arche. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8974, longitude: 2.2018 },
+  },
+  {
+    slug: 'courbevoie',
+    name: "Courbevoie",
+    prep: 'à',
+    longName: "Courbevoie",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92400'],
+    metaDesc:
+      "Diagnostic immobilier à Courbevoie (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Courbevoie abrite une grande partie du quartier d'affaires de La Défense ; autour des tours, le parc résidentiel alterne immeubles anciens, résidences d'après-guerre et programmes récents, notamment vers Bécon. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8976, longitude: 2.2574 },
+  },
+  {
+    slug: 'asnieres-sur-seine',
+    name: "Asnières-sur-Seine",
+    prep: 'à',
+    longName: "Asnières-sur-Seine",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92600'],
+    metaDesc:
+      "Diagnostic immobilier à Asnières-sur-Seine (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Sur les bords de Seine, Asnières-sur-Seine réunit de nombreux immeubles anciens près de la gare, des pavillons dans les quartiers résidentiels et des programmes neufs en bord de fleuve. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.9181, longitude: 2.2935 },
+  },
+  {
+    slug: 'colombes',
+    name: "Colombes",
+    prep: 'à',
+    longName: "Colombes",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92700'],
+    metaDesc:
+      "Diagnostic immobilier à Colombes (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Colombes se distingue par une part notable de maisons individuelles, qui côtoient des copropriétés construites entre les années 1950 et 1970 et des programmes plus récents. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.9218, longitude: 2.2469 },
+  },
+  {
+    slug: 'rueil-malmaison',
+    name: "Rueil-Malmaison",
+    prep: 'à',
+    longName: "Rueil-Malmaison",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92500'],
+    metaDesc:
+      "Diagnostic immobilier à Rueil-Malmaison (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Ville résidentielle connue pour le château de Malmaison, Rueil-Malmaison compte des maisons de ville, des pavillons et des copropriétés récentes, entre la Seine et le quartier d'affaires de Rueil 2000. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8717, longitude: 2.1806 },
+  },
+  {
+    slug: 'issy-les-moulineaux',
+    name: "Issy-les-Moulineaux",
+    prep: 'à',
+    longName: "Issy-les-Moulineaux",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92130'],
+    metaDesc:
+      "Diagnostic immobilier à Issy-les-Moulineaux (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Au bord de la Seine, Issy-les-Moulineaux a vu naître de grands quartiers récents, comme Cœur de ville, le Fort d'Issy et Val de Seine, à côté d'un bâti plus ancien et d'un tissu dense d'entreprises. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8240, longitude: 2.2628 },
+  },
+  {
+    slug: 'levallois-perret',
+    name: "Levallois-Perret",
+    prep: 'à',
+    longName: "Levallois-Perret",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92300'],
+    metaDesc:
+      "Diagnostic immobilier à Levallois-Perret (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Levallois-Perret est l'une des communes les plus denses de France : immeubles anciens, résidences et bureaux s'y succèdent sur un territoire très compact, aux portes de Paris. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8946, longitude: 2.2874 },
+  },
+  {
+    slug: 'neuilly-sur-seine',
+    name: "Neuilly-sur-Seine",
+    prep: 'à',
+    longName: "Neuilly-sur-Seine",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92200'],
+    metaDesc:
+      "Diagnostic immobilier à Neuilly-sur-Seine (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Voisine du bois de Boulogne et de La Défense, Neuilly-sur-Seine compte de nombreux immeubles anciens et des logements de grande surface, sur l'un des marchés immobiliers les plus recherchés d'Île-de-France. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8862, longitude: 2.2651 },
+  },
+  {
+    slug: 'clichy',
+    name: "Clichy",
+    prep: 'à',
+    longName: "Clichy",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92110'],
+    metaDesc:
+      "Diagnostic immobilier à Clichy (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Limitrophe de Paris et du 17e arrondissement, Clichy est une commune très dense, où de nombreux immeubles anciens côtoient des résidences plus récentes. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.9041, longitude: 2.3041 },
+  },
+  {
+    slug: 'antony',
+    name: "Antony",
+    prep: 'à',
+    longName: "Antony",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92160'],
+    metaDesc:
+      "Diagnostic immobilier à Antony (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Ville résidentielle du sud des Hauts-de-Seine, desservie par le RER B, Antony répartit son parc entre pavillons et copropriétés, avec un bâti en grande majorité postérieur à 1948. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.7507, longitude: 2.2976 },
+  },
+  {
+    slug: 'montrouge',
+    name: "Montrouge",
+    prep: 'à',
+    longName: "Montrouge",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92120'],
+    metaDesc:
+      "Diagnostic immobilier à Montrouge (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Aux portes du 14e arrondissement de Paris, Montrouge est une commune dense, desservie par la ligne 4 du métro, où se mêlent immeubles anciens, résidences des années 1960 et 1970 et programmes récents. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8159, longitude: 2.3163 },
+  },
+  {
+    slug: 'clamart',
+    name: "Clamart",
+    prep: 'à',
+    longName: "Clamart",
+    dept: "Hauts-de-Seine (92)",
+    postalCodes: ['92140'],
+    metaDesc:
+      "Diagnostic immobilier à Clamart (92) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Commune résidentielle en lisière des bois de Meudon et de Clamart, Clamart réunit pavillons, grands ensembles et copropriétés, pour l'essentiel construits entre 1948 et 1989. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.7957, longitude: 2.2518 },
+  },
+  {
+    slug: 'versailles',
+    name: "Versailles",
+    prep: 'à',
+    longName: "Versailles",
+    dept: "Yvelines (78)",
+    postalCodes: ['78000'],
+    metaDesc:
+      "Diagnostic immobilier à Versailles (78) : DPE, vente, location, audit. Tarif tout compris, rapport sous 48 h, certifié COFRAC.",
+    intro:
+      "Ville du château, Versailles possède un parc ancien et prestigieux, fait d'hôtels particuliers et d'immeubles du XVIIIe au XXe siècle, avec des secteurs protégés au titre du patrimoine. Soloris y intervient sous 48 h dans la plupart des cas, déplacement inclus, avec un rapport clair et opposable.",
+    geo: { latitude: 48.8039, longitude: 2.1191 },
+  },
 ];
 
 export function getZone(slug: string): Zone | undefined {
