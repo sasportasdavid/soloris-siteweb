@@ -226,7 +226,7 @@ const jsonLd = [
   <section class="section-line">
     <div class="wrap">
       <div class="eyebrow">Autour de {zone.name}</div>
-      <h2 class="sec-title" style="font-size:26px">Nos autres secteurs en {zone.dept}</h2>
+      <h2 class="sec-title" style="font-size:26px">Nos autres secteurs : {zone.dept}</h2>
       <ul class="zchips">
         {nearby.map((z) => <li><a href={`/diagnostic-immobilier-${z.slug}`}>{z.name}</a></li>)}
         <li><a href="/zones-desservies" class="all">Toutes les zones desservies</a></li>
