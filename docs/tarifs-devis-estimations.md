@@ -263,8 +263,7 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 8. **Prix retirés des pages d'offre le 12 octobre** : « Dès X € » est remplacé par « Tarif tout compris » sur les pages d'offre et leurs FAQ. La grille, la page `/tarifs`, la LP vente avec prix et le guide du prix gardent les montants.
 9. **Périmètre en double.** La constante de périmètre de `pricing.ts` n'est lue par aucun code. Le formulaire embarque sa propre liste de départements, qui est la seule règle réellement appliquée.
 10. **Email et « pas de prix à l'écran ».** Sur les pages où le montant est masqué, l'email de confirmation l'affiche quand même s'il existe. À arbitrer si la règle de communication doit aussi couvrir l'email.
-11. **Comparaison de marché obsolète.** Le guide du prix affirme que « sur le marché parisien, un DPE se situe généralement entre 100 et 160 € ». Avec un plancher à 150 € (165 € pour une maison), Soloris se place en haut de cette fourchette. La phrase est écrite à la main dans le guide et n'a pas été modifiée.
-12. **Annonces en pause.** Deux annonces Google Ads en pause affichent encore « dès 120 € » dans leur titre. Les annonces actives ne citent aucun prix de DPE.
+11. **Google Ads : anciens prix dans des extensions.** Les annonces textuelles actives ne citent aucun montant. En revanche, des liens annexes diffusés par les campagnes actives affichent encore d'anciens prix : « DPE seul, dès 120 € » (3 liens, dont un au niveau du compte), « Pack location, dès 180 € » (2 liens) et « Audit énergétique, dès 590 € » (1 lien). Les annonces en pause citent aussi « dès 120 € » (DPE), « dès 180 € » (pack location) et « dès 250 € » (pack vente). Le compte publicitaire n'a pas été modifié : à aligner ou à retirer avant toute réactivation.
 
 ## 13. Fichiers de référence
 
