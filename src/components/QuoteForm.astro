@@ -133,6 +133,15 @@ const FORM_SEND_TO_DPE =
       <legend>Votre logement</legend>
       <p class="qsub" data-el="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
 
+      <!-- Rappel DPE seul → location : d'autres diagnostics sont obligatoires pour louer. Affiché
+           uniquement pour la demande « DPE seul », sans aucun prix, bouton interne (pas de lien sortant
+           → compatible avec les LP nav-strippées). Présent à l'étape 3 : survit au test steps_order B. -->
+      <div class="qnote" data-el="dpe-rappel" role="note" hidden>
+        <b>Pour louer, le DPE ne suffit pas</b>
+        D'autres diagnostics sont obligatoires pour une mise en location, selon l'âge du bien. Le pack location les regroupe en un seul rendez-vous.
+        <button type="button" class="qnote-link" data-dpe-to-location>Voir le pack location</button>
+      </div>
+
       <label class="qfield">
         <span>Surface du bien (en m²)</span>
         <input type="number" name="surface_m2" inputmode="numeric" min="1" max="2000" step="1" placeholder="ex : 75" autocomplete="off" />
@@ -254,6 +263,9 @@ const FORM_SEND_TO_DPE =
   .qstep { border: none; }
   .qstep legend { font-family: var(--sora); font-weight: 600; font-size: 22px; color: var(--blue); margin-bottom: 6px; padding: 0; letter-spacing: -.01em; }
   .qsub { font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; }
+  .qnote { margin: 0 0 18px; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 12px 14px; background: var(--paper); font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
+  .qnote b { display: block; font-family: var(--sora); font-weight: 600; font-size: 14px; color: var(--blue); margin-bottom: 2px; }
+  .qnote-link { display: inline-block; margin-top: 6px; padding: 0; border: 0; background: none; font-family: var(--sora); font-weight: 600; font-size: 13.5px; color: var(--blue); text-decoration: underline; cursor: pointer; }
   .qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 480px) { .qgrid { grid-template-columns: 1fr; } }
   .qopt { position: relative; cursor: pointer; }
@@ -493,6 +505,10 @@ const FORM_SEND_TO_DPE =
       var isPack = (d === 'vente' || d === 'location');
       var lot = isLotBien();
 
+      // Rappel « pour louer, le DPE ne suffit pas » : uniquement pour la demande DPE seul.
+      var dpeRappel = form.querySelector('[data-el="dpe-rappel"]');
+      if (dpeRappel) dpeRappel.hidden = (d !== 'dpe');
+
       // Lots annexes (cave/parking/box) : proposés pour vente/location uniquement.
       var lotBlock = gid('lot-annexe-block');
       if (lotBlock) lotBlock.hidden = !isPack;
@@ -576,6 +592,10 @@ const FORM_SEND_TO_DPE =
         if (current < steps.length - 1) showStep(current + 1, true);
       } else if (e.target.matches('[data-prev]')) {
         if (current > 0) showStep(current - 1, true);
+      } else if (e.target.matches('[data-dpe-to-location]')) {
+        // Rappel DPE → location : on bascule la demande sur « Location » et on revient à l'étape 2.
+        var rLoc = form.querySelector('input[name="type_demande"][value="location"]');
+        if (rLoc) { rLoc.checked = true; showStep(1, true); }
       } else if (e.target.matches('input[type="radio"]')) {
         // re-clic sur un radio déjà coché : `change` ne se déclenche pas → on avance ici
         if (e.target.checked) maybeAutoAdvance(e.target);
@@ -815,8 +835,8 @@ const FORM_SEND_TO_DPE =
               var isVente = (demandeType === 'vente' || demandeType === 'location' || demandeType === 'audit');
               var convSendTo = isDpe ? FORM_SEND_TO_DPE : (isVente ? FORM_SEND_TO : null);
               // Valeur = prix estimé réel (déjà bien plus élevé pour la Vente que pour un DPE) ;
-              // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 150 €).
-              var convValue = v3 > 0 ? v3 : (isDpe ? 150 : 300);
+              // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 160 €).
+              var convValue = v3 > 0 ? v3 : (isDpe ? 160 : 300);
               if (window.gtag && convSendTo) {
                 // Enhanced Conversions : données fournies par l'utilisateur, posées AVANT
                 // l'event de conversion (Google les hache côté client ; l'envoi reste soumis

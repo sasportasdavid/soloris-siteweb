@@ -82,8 +82,8 @@ export const APPART_GRID: (readonly [number, number, number] | null)[] = [
 export const MAISON_SUPP = 30; // maison = appartement + 30 €
 export const PACK_FLOOR = 159; // plancher d'accroche « dès 159 € » (appart récent ≤ 20 m²)
 export const AUDIT_FROM = 590; // audit énergétique dès 590 € (inchangé)
-export const DPE_FROM = 120; // DPE seul dès 120 € (plancher)
-export const DPE_TO = 190; // DPE seul plafond (120 → 190 € selon la surface)
+export const DPE_FROM = 160; // DPE seul dès 160 € (plancher ; décision produit du 14/10/2026, avant : 120 €)
+export const DPE_TO = 190; // DPE seul plafond (160 → 190 € selon la surface)
 
 /** Mentions / suppléments fixes. */
 export const FIXED = {
@@ -168,12 +168,15 @@ export function estimerPack(
   return typeBien === 'maison' ? base + MAISON_SUPP : base;
 }
 
-/** DPE seul — conservé 120 à 190 € (par surface). */
+/**
+ * DPE seul — 160 à 190 € (par surface). Plancher DPE_FROM = 160 € : l'ancien barème
+ * 120 / 150 / 170 / 190 est relevé au minimum de 160 € (les deux premières tranches passent
+ * à 160 €, les autres sont inchangées). Les seuils restent alignés sur les bandes de surface.
+ */
 export function estimerDpe(m2: number): number {
-  if (m2 <= 39) return 120;
-  if (m2 <= 79) return 150;
+  if (m2 <= 79) return DPE_FROM;
   if (m2 <= 119) return 170;
-  return 190;
+  return DPE_TO;
 }
 
 /** Prix « à partir de » par type de demande (accroches « dès X € »). MIN de la grille. */
