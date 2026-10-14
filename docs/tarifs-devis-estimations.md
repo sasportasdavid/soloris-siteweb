@@ -1,6 +1,6 @@
 # Règles tarifaires, estimations et devis — Soloris
 
-État du code : branche `main`, commit `510ef72`, au 14 octobre 2026.
+État du code au 14 octobre 2026, avec la décision « DPE seul à 160 € minimum » et le rappel pour la location.
 Document établi par lecture du code. Les tables de prix sont calculées directement depuis `src/lib/pricing.ts`, jamais recopiées à la main.
 
 ## 1. Principes généraux
@@ -92,14 +92,14 @@ Accroche publique « dès 159 € » : c'est le minimum de la grille, appartemen
 
 ## 3. DPE seul
 
-Le prix dépend **uniquement de la surface**, ni du type de bien ni de l'âge.
+Le prix dépend **uniquement de la surface**, ni du type de bien ni de l'âge. Le **plancher est de 160 €** depuis le 14 octobre 2026 : l'ancien barème 120, 150, 170 et 190 € est relevé au minimum de 160 €. Les deux premières tranches passent à 160 €, les deux dernières sont inchangées.
 
 | Surface | Prix |
 |---|---:|
-| Jusqu’à 20 m² | 120 € |
-| 20 à 39 m² | 120 € |
-| 40 à 59 m² | 150 € |
-| 60 à 79 m² | 150 € |
+| Jusqu’à 20 m² | 160 € |
+| 20 à 39 m² | 160 € |
+| 40 à 59 m² | 160 € |
+| 60 à 79 m² | 160 € |
 | 80 à 99 m² | 170 € |
 | 100 à 119 m² | 170 € |
 | 120 à 139 m² | 190 € |
@@ -110,8 +110,17 @@ Le prix dépend **uniquement de la surface**, ni du type de bien ni de l'âge.
 | 220 à 239 m² | 190 € |
 | Plus de 239 m² | 190 € |
 
-Seuils : jusqu'à 39 m² : 120 € · jusqu'à 79 m² : 150 € · jusqu'à 119 m² : 170 € · au-delà : 190 €.
-Accroche publique « dès 120 € », plage annoncée 120 à 190 €.
+Seuils : jusqu'à 79 m² : 160 € · jusqu'à 119 m² : 170 € · au-delà : 190 €.
+Accroche publique « dès 160 € », plage annoncée 160 à 190 €.
+Les leads et devis déjà créés gardent leur ancien montant, rien n'est recalculé.
+
+### Rappel pour la location
+
+Quand le visiteur choisit « DPE seul », l'étape de la surface affiche un encadré : « Pour louer, le DPE ne suffit pas. D'autres diagnostics sont obligatoires pour une mise en location, selon l'âge du bien. Le pack location les regroupe en un seul rendez-vous. »
+
+- L'encadré ne contient **aucun prix**, donc il est compatible avec les pages sans prix à l'écran.
+- Le bouton « Voir le pack location » ne quitte pas la page : il passe la demande à Location et ramène à l'étape du type de bien. Les pages sans navigation restent donc intactes.
+- L'encadré ne s'affiche pas pour les autres demandes. Il fonctionne dans les deux variantes de l'ordre des étapes.
 
 ## 4. Audit énergétique
 
@@ -149,7 +158,7 @@ Affichés sur `/tarifs` et sur les pages `/diagnostics/…`, à titre indicatif.
 | Maison 120 m², récente, en copropriété, vente | 339 € |
 | Appartement 239 m², avant 1949, vente | 429 € |
 | Appartement 240 m², avant 1949, vente | Sur devis |
-| DPE seul, 45 m² | 150 € |
+| DPE seul, 45 m² | 160 € |
 | DPE seul, 150 m² | 190 € |
 | Audit énergétique | 590 € |
 | Cave vendue seule | 179 € |
@@ -230,7 +239,7 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 
 **Conversion du formulaire** (au dépôt d'un lead complet)
 
-- Valeur : l'estimation si elle est positive, sinon **300 €** pour vente, location et audit, **150 €** pour le DPE.
+- Valeur : l'estimation si elle est positive, sinon **300 €** pour vente, location et audit, **160 €** pour le DPE.
 - Action « Soloris - Devis DPE » pour les demandes DPE. Action « Soloris - Devis Vente » pour vente, location et audit. Un type de demande inconnu ne déclenche aucune conversion.
 
 **Conversion hors-ligne « RDV pris » ou devis signé** (cron quotidien)
@@ -250,6 +259,8 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 8. **Prix retirés des pages d'offre le 12 octobre** : « Dès X € » est remplacé par « Tarif tout compris » sur les pages d'offre et leurs FAQ. La grille, la page `/tarifs`, la LP vente avec prix et le guide du prix gardent les montants.
 9. **Périmètre en double.** La constante de périmètre de `pricing.ts` n'est lue par aucun code. Le formulaire embarque sa propre liste de départements, qui est la seule règle réellement appliquée.
 10. **Email et « pas de prix à l'écran ».** Sur les pages où le montant est masqué, l'email de confirmation l'affiche quand même s'il existe. À arbitrer si la règle de communication doit aussi couvrir l'email.
+11. **Comparaison de marché obsolète.** Le guide du prix affirme que « sur le marché parisien, un DPE se situe généralement entre 100 et 160 € ». Avec un plancher à 160 €, Soloris se place au sommet de cette fourchette. La phrase est écrite à la main dans le guide et n'a pas été modifiée.
+12. **Annonces en pause.** Deux annonces Google Ads en pause affichent encore « dès 120 € » dans leur titre. Les annonces actives ne citent aucun prix de DPE.
 
 ## 13. Fichiers de référence
 
