@@ -81,9 +81,16 @@ export const APPART_GRID: (readonly [number, number, number] | null)[] = [
 
 export const MAISON_SUPP = 30; // maison = appartement + 30 €
 export const PACK_FLOOR = 159; // plancher d'accroche « dès 159 € » (appart récent ≤ 20 m²)
-export const AUDIT_FROM = 590; // audit énergétique dès 590 € (inchangé)
-export const DPE_FROM = 160; // DPE seul dès 160 € (plancher ; décision produit du 14/10/2026, avant : 120 €)
-export const DPE_TO = 190; // DPE seul plafond (160 → 190 € selon la surface)
+// Audit énergétique : de 450 à 900 € selon le bien (décision produit du 14/10/2026 ; avant : dès 590 €).
+// L'estimation, le brouillon de devis et la valeur de conversion prennent le bas de la fourchette
+// (« à partir de ») ; le prix réel se fixe au devis.
+export const AUDIT_FROM = 450;
+export const AUDIT_TO = 900;
+// DPE seul : 150 à 190 € selon la surface, + 15 € pour une maison (décision produit du 14/10/2026 ;
+// avant : 120 / 150 / 170 / 190 €). Pas rentable de se déplacer sous 150 €.
+export const DPE_FROM = 150;
+export const DPE_TO = 190;
+export const DPE_MAISON_SUPP = 15; // DPE seul d'une maison : + 15 € sur chaque tranche
 
 /** Mentions / suppléments fixes. */
 export const FIXED = {
@@ -169,14 +176,13 @@ export function estimerPack(
 }
 
 /**
- * DPE seul — 160 à 190 € (par surface). Plancher DPE_FROM = 160 € : l'ancien barème
- * 120 / 150 / 170 / 190 est relevé au minimum de 160 € (les deux premières tranches passent
- * à 160 €, les autres sont inchangées). Les seuils restent alignés sur les bandes de surface.
+ * DPE seul, par surface : jusqu'à 39 m² 150 € · jusqu'à 79 m² 160 € · jusqu'à 119 m² 170 € ·
+ * au-delà 190 €. Maison : + DPE_MAISON_SUPP (15 €) sur chaque tranche. Sans type de bien :
+ * prix appartement. Les seuils restent alignés sur les bandes de surface.
  */
-export function estimerDpe(m2: number): number {
-  if (m2 <= 79) return DPE_FROM;
-  if (m2 <= 119) return 170;
-  return DPE_TO;
+export function estimerDpe(m2: number, typeBien?: string | null): number {
+  const base = m2 <= 39 ? DPE_FROM : m2 <= 79 ? 160 : m2 <= 119 ? 170 : DPE_TO;
+  return typeBien === 'maison' ? base + DPE_MAISON_SUPP : base;
 }
 
 /** Prix « à partir de » par type de demande (accroches « dès X € »). MIN de la grille. */
@@ -184,6 +190,15 @@ export function prixDes(demande: Demande): number {
   if (demande === 'dpe') return DPE_FROM;
   if (demande === 'audit') return AUDIT_FROM;
   return PACK_FLOOR; // vente / location
+}
+
+/**
+ * Libellé public du prix d'entrée : « dès X € », sauf l'audit, annoncé en fourchette
+ * « de 450 à 900 € ».
+ */
+export function prixLabel(demande: Demande): string {
+  if (demande === 'audit') return `de ${AUDIT_FROM} à ${AUDIT_TO} €`;
+  return `dès ${prixDes(demande)} €`;
 }
 
 /** Alias sémantique : prix d'entrée d'une demande (jamais de « dès » écrit en dur). */
@@ -207,7 +222,7 @@ export function computePrix(args: ComputePrixArgs): { prix: number | null; surDe
   // Lot annexe (cave / parking / box) vendu seul : tarif unique, pas de grille.
   if (isLotAnnexe(typeBien)) return { prix: LOT_ANNEXE_PRICE, surDevis: false };
   if (projet === 'audit') return { prix: AUDIT_FROM, surDevis: false };
-  if (projet === 'dpe') return { prix: estimerDpe(Number(surface) || 0), surDevis: false };
+  if (projet === 'dpe') return { prix: estimerDpe(Number(surface) || 0, typeBien as string | null), surDevis: false };
   // vente / location — grille unique âge × surface
   const tb: 'appartement' | 'maison' = typeBien === 'maison' ? 'maison' : 'appartement';
   const base = estimerPack(tb, Number(surface) || 0, (age as AgeBien) || 'recent');

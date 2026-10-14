@@ -1,6 +1,6 @@
 # Règles tarifaires, estimations et devis — Soloris
 
-État du code au 14 octobre 2026, avec la décision « DPE seul à 160 € minimum » et le rappel pour la location.
+État du code au 14 octobre 2026, avec les décisions « DPE seul à 150 € minimum, 15 € de plus pour une maison », « audit énergétique de 450 à 900 € » et le rappel pour la location.
 Document établi par lecture du code. Les tables de prix sont calculées directement depuis `src/lib/pricing.ts`, jamais recopiées à la main.
 
 ## 1. Principes généraux
@@ -92,26 +92,27 @@ Accroche publique « dès 159 € » : c'est le minimum de la grille, appartemen
 
 ## 3. DPE seul
 
-Le prix dépend **uniquement de la surface**, ni du type de bien ni de l'âge. Le **plancher est de 160 €** depuis le 14 octobre 2026 : l'ancien barème 120, 150, 170 et 190 € est relevé au minimum de 160 €. Les deux premières tranches passent à 160 €, les deux dernières sont inchangées.
+Le prix dépend de la **surface** et du **type de bien** (appartement ou maison), pas de l'âge. Décision du 14 octobre 2026 : il n'est pas rentable de se déplacer pour moins de 150 €, donc le **plancher est de 150 €** (ancien barème : 120, 150, 170 et 190 €). Le DPE d'une **maison** coûte **15 € de plus** que celui d'un appartement, sur chaque tranche.
 
-| Surface | Prix |
-|---|---:|
-| Jusqu’à 20 m² | 160 € |
-| 20 à 39 m² | 160 € |
-| 40 à 59 m² | 160 € |
-| 60 à 79 m² | 160 € |
-| 80 à 99 m² | 170 € |
-| 100 à 119 m² | 170 € |
-| 120 à 139 m² | 190 € |
-| 140 à 159 m² | 190 € |
-| 160 à 179 m² | 190 € |
-| 180 à 199 m² | 190 € |
-| 200 à 219 m² | 190 € |
-| 220 à 239 m² | 190 € |
-| Plus de 239 m² | 190 € |
+| Surface | Appartement | Maison (+ 15 €) |
+|---|---:|---:|
+| Jusqu’à 20 m² | 150 € | 165 € |
+| 20 à 39 m² | 150 € | 165 € |
+| 40 à 59 m² | 160 € | 175 € |
+| 60 à 79 m² | 160 € | 175 € |
+| 80 à 99 m² | 170 € | 185 € |
+| 100 à 119 m² | 170 € | 185 € |
+| 120 à 139 m² | 190 € | 205 € |
+| 140 à 159 m² | 190 € | 205 € |
+| 160 à 179 m² | 190 € | 205 € |
+| 180 à 199 m² | 190 € | 205 € |
+| 200 à 219 m² | 190 € | 205 € |
+| 220 à 239 m² | 190 € | 205 € |
+| Plus de 239 m² | 190 € | 205 € |
 
-Seuils : jusqu'à 79 m² : 160 € · jusqu'à 119 m² : 170 € · au-delà : 190 €.
-Accroche publique « dès 160 € », plage annoncée 160 à 190 €.
+Seuils : jusqu'à 39 m² : 150 € · jusqu'à 79 m² : 160 € · jusqu'à 119 m² : 170 € · au-delà : 190 €. Maison : + 15 € sur chaque tranche.
+Si le type de bien n'est pas connu, le prix appartement s'applique.
+Accroche publique « dès 150 € », plage annoncée 150 à 190 € (+ 15 € pour une maison).
 Les leads et devis déjà créés gardent leur ancien montant, rien n'est recalculé.
 
 ### Rappel pour la location
@@ -124,8 +125,8 @@ Quand le visiteur choisit « DPE seul », l'étape de la surface affiche un enca
 
 ## 4. Audit énergétique
 
-- **590 € « dès »**, montant unique quelle que soit la surface.
-- Ce montant sert d'estimation, de ligne de devis et de valeur de conversion Google Ads. Le prix réel dépend du bien et se fixe au devis.
+- Prix annoncé en **fourchette : de 450 à 900 €**, selon le bien (décision du 14 octobre 2026 ; ancien affichage : « dès 590 € »).
+- L'estimation, la ligne du brouillon de devis et la valeur de conversion Google Ads prennent le **bas de la fourchette, 450 €**, quelle que soit la surface. Le prix réel se fixe au devis, entre 450 et 900 €.
 
 ## 5. Lot annexe vendu seul
 
@@ -158,9 +159,12 @@ Affichés sur `/tarifs` et sur les pages `/diagnostics/…`, à titre indicatif.
 | Maison 120 m², récente, en copropriété, vente | 339 € |
 | Appartement 239 m², avant 1949, vente | 429 € |
 | Appartement 240 m², avant 1949, vente | Sur devis |
-| DPE seul, 45 m² | 160 € |
-| DPE seul, 150 m² | 190 € |
-| Audit énergétique | 590 € |
+| DPE seul, appartement 25 m² | 150 € |
+| DPE seul, appartement 45 m² | 160 € |
+| DPE seul, maison 45 m² | 175 € |
+| DPE seul, appartement 150 m² | 190 € |
+| DPE seul, maison 150 m² | 205 € |
+| Audit énergétique (estimation) | 450 €, fourchette annoncée 450 à 900 € |
 | Cave vendue seule | 179 € |
 
 ## 8. Où l'estimation est calculée et quand le visiteur la voit
@@ -192,7 +196,7 @@ Créé par le bouton « Générer un devis » de l'admin ou par le bouton Devis 
 |---|---|---|
 | Vente ou location | « Pack diagnostics avant vente (ou location) — type de bien, surface, âge » + ligne « annexe — inclus » si l'option est cochée | estimation, annexe à 0 € |
 | DPE | « Diagnostic de performance énergétique (DPE) — type de bien, surface » | estimation |
-| Audit | « Audit énergétique réglementaire » | estimation (590 €) |
+| Audit | « Audit énergétique réglementaire » | estimation (450 €, bas de la fourchette) |
 | Lot annexe seul | « Diagnostics cave, parking ou box (lot vendu seul, tout compris) » | 179 € |
 | Autre | libellé générique | estimation |
 
@@ -239,7 +243,7 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 
 **Conversion du formulaire** (au dépôt d'un lead complet)
 
-- Valeur : l'estimation si elle est positive, sinon **300 €** pour vente, location et audit, **160 €** pour le DPE.
+- Valeur : l'estimation si elle est positive, sinon **300 €** pour vente, location et audit, **150 €** pour le DPE.
 - Action « Soloris - Devis DPE » pour les demandes DPE. Action « Soloris - Devis Vente » pour vente, location et audit. Un type de demande inconnu ne déclenche aucune conversion.
 
 **Conversion hors-ligne « RDV pris » ou devis signé** (cron quotidien)
@@ -254,12 +258,12 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 3. **Devis à 0 €.** Les leads de plus de 239 m² donnent un brouillon à 0 €, que l'admin peut envoyer. Seul Telegram le bloque.
 4. **Totaux de CA.** Ils lisent les champs saisis sur le lead, pas les devis. Un devis signé n'alimente pas « CA validé » tant que le champ n'est pas rempli à la main.
 5. **Pas de ventilation HT et TVA** sur le devis : montants TTC uniquement.
-6. **Audit à 590 € fixe** : c'est un plancher. L'estimation, le devis préparé et la valeur de conversion le reprennent tels quels.
-7. **DPE seul** : même prix pour appartement et maison, quel que soit l'âge.
+6. **Audit : fourchette annoncée, montant unique en interne.** Le site annonce « de 450 à 900 € », mais l'estimation, le devis préparé et la valeur de conversion reprennent toujours 450 €. Il n'existe pas de règle qui place le prix dans la fourchette selon le bien : c'est l'admin qui saisit le montant réel au devis.
+7. **DPE seul** : le prix dépend de la surface et du type de bien (maison + 15 €), jamais de l'âge. Un lead sans type de bien est estimé au prix appartement.
 8. **Prix retirés des pages d'offre le 12 octobre** : « Dès X € » est remplacé par « Tarif tout compris » sur les pages d'offre et leurs FAQ. La grille, la page `/tarifs`, la LP vente avec prix et le guide du prix gardent les montants.
 9. **Périmètre en double.** La constante de périmètre de `pricing.ts` n'est lue par aucun code. Le formulaire embarque sa propre liste de départements, qui est la seule règle réellement appliquée.
 10. **Email et « pas de prix à l'écran ».** Sur les pages où le montant est masqué, l'email de confirmation l'affiche quand même s'il existe. À arbitrer si la règle de communication doit aussi couvrir l'email.
-11. **Comparaison de marché obsolète.** Le guide du prix affirme que « sur le marché parisien, un DPE se situe généralement entre 100 et 160 € ». Avec un plancher à 160 €, Soloris se place au sommet de cette fourchette. La phrase est écrite à la main dans le guide et n'a pas été modifiée.
+11. **Comparaison de marché obsolète.** Le guide du prix affirme que « sur le marché parisien, un DPE se situe généralement entre 100 et 160 € ». Avec un plancher à 150 € (165 € pour une maison), Soloris se place en haut de cette fourchette. La phrase est écrite à la main dans le guide et n'a pas été modifiée.
 12. **Annonces en pause.** Deux annonces Google Ads en pause affichent encore « dès 120 € » dans leur titre. Les annonces actives ne citent aucun prix de DPE.
 
 ## 13. Fichiers de référence

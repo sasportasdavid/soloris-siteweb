@@ -11,7 +11,7 @@
  */
 import {
   DEMANDE_LABELS, AGE_LABELS, AGE_DESC, SURFACE_BANDS, APPART_GRID,
-  MAISON_SUPP, AUDIT_FROM, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, FIXED, estimerDpe,
+  MAISON_SUPP, AUDIT_FROM, DPE_MAISON_SUPP, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, FIXED, estimerDpe,
 } from '../lib/pricing';
 import { SITE } from '../lib/site';
 
@@ -52,7 +52,8 @@ const DEMANDE_DESC: Record<string, string> = {
 
 const hasReviews = Number(SITE.rating.count) > 0;
 const surfaceBands = SURFACE_BANDS.map((b) => b.label);
-// Prix DPE par bande de surface, dérivé d'estimerDpe() → source unique (pas de barème en dur).
+// Prix DPE (appartement) par bande de surface, dérivé d'estimerDpe() → source unique ; la maison
+// ajoute DPE_MAISON_SUPP côté navigateur.
 const dpeByBand = SURFACE_BANDS.map((b) => estimerDpe(b.maxIncl === Infinity ? 240 : b.maxIncl));
 
 // Conversion Google Ads « formulaire devis » — déclenchée DIRECTEMENT côté code au succès
@@ -330,7 +331,7 @@ const FORM_SEND_TO_DPE =
   .qthanks-estim strong { font-family: var(--sora); font-size: 19px; color: var(--blue); }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_MAISON_SUPP, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
   (function () {
     // ── Multi-instances : le QuoteForm peut apparaître plusieurs fois sur une page
     //    (ex. simulateur dans le hero + formulaire plus bas). On initialise CHAQUE
@@ -540,7 +541,7 @@ const FORM_SEND_TO_DPE =
       var value = null, surDevis = false;
       if (lot) { value = LOT_ANNEXE_PRICE; } // cave / parking / box — tarif unique
       else if (d === 'audit') { value = AUDIT_FROM; }
-      else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = DPE_BY_BAND[bi]; }
+      else if (d === 'dpe') { if (bi == null) { box.hidden = true; return; } value = DPE_BY_BAND[bi] + (b === 'maison' ? DPE_MAISON_SUPP : 0); }
       else { // vente / location
         if (bi == null || (ageNeeded() && !age)) { box.hidden = true; return; }
         var row = APPART_GRID[bi];
@@ -835,8 +836,8 @@ const FORM_SEND_TO_DPE =
               var isVente = (demandeType === 'vente' || demandeType === 'location' || demandeType === 'audit');
               var convSendTo = isDpe ? FORM_SEND_TO_DPE : (isVente ? FORM_SEND_TO : null);
               // Valeur = prix estimé réel (déjà bien plus élevé pour la Vente que pour un DPE) ;
-              // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 160 €).
-              var convValue = v3 > 0 ? v3 : (isDpe ? 160 : 300);
+              // fallback par type si l'estimation est indisponible (Vente 300 € / DPE 150 €).
+              var convValue = v3 > 0 ? v3 : (isDpe ? 150 : 300);
               if (window.gtag && convSendTo) {
                 // Enhanced Conversions : données fournies par l'utilisateur, posées AVANT
                 // l'event de conversion (Google les hache côté client ; l'envoi reste soumis
