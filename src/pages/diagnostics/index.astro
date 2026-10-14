@@ -9,14 +9,14 @@ import Base from '../../layouts/Base.astro';
 import ReassuranceBar from '../../components/ReassuranceBar.astro';
 import Faq from '../../components/Faq.astro';
 import { DIAGNOSTICS } from '../../lib/diagnostics';
-import { prixDes } from '../../lib/pricing';
+import { prixDes, prixLabel } from '../../lib/pricing';
 import { faqPage, breadcrumb } from '../../lib/jsonld';
 
 // Carte « DPE » et « Audit » pointent vers les pages offres existantes.
 type Card = { name: string; desc: string; price: string; href: string };
 const cards: Card[] = [
   { name: 'DPE', desc: 'Diagnostic de Performance Énergétique (étiquette A→G).', price: `dès ${prixDes('dpe')} €`, href: '/dpe' },
-  { name: 'Audit énergétique', desc: 'Scénarios de travaux pour les logements énergivores.', price: `dès ${prixDes('audit')} €`, href: '/audit-energetique' },
+  { name: 'Audit énergétique', desc: 'Scénarios de travaux pour les logements énergivores.', price: prixLabel('audit'), href: '/audit-energetique' },
   ...DIAGNOSTICS.map((d) => ({
     name: d.name,
     desc: d.tagline,

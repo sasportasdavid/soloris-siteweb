@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import QuoteForm from '../../components/QuoteForm.astro';
 import { getGuide } from '../../lib/guides';
-import { prixDes, DPE_FROM, DPE_TO, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
+import { prixDes, prixLabel, DPE_FROM, DPE_TO, DPE_MAISON_SUPP, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('prix-diagnostic-immobilier-paris')!;
@@ -10,7 +10,7 @@ const g = getGuide('prix-diagnostic-immobilier-paris')!;
 const faq = [
   {
     q: 'Combien coûte un DPE à Paris ?',
-    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (${DPE_FROM} à ${DPE_TO} €). Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
+    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (${DPE_FROM} à ${DPE_TO} €, majoré de ${DPE_MAISON_SUPP} € pour une maison). Sur le marché parisien, un DPE se situe généralement entre 100 et 160 €.`,
   },
   {
     q: 'Quel est le prix d\'un pack de diagnostics pour vendre ?',
@@ -74,7 +74,7 @@ const jsonLd = [
         <h3>Pack location</h3>
         <p>Dès {prixDes('location')} € tout compris. Les diagnostics à annexer au bail. Voir <a href="/diagnostics-location">diagnostics pour louer</a>.</p>
         <h3>Audit énergétique</h3>
-        <p>Dès {prixDes('audit')} € tout compris. Requis à la vente de certains logements énergivores. Voir <a href="/audit-energetique">l'audit énergétique</a> et le guide <a href="/guides/reforme-dpe">réforme DPE</a>.</p>
+        <p>{prixLabel('audit').charAt(0).toUpperCase() + prixLabel('audit').slice(1)} tout compris, selon le bien. Requis à la vente de certains logements énergivores. Voir <a href="/audit-energetique">l'audit énergétique</a> et le guide <a href="/guides/reforme-dpe">réforme DPE</a>.</p>
 
         <h2>Comment obtenir un prix ferme</h2>
         <p>Pour connaître <strong>votre</strong> prix exact, le plus simple est le simulateur ci-dessus (ou notre <a href="/devis">formulaire de devis</a>) : quelques questions, puis vous recevez votre estimation tout compris par email, et un devis confirmé sans engagement. Vous pouvez aussi passer par la page <a href="/tarifs">tarifs</a>.</p>
