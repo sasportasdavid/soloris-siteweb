@@ -1,0 +1,852 @@
+{
+  "generatedAt": "2026-10-14",
+  "sources": {
+    "dpe": "ADEME, Observatoire DPE-Audit, DPE des logements existants établis depuis juillet 2021",
+    "risques": "Géorisques (BRGM) : GASPAR, potentiel radon, zonage sismique, arrêtés de catastrophe naturelle",
+    "communes": "geo.api.gouv.fr (Etalab) : population, codes postaux"
+  },
+  "communes": {
+    "nanterre": {
+      "insee": "92050",
+      "name": "Nanterre",
+      "departement": "Hauts-de-Seine",
+      "population": 97783,
+      "codesPostaux": [
+        "92000"
+      ],
+      "centre": {
+        "latitude": 48.8974,
+        "longitude": 2.2018
+      },
+      "dpe": {
+        "total": 32220,
+        "etiquettes": {
+          "C": 16975,
+          "D": 8798,
+          "E": 3211,
+          "F": 1531,
+          "G": 906,
+          "B": 712,
+          "A": 87
+        },
+        "periodes": {
+          "1948-1974": 15062,
+          "avant 1948": 3833,
+          "1989-2000": 3469,
+          "2006-2012": 2695,
+          "2013-2021": 2487,
+          "1978-1982": 2140,
+          "1975-1977": 939,
+          "1983-1988": 574,
+          "2001-2005": 526,
+          "après 2021": 495
+        },
+        "types": {
+          "immeuble": 673,
+          "maison": 1606,
+          "appartement": 29941
+        },
+        "surfaceMoyenne": {
+          "immeuble": 210.3,
+          "maison": 102.6,
+          "appartement": 58.1
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Risque industriel",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 10,
+          "depuis": 1983,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 7,
+            "Sécheresse": 2,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "courbevoie": {
+      "insee": "92026",
+      "name": "Courbevoie",
+      "departement": "Hauts-de-Seine",
+      "population": 82902,
+      "codesPostaux": [
+        "92400"
+      ],
+      "centre": {
+        "latitude": 48.8976,
+        "longitude": 2.2574
+      },
+      "dpe": {
+        "total": 24868,
+        "etiquettes": {
+          "C": 8915,
+          "D": 7263,
+          "E": 5175,
+          "F": 2164,
+          "G": 941,
+          "B": 372,
+          "A": 38
+        },
+        "periodes": {
+          "avant 1948": 6622,
+          "1948-1974": 5837,
+          "1989-2000": 5545,
+          "1983-1988": 2358,
+          "2001-2005": 1529,
+          "1978-1982": 1062,
+          "1975-1977": 750,
+          "2006-2012": 589,
+          "2013-2021": 400,
+          "après 2021": 176
+        },
+        "types": {
+          "immeuble": 658,
+          "maison": 449,
+          "appartement": 23761
+        },
+        "surfaceMoyenne": {
+          "immeuble": 6349,
+          "maison": 114.8,
+          "appartement": 52.1
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 5,
+          "depuis": 1999,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 4,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "asnieres-sur-seine": {
+      "insee": "92004",
+      "name": "Asnières-sur-Seine",
+      "departement": "Hauts-de-Seine",
+      "population": 93941,
+      "codesPostaux": [
+        "92600"
+      ],
+      "centre": {
+        "latitude": 48.9181,
+        "longitude": 2.2935
+      },
+      "dpe": {
+        "total": 27654,
+        "etiquettes": {
+          "D": 8351,
+          "C": 7794,
+          "E": 6161,
+          "F": 2808,
+          "G": 1988,
+          "B": 537,
+          "A": 15
+        },
+        "periodes": {
+          "avant 1948": 11140,
+          "1948-1974": 7530,
+          "1989-2000": 2751,
+          "2013-2021": 1681,
+          "2006-2012": 1448,
+          "1983-1988": 1160,
+          "1978-1982": 729,
+          "2001-2005": 510,
+          "1975-1977": 434,
+          "après 2021": 271
+        },
+        "types": {
+          "immeuble": 626,
+          "maison": 1086,
+          "appartement": 25942
+        },
+        "surfaceMoyenne": {
+          "immeuble": 1194,
+          "maison": 125.9,
+          "appartement": 52.3
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 5,
+          "depuis": 1992,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 4,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "colombes": {
+      "insee": "92025",
+      "name": "Colombes",
+      "departement": "Hauts-de-Seine",
+      "population": 91053,
+      "codesPostaux": [
+        "92700"
+      ],
+      "centre": {
+        "latitude": 48.9218,
+        "longitude": 2.2469
+      },
+      "dpe": {
+        "total": 15461,
+        "etiquettes": {
+          "C": 4070,
+          "D": 3732,
+          "E": 3567,
+          "F": 2092,
+          "G": 1646,
+          "B": 314,
+          "A": 40
+        },
+        "periodes": {
+          "avant 1948": 6425,
+          "1948-1974": 5275,
+          "2013-2021": 1613,
+          "2006-2012": 656,
+          "après 2021": 408,
+          "2001-2005": 402,
+          "1989-2000": 338,
+          "1975-1977": 166,
+          "1978-1982": 112,
+          "1983-1988": 66
+        },
+        "types": {
+          "immeuble": 311,
+          "maison": 2619,
+          "appartement": 12531
+        },
+        "surfaceMoyenne": {
+          "immeuble": 246,
+          "maison": 108.5,
+          "appartement": 55.8
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 9,
+          "depuis": 1984,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 7,
+            "Inondations Remontée Nappe": 1,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "rueil-malmaison": {
+      "insee": "92063",
+      "name": "Rueil-Malmaison",
+      "departement": "Hauts-de-Seine",
+      "population": 82874,
+      "codesPostaux": [
+        "92500"
+      ],
+      "centre": {
+        "latitude": 48.8717,
+        "longitude": 2.1806
+      },
+      "dpe": {
+        "total": 21518,
+        "etiquettes": {
+          "C": 8353,
+          "D": 7119,
+          "E": 3744,
+          "F": 1170,
+          "G": 888,
+          "B": 199,
+          "A": 45
+        },
+        "periodes": {
+          "1948-1974": 9530,
+          "1989-2000": 3384,
+          "avant 1948": 2320,
+          "2013-2021": 1675,
+          "1983-1988": 1423,
+          "1978-1982": 910,
+          "2001-2005": 792,
+          "1975-1977": 656,
+          "2006-2012": 591,
+          "après 2021": 237
+        },
+        "types": {
+          "maison": 2227,
+          "appartement": 18778,
+          "immeuble": 513
+        },
+        "surfaceMoyenne": {
+          "maison": 132.3,
+          "appartement": 56.8
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 18,
+          "depuis": 1983,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 13,
+            "Sécheresse": 4,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "issy-les-moulineaux": {
+      "insee": "92040",
+      "name": "Issy-les-Moulineaux",
+      "departement": "Hauts-de-Seine",
+      "population": 67669,
+      "codesPostaux": [
+        "92130"
+      ],
+      "centre": {
+        "latitude": 48.824,
+        "longitude": 2.2628
+      },
+      "dpe": {
+        "total": 25301,
+        "etiquettes": {
+          "C": 11779,
+          "D": 6001,
+          "E": 4101,
+          "F": 1318,
+          "B": 1182,
+          "G": 834,
+          "A": 86
+        },
+        "periodes": {
+          "1948-1974": 7021,
+          "avant 1948": 6408,
+          "1989-2000": 5033,
+          "2013-2021": 2223,
+          "2001-2005": 1368,
+          "2006-2012": 1060,
+          "1983-1988": 835,
+          "1978-1982": 703,
+          "1975-1977": 333,
+          "après 2021": 317
+        },
+        "types": {
+          "maison": 547,
+          "appartement": 24223,
+          "immeuble": 531
+        },
+        "surfaceMoyenne": {
+          "maison": 114.6,
+          "appartement": 53.5,
+          "immeuble": 25.1
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 13,
+          "depuis": 1997,
+          "types": {
+            "Sécheresse": 1,
+            "Inondations et/ou Coulées de Boue": 10,
+            "Inondations Remontée Nappe": 1,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "levallois-perret": {
+      "insee": "92044",
+      "name": "Levallois-Perret",
+      "departement": "Hauts-de-Seine",
+      "population": 68092,
+      "codesPostaux": [
+        "92300"
+      ],
+      "centre": {
+        "latitude": 48.8946,
+        "longitude": 2.2874
+      },
+      "dpe": {
+        "total": 21836,
+        "etiquettes": {
+          "C": 8014,
+          "D": 5232,
+          "E": 4716,
+          "F": 2235,
+          "G": 1407,
+          "B": 222,
+          "A": 10
+        },
+        "periodes": {
+          "avant 1948": 9762,
+          "1948-1974": 4065,
+          "1989-2000": 4013,
+          "2013-2021": 1287,
+          "1978-1982": 727,
+          "1983-1988": 662,
+          "2006-2012": 549,
+          "2001-2005": 330,
+          "1975-1977": 265,
+          "après 2021": 176
+        },
+        "types": {
+          "immeuble": 688,
+          "maison": 114,
+          "appartement": 21034
+        },
+        "surfaceMoyenne": {
+          "immeuble": 2539,
+          "maison": 119.1,
+          "appartement": 51.4
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 8,
+          "depuis": 1992,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 7,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "neuilly-sur-seine": {
+      "insee": "92051",
+      "name": "Neuilly-sur-Seine",
+      "departement": "Hauts-de-Seine",
+      "population": 59538,
+      "codesPostaux": [
+        "92200"
+      ],
+      "centre": {
+        "latitude": 48.8862,
+        "longitude": 2.2651
+      },
+      "dpe": {
+        "total": 18475,
+        "etiquettes": {
+          "E": 6523,
+          "D": 5404,
+          "F": 2567,
+          "C": 2126,
+          "G": 1611,
+          "A": 134,
+          "B": 110
+        },
+        "periodes": {
+          "avant 1948": 9057,
+          "1948-1974": 6710,
+          "1978-1982": 829,
+          "1975-1977": 565,
+          "1989-2000": 367,
+          "1983-1988": 243,
+          "2006-2012": 237,
+          "après 2021": 206,
+          "2013-2021": 156,
+          "2001-2005": 105
+        },
+        "types": {
+          "maison": 296,
+          "appartement": 17734,
+          "immeuble": 445
+        },
+        "surfaceMoyenne": {
+          "maison": 255.4,
+          "appartement": 69
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 10,
+          "depuis": 1992,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 9,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "clichy": {
+      "insee": "92024",
+      "name": "Clichy",
+      "departement": "Hauts-de-Seine",
+      "population": 64410,
+      "codesPostaux": [
+        "92110"
+      ],
+      "centre": {
+        "latitude": 48.9041,
+        "longitude": 2.3041
+      },
+      "dpe": {
+        "total": 21821,
+        "etiquettes": {
+          "C": 8808,
+          "D": 6373,
+          "E": 3638,
+          "F": 1483,
+          "G": 930,
+          "B": 580,
+          "A": 9
+        },
+        "periodes": {
+          "avant 1948": 7647,
+          "1948-1974": 4595,
+          "1989-2000": 3742,
+          "2013-2021": 1643,
+          "1975-1977": 1001,
+          "1978-1982": 964,
+          "2006-2012": 845,
+          "2001-2005": 591,
+          "1983-1988": 573,
+          "après 2021": 220
+        },
+        "types": {
+          "immeuble": 523,
+          "maison": 132,
+          "appartement": 21166
+        },
+        "surfaceMoyenne": {
+          "immeuble": 400,
+          "maison": 82.4,
+          "appartement": 49.7
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Inondation",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 7,
+          "depuis": 1987,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 6,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "antony": {
+      "insee": "92002",
+      "name": "Antony",
+      "departement": "Hauts-de-Seine",
+      "population": 64263,
+      "codesPostaux": [
+        "92160"
+      ],
+      "centre": {
+        "latitude": 48.7507,
+        "longitude": 2.2976
+      },
+      "dpe": {
+        "total": 17457,
+        "etiquettes": {
+          "D": 6672,
+          "C": 5317,
+          "E": 2682,
+          "F": 1512,
+          "B": 711,
+          "G": 517,
+          "A": 46
+        },
+        "periodes": {
+          "1948-1974": 9074,
+          "1975-1977": 1750,
+          "1989-2000": 1606,
+          "2006-2012": 1216,
+          "avant 1948": 1125,
+          "2013-2021": 990,
+          "1983-1988": 956,
+          "1978-1982": 401,
+          "2001-2005": 283,
+          "après 2021": 56
+        },
+        "types": {
+          "maison": 1873,
+          "appartement": 15226,
+          "immeuble": 358
+        },
+        "surfaceMoyenne": {
+          "maison": 114.1,
+          "appartement": 57.7
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 23,
+          "depuis": 1988,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 9,
+            "Sécheresse": 12,
+            "Mouvement de Terrain": 2
+          }
+        }
+      }
+    },
+    "montrouge": {
+      "insee": "92049",
+      "name": "Montrouge",
+      "departement": "Hauts-de-Seine",
+      "population": 46324,
+      "codesPostaux": [
+        "92120"
+      ],
+      "centre": {
+        "latitude": 48.8159,
+        "longitude": 2.3163
+      },
+      "dpe": {
+        "total": 17049,
+        "etiquettes": {
+          "D": 5597,
+          "C": 4877,
+          "E": 4100,
+          "F": 1426,
+          "G": 773,
+          "B": 201,
+          "A": 75
+        },
+        "periodes": {
+          "1948-1974": 5761,
+          "avant 1948": 5690,
+          "1989-2000": 1783,
+          "2001-2005": 1393,
+          "1978-1982": 572,
+          "1975-1977": 499,
+          "2006-2012": 377,
+          "2013-2021": 376,
+          "1983-1988": 375,
+          "après 2021": 223
+        },
+        "types": {
+          "immeuble": 465,
+          "maison": 280,
+          "appartement": 16304
+        },
+        "surfaceMoyenne": {
+          "immeuble": 2394,
+          "maison": 107.8,
+          "appartement": 49
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 6,
+          "depuis": 1983,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 3,
+            "Mouvement de Terrain": 1,
+            "Grêle": 1,
+            "Tempête": 1
+          }
+        }
+      }
+    },
+    "clamart": {
+      "insee": "92023",
+      "name": "Clamart",
+      "departement": "Hauts-de-Seine",
+      "population": 58576,
+      "codesPostaux": [
+        "92140"
+      ],
+      "centre": {
+        "latitude": 48.7957,
+        "longitude": 2.2518
+      },
+      "dpe": {
+        "total": 24035,
+        "etiquettes": {
+          "C": 12068,
+          "D": 7320,
+          "E": 2137,
+          "F": 1242,
+          "G": 900,
+          "B": 316,
+          "A": 52
+        },
+        "periodes": {
+          "1948-1974": 14617,
+          "avant 1948": 3266,
+          "2013-2021": 1818,
+          "2006-2012": 1286,
+          "1989-2000": 1059,
+          "1983-1988": 570,
+          "2001-2005": 432,
+          "1978-1982": 411,
+          "après 2021": 367,
+          "1975-1977": 209
+        },
+        "types": {
+          "immeuble": 708,
+          "maison": 1786,
+          "appartement": 21541
+        },
+        "surfaceMoyenne": {
+          "immeuble": 204,
+          "maison": 110.3,
+          "appartement": 56.2
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Mouvement de terrain",
+          "Phénomène lié à l'atmosphère",
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 13,
+          "depuis": 1989,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 7,
+            "Sécheresse": 5,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    },
+    "versailles": {
+      "insee": "78646",
+      "name": "Versailles",
+      "departement": "Yvelines",
+      "population": 84095,
+      "codesPostaux": [
+        "78000"
+      ],
+      "centre": {
+        "latitude": 48.8039,
+        "longitude": 2.1191
+      },
+      "dpe": {
+        "total": 27485,
+        "etiquettes": {
+          "D": 9299,
+          "E": 6981,
+          "C": 6565,
+          "F": 2788,
+          "G": 1690,
+          "B": 143,
+          "A": 19
+        },
+        "periodes": {
+          "1948-1974": 11807,
+          "avant 1948": 11102,
+          "1989-2000": 1126,
+          "1975-1977": 920,
+          "2013-2021": 708,
+          "1978-1982": 496,
+          "2006-2012": 460,
+          "1983-1988": 449,
+          "2001-2005": 324,
+          "après 2021": 93
+        },
+        "types": {
+          "immeuble": 984,
+          "maison": 1574,
+          "appartement": 24927
+        },
+        "surfaceMoyenne": {
+          "immeuble": 3770,
+          "maison": 127.4,
+          "appartement": 59.4
+        }
+      },
+      "georisques": {
+        "risques": [
+          "Transport de marchandises dangereuses"
+        ],
+        "radonClasse": "1",
+        "sismicite": "1 - TRES FAIBLE",
+        "catnat": {
+          "total": 13,
+          "depuis": 1990,
+          "types": {
+            "Inondations et/ou Coulées de Boue": 8,
+            "Sécheresse": 4,
+            "Mouvement de Terrain": 1
+          }
+        }
+      }
+    }
+  }
+}

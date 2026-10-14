@@ -1,0 +1,68 @@
+---
+/**
+ * /zones-desservies : page hub de toutes les pages locales (maillage interne).
+ * Alimentée par ZONES : une zone ajoutée dans src/lib/zones.ts apparaît ici automatiquement.
+ */
+import Base from '../layouts/Base.astro';
+import ReassuranceBar from '../components/ReassuranceBar.astro';
+import { ZONES } from '../lib/zones';
+import { prixDes } from '../lib/pricing';
+import { breadcrumb } from '../lib/jsonld';
+
+// Regroupement par département, dans un ordre stable (Paris d'abord).
+const ORDER = ['Paris (75)', 'Hauts-de-Seine (92)', 'Seine-Saint-Denis (93)', 'Val-de-Marne (94)', "Val-d'Oise (95)", 'Yvelines (78)'];
+const groups = [...new Set(ZONES.map((z) => z.dept))]
+  .sort((a, b) => (ORDER.indexOf(a) + 100) % 100 - (ORDER.indexOf(b) + 100) % 100)
+  .map((dept) => ({ dept, zones: ZONES.filter((z) => z.dept === dept).sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })) }));
+
+const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Zones desservies', url: '/zones-desservies' }])];
+---
+<Base
+  title="Zones desservies : diagnostic immobilier à Paris et en Île-de-France | Soloris"
+  description="Soloris réalise vos diagnostics immobiliers à Paris et dans toute l'Île-de-France. Retrouvez votre commune ou votre arrondissement, avec ses chiffres et ses spécificités."
+  path="/zones-desservies"
+  jsonLd={jsonLd}
+>
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Zones desservies</span></nav>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">Zones desservies</div>
+      <h1 class="sec-title" style="font-size:40px">Diagnostics immobiliers à Paris et en Île-de-France</h1>
+      <p class="sec-intro">Nous intervenons dans toute l'Île-de-France, déplacement inclus. Choisissez votre secteur pour retrouver les chiffres de votre commune (étiquettes DPE, époque de construction, risques) et ce qu'ils changent pour vos diagnostics. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente.</p>
+    </div>
+  </section>
+
+  <ReassuranceBar />
+
+  <section class="section-line">
+    <div class="wrap">
+      {groups.map((g) => (
+        <div class="zgroup">
+          <h2 class="sec-title" style="font-size:24px">{g.dept}</h2>
+          <ul class="zchips">
+            {g.zones.map((z) => <li><a href={`/diagnostic-immobilier-${z.slug}`}>{z.name}</a></li>)}
+          </ul>
+        </div>
+      ))}
+      <p class="muted mt-5" style="font-size:14.5px">Votre commune n'est pas dans la liste ? Nous intervenons dans toute l'Île-de-France : <a href="/devis">demandez votre devis</a>.</p>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>Une estimation en 2 minutes</h2>
+      <p>Obtenez votre prix tout compris, sans engagement.</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .zgroup { margin-bottom: 28px; }
+  .zchips { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .zchips a { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--blue); text-decoration: none; font-size: 14.5px; }
+  .zchips a:hover { border-color: var(--blue); }
+</style>
