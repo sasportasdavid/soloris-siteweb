@@ -1,9 +1,10 @@
 ---
 /**
- * Barre de réassurance (fond bleu) : 48 h · tout compris · COFRAC · note Google.
+ * Barre de réassurance (fond bleu) : rapport sous 24 h · tout compris · COFRAC · note Google.
  * La note est issue de site.ts ([À REMPLACER par avis réels]).
  */
 import { SITE } from '../lib/site';
+
 const hasReviews = Number(SITE.rating.count) > 0;
 ---
 <div class="reassurance">
@@ -11,7 +12,7 @@ const hasReviews = Number(SITE.rating.count) > 0;
     <div class="row">
       <span class="item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        Rapport sous 48 h
+        Rapport sous 24 h
       </span>
       <span class="item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>

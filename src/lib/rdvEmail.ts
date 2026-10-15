@@ -75,7 +75,7 @@ ${phraseDuree}Merci de prévoir un accès au logement (clés, badge) le jour J${
 
 Un imprévu, un changement d'horaire ? Appelez-nous au ${tel}, on s'adapte.
 
-Votre rapport vous sera remis, clair et opposable, en général sous 48 h après notre passage.
+Votre rapport vous sera remis, clair et opposable, en général sous 24 h après notre passage.
 
 L'équipe Soloris — Le diagnostic, en toute clarté.
 soloris.fr · Paris & Île-de-France · Une marque du groupe ISDIAG${ANNULATION_NOTICE ? '\n' + ANNULATION_NOTICE : ''}
@@ -126,7 +126,7 @@ Email automatique — pour toute question, appelez le ${tel}.`;
         </table>
         <p style="margin:0 0 14px;font-size:15px;line-height:1.6">${phraseDuree ? esc(phraseDuree.trim()) + ' ' : ''}Merci de prévoir un accès au logement (clés, badge) le jour J${esc(suffixeConsignes)}.</p>
         <p style="margin:0 0 14px;font-size:15px;line-height:1.6">Un imprévu, un changement d'horaire ? Appelez-nous au <a href="tel:${esc(SITE.phone.replace(/\s/g, ''))}" style="color:#2E6FAE;text-decoration:none;font-weight:bold">${esc(tel)}</a>, on s'adapte.</p>
-        <p style="margin:0 0 20px;font-size:15px;line-height:1.6">Votre rapport vous sera remis, clair et opposable, en général sous 48 h après notre passage.</p>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6">Votre rapport vous sera remis, clair et opposable, en général sous 24 h après notre passage.</p>
         <p style="margin:0 0 4px;font-size:15px;color:#0B2A4A"><strong>L'équipe Soloris</strong> — <span style="color:#5B6B7C">Le diagnostic, en toute clarté.</span></p>
       </td></tr>
       <tr><td style="padding:18px 28px 24px">

@@ -8,7 +8,7 @@ const g = getGuide('diagnostics-obligatoires-vente')!;
 const faq = [
   { q: 'Quels diagnostics sont obligatoires pour vendre un appartement ?', a: "Le DPE et l'ERP sont quasi systématiques. S'y ajoutent, selon l'année de construction et la zone : amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, et termites en zone concernée." },
   { q: 'Qui doit payer les diagnostics, le vendeur ou l\'acheteur ?', a: 'Les diagnostics du dossier de vente sont à la charge du vendeur.' },
-  { q: 'Combien de temps faut-il pour obtenir les diagnostics ?', a: 'Chez Soloris, un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.' },
+  { q: 'Combien de temps faut-il pour obtenir les diagnostics ?', a: 'Chez Soloris, un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.' },
 ];
 const jsonLd = [
   article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
@@ -51,7 +51,7 @@ const jsonLd = [
         <p>En copropriété, la surface privative (Loi Carrez) doit être mentionnée. Une erreur de surface peut avoir des conséquences sur la vente : mieux vaut un mesurage fiable.</p>
 
         <h2>Combien ça coûte, en combien de temps ?</h2>
-        <p>Chez Soloris, le <a href="/diagnostics-vente">pack vente</a> est <strong>tout compris dès {prixDes('vente')} €</strong>, déplacement inclus (le prix dépend de la surface et de l'âge du bien), avec un rendez-vous et un rapport <strong>sous 48 h</strong> dans la plupart des cas. Vous obtenez une estimation immédiate via notre <a href="/devis">formulaire de devis</a>, et le détail figure sur notre page <a href="/tarifs">tarifs</a>.</p>
+        <p>Chez Soloris, le <a href="/diagnostics-vente">pack vente</a> est <strong>tout compris dès {prixDes('vente')} €</strong>, déplacement inclus (le prix dépend de la surface et de l'âge du bien), avec un rendez-vous sous 48 h et un rapport remis <strong>sous 24 h</strong> après la visite, dans la plupart des cas. Vous obtenez une estimation immédiate via notre <a href="/devis">formulaire de devis</a>, et le détail figure sur notre page <a href="/tarifs">tarifs</a>.</p>
 
         <h2>En résumé</h2>
         <p>Pour vendre, comptez au minimum le DPE et l'ERP, complétés selon votre bien par l'amiante, le plomb, l'électricité, le gaz, le mesurage Carrez et, en zone concernée, les termites. La meilleure façon de connaître votre liste exacte ? Demander un devis : c'est gratuit et sans engagement.</p>
@@ -61,7 +61,7 @@ const jsonLd = [
     <section class="cta-final">
       <div class="wrap">
         <h2>Vendez en toute clarté</h2>
-        <p>Pack vente tout compris, rapport opposable sous 48 h.</p>
+        <p>Pack vente tout compris, rapport opposable sous 24 h.</p>
         <div class="cta">
           <a href="/devis?type=vente" class="btn-gold">Estimer mon pack vente</a>
           <a href="/diagnostics-vente" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir l'offre vente</a>

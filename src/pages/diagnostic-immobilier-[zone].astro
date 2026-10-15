@@ -42,7 +42,7 @@ const title = `Diagnostic immobilier ${where} | Soloris`;
 const faq = [
   {
     q: `Intervenez-vous ${where} ?`,
-    a: `Oui. Soloris réalise vos diagnostics immobiliers ${where} (${zone.dept}) et dans toute l'Île-de-France, avec un rendez-vous et un rapport sous 48 h dans la plupart des cas.`,
+    a: `Oui. Soloris réalise vos diagnostics immobiliers ${where} (${zone.dept}) et dans toute l'Île-de-France, avec un rendez-vous sous 48 h et un rapport remis sous 24 h après la visite, dans la plupart des cas.`,
   },
   {
     q: `Combien coûte un DPE ${where} ?`,
@@ -54,7 +54,7 @@ const faq = [
   },
   {
     q: `Quels sont vos délais ${where} ?`,
-    a: `Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas ${where} et en Île-de-France.`,
+    a: `Nous proposons un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas ${where} et en Île-de-France.`,
   },
 ];
 
@@ -83,7 +83,7 @@ const jsonLd = [
 
   <Hero
     tagpill={`${zone.dept} · Certifié COFRAC`}
-    h1={`Diagnostic immobilier ${where}, <span class="hl">sous 48 h</span>`}
+    h1={`Diagnostic immobilier ${where}, <span class="hl">rapport sous 24 h</span>`}
     sub={`DPE, vente, location, audit : tarif tout compris, déplacement inclus. Soloris intervient ${where} et en Île-de-France.`}
     showTrust={true}
     sun={true}
@@ -206,15 +206,15 @@ const jsonLd = [
   <!-- Avis -->
   <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
 
-  <!-- Process 48 h -->
+  <!-- Process : RDV sous 48 h, rapport sous 24 h -->
   <section class="section-line">
     <div class="wrap">
       <div class="eyebrow">Notre process</div>
-      <h2 class="sec-title">De la demande au rapport, sous 48&nbsp;h</h2>
+      <h2 class="sec-title">Rendez-vous rapide, rapport sous 24&nbsp;h</h2>
       <div class="grid grid-3 mt-5 steps">
         <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Estimation tout compris en 2 minutes, en ligne.</p></div>
         <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient {where}.</p></div>
-        <div class="step"><div class="n">Étape 3</div><h3>Rapport pédagogique</h3><p>Document clair et opposable, livré rapidement.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Rapport sous 24 h</h3><p>Document clair et opposable, remis sous 24 h après la visite.</p></div>
       </div>
     </div>
   </section>

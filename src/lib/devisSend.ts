@@ -36,7 +36,7 @@ function emailHtml(d: any, signUrl: string): string {
         <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:6px 0 18px">
           <a href="${esc(signUrl)}" style="display:inline-block;background:#F5A623;color:#0B2A4A;font-weight:bold;font-size:15px;text-decoration:none;padding:13px 26px;border-radius:10px">Voir et signer mon devis</a>
         </td></tr></table>
-        <p style="margin:0 0 6px;font-size:12.5px;color:#7a828c;line-height:1.6">Devis valable ${esc(d.validite_jours || 30)} jours. Tarifs TTC, déplacement inclus. Rapport sous 48 h après règlement.</p>
+        <p style="margin:0 0 6px;font-size:12.5px;color:#7a828c;line-height:1.6">Devis valable ${esc(d.validite_jours || 30)} jours. Tarifs TTC, déplacement inclus. Rapport transmis sous 24 h après la visite, dès réception du règlement.</p>
         <p style="margin:0;font-size:12.5px;color:#7a828c;line-height:1.6">Une question ? Répondez à cet email ou appelez-nous au ${esc(SITE.phoneDisplay)}.</p>
       </td></tr>
       <tr><td style="background:#f4f6f8;padding:16px 28px;font-size:11px;color:#9aa1aa;line-height:1.5">

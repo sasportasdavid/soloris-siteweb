@@ -22,7 +22,7 @@ import { localBusiness, faqPage } from '../lib/jsonld';
 
 const piliers = [
   { t: 'Clarté', d: 'Tarif tout compris affiché, rapport lisible sans jargon.', proof: 'Le prix que vous voyez est le prix final.', ic: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
-  { t: 'Rapidité', d: 'Rendez-vous et rapport sous 48 h dans la plupart des cas.', proof: 'Devis immédiat, intervention sous 48 h.', ic: '<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>' },
+  { t: 'Rapidité', d: 'Rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas.', proof: 'Devis immédiat, intervention sous 48 h.', ic: '<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>' },
   { t: 'Confiance', d: 'Diagnostiqueur certifié COFRAC, rapport opposable et assuré.', proof: 'Certifié COFRAC · rapport opposable.', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
   { t: 'Expertise énergie', d: "Conseil clair sur votre étiquette et les pistes d'amélioration.", proof: 'Un expert qui vous explique, sans vous vendre des travaux.', ic: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>' },
 ];
@@ -31,7 +31,7 @@ const faq = [
   { q: 'Quels diagnostics sont obligatoires pour vendre ?', a: "Selon le bien : DPE, ERP, et selon l'âge et la zone — amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, termites. Nous établissons la liste exacte applicable à votre logement au moment du devis." },
   { q: 'Quels diagnostics pour mettre en location ?', a: "Généralement le DPE et l'ERP, complétés selon le logement par le CREP (plomb), l'électricité, le gaz et le mesurage Loi Boutin. La composition est confirmée au devis." },
   { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
-  { q: 'Quels sont vos délais ?', a: 'Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.' },
+  { q: 'Quels sont vos délais ?', a: 'Nous proposons un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.' },
   { q: 'Combien coûtent vos diagnostics ?', a: `Nos tarifs sont tout compris, déplacement inclus : dès ${prixDes('dpe')} € pour un DPE, dès ${prixDes('vente')} € pour un pack vente. Vous obtenez une estimation immédiate via notre formulaire de devis.` },
   { q: 'Dans quelle zone intervenez-vous ?', a: 'À Paris et dans toute l’Île-de-France.' },
   { q: 'Pouvez-vous garantir une bonne étiquette énergétique ?', a: "Non. Le DPE reflète la performance réelle du logement. Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat." },
@@ -39,14 +39,14 @@ const faq = [
 
 const jsonLd = [localBusiness(), faqPage(faq)];
 const title = 'Diagnostics immobiliers Paris & Île-de-France | Soloris';
-const description = 'DPE, vente, location et audit énergétique. Prix clair, diagnostiqueur certifié, rapport sous 48 h à Paris et en Île-de-France.';
+const description = 'DPE, vente, location et audit énergétique. Prix clair, diagnostiqueur certifié, rapport sous 24 h à Paris et en Île-de-France.';
 ---
 <Base title={title} description={description} path="/" jsonLd={jsonLd}>
   <!-- 2 · Hero dynamique — simulateur de devis embarqué (composant unique QuoteForm) -->
   <Hero
     dynamic={true}
     h1='Diagnostics immobiliers à <span class="hl">Paris &amp; Île-de-France</span>'
-    sub="DPE, vente, location ou audit énergétique : obtenez un prix clair, un rendez-vous rapide et un rapport sous 48 h."
+    sub="DPE, vente, location ou audit énergétique : obtenez un prix clair, un rendez-vous rapide et un rapport sous 24 h."
     showTrust={true}
     sun={true}
     hideCta={true}
@@ -217,7 +217,7 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
     <div class="wrap">
       <div class="eyebrow center">Notre terrain</div>
       <h2>À Paris et dans toute l'Île-de-France</h2>
-      <p>Nos diagnostiqueurs certifiés COFRAC interviennent à Paris et dans toute l'Île-de-France, avec un rendez-vous et un rapport sous 48 h dans la plupart des cas.</p>
+      <p>Nos diagnostiqueurs certifiés COFRAC ont déjà réalisé plusieurs milliers de diagnostics à Paris et dans toute l'Île-de-France, avec un rendez-vous sous 48 h et un rapport remis sous 24 h après la visite, dans la plupart des cas.</p>
       <a href="/devis" class="btn-gold">Obtenir mon devis</a>
     </div>
   </section>
