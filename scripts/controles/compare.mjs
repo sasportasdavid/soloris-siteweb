@@ -65,13 +65,20 @@ const telDiff = common.filter((r) => JSON.stringify(before.routes[r].telLinks) !
 add(telDiff.length ? 'ÉCHEC' : 'PASS', 'Liens tel: identiques (nombre et attributs)', telDiff.join(', '));
 
 // ── 4. Scripts (hors JSON-LD) ─────────────────────────────────────────────
-const scriptDiff = [];
+const scriptDiff = [], scriptData = [];
+const ALLOW_VARS = (opt['allow-vars'] || '').split(',').filter(Boolean);
 for (const r of common) {
   const sb = before.routes[r].scripts.filter((s) => s.type !== 'application/ld+json');
   const sa = after.routes[r].scripts.filter((s) => s.type !== 'application/ld+json');
   const kb = sb.map((s) => `${s.src}|${s.hash}`).join('\n'), ka = sa.map((s) => `${s.src}|${s.hash}`).join('\n');
-  if (kb !== ka) scriptDiff.push(`${r} (${sb.length}→${sa.length})`);
+  if (kb === ka) continue;
+  // Scripts dont SEULES les données define:vars autorisées (--allow-vars=VARIANTS,…) changent :
+  // logique identique, contenu éditorial modifié → « À REVOIR », pas « ÉCHEC ».
+  const strip = (c) => (c || '').replace(new RegExp(`^\\s*const (${ALLOW_VARS.join('|') || '__none__'}) = .*;$`, 'gm'), '');
+  const sameLogic = sb.length === sa.length && sb.every((s, i) => s.src === sa[i].src && (s.hash === sa[i].hash || (s.content != null && strip(s.content) === strip(sa[i].content))));
+  (sameLogic ? scriptData : scriptDiff).push(`${r} (${sb.length}→${sa.length})`);
 }
+if (scriptData.length) add('À REVOIR', `Scripts : seules les données define:vars autorisées changent (${ALLOW_VARS.join(', ')})`, scriptData.slice(0, 30).join(', '));
 add(scriptDiff.length ? (MODE === 'M' ? 'À REVOIR' : 'ÉCHEC') : 'PASS', 'Scripts identiques (tracking, formulaires, expériences)', scriptDiff.slice(0, 30).join(', '));
 
 // ── 5. Éditorial : H1, prix balisés visibles, allégations ─────────────────
@@ -87,8 +94,9 @@ for (const r of ra) {
   for (const raw of after.routes[r].jsonld) {
     let j; try { j = JSON.parse(raw); } catch { ldPrices.push(`${r} : JSON-LD invalide`); continue; }
     const vals = [];
-    (function walk(o) { if (!o || typeof o !== 'object') return; for (const [k, v] of Object.entries(o)) { if (['price', 'lowPrice', 'highPrice'].includes(k)) vals.push(String(v)); else walk(v); } })(j);
-    for (const v of vals) if (!new RegExp(`(^|[^\\d])${v.replace('.', '[.,]')}\\s?€`).test(text)) ldPrices.push(`${r} : ${v} € balisé mais non visible`);
+    (function walk(o) { if (!o || typeof o !== 'object') return; for (const [k, v] of Object.entries(o)) { if (['price', 'lowPrice', 'highPrice', 'minPrice', 'maxPrice'].includes(k)) vals.push(String(v)); else walk(v); } })(j);
+    // Montant visible seul (« 150 € ») ou borne basse d'une fourchette affichée (« de 450 à 800 € »).
+    for (const v of vals) if (!new RegExp(`(^|[^\\d])${v.replace('.', '[.,]')}(\\s?€|\\s(à|-|–)\\s\\d+\\s?€)`).test(text)) ldPrices.push(`${r} : ${v} € balisé mais non visible`);
   }
 }
 add(ldPrices.length ? 'ÉCHEC' : 'PASS', 'Prix des données structurées visibles dans la page', [...new Set(ldPrices)].slice(0, 30).join(' ; '));
@@ -105,12 +113,15 @@ for (const [re, label] of WARN) {
   const hitsB = rb.filter((r) => re.test(before.routes[r].bodyText)).length;
   add('INFO', `Occurrences « ${label} » (pages)`, `${hitsB} → ${hits}`);
 }
-const audit24 = ['/audit-energetique/'].filter((r) => after.routes[r] && /24\s?h/.test(after.routes[r].bodyText));
-add(audit24.length ? 'ÉCHEC' : 'PASS', 'Audit énergétique : pas de délai 24 h hérité', audit24.join(', '));
+// Les questions (FAQ « L’audit est-il remis sous 24 h ? ») ne sont pas des promesses : seules les
+// phrases affirmatives citant 24 h sont signalées, avec leur extrait.
+const audit24 = ['/audit-energetique/'].flatMap((r) => !after.routes[r] ? [] : after.routes[r].bodyText.split(/(?<=[.!?])\s+|\n+/)
+  .filter((ph) => /24\s?h/.test(ph) && !/\?\s*$/.test(ph)).map((ph) => `${r} : « …${ph.slice(Math.max(0, ph.search(/24\s?h/) - 60), ph.search(/24\s?h/) + 40).trim()}… »`));
+add(audit24.length ? 'ÉCHEC' : 'PASS', 'Audit énergétique : pas de délai 24 h hérité', audit24.join(' ; '));
 const sp = after.routes['/lp/vente-sans-prix/'];
 if (sp) {
   const money = /\d\s?€|\d\s?euros?/i;
-  const ldMoney = sp.jsonld.some((j) => /"(price|lowPrice|highPrice)"/.test(j));
+  const ldMoney = sp.jsonld.some((j) => /"(price|lowPrice|highPrice|minPrice|maxPrice)"/.test(j));
   const bad = [money.test(sp.bodyText) && 'texte', money.test(sp.title) && 'title', money.test(sp.description || '') && 'meta', ldMoney && 'JSON-LD',
     sp.images.some((i) => money.test(i.alt || '')) && 'alt'].filter(Boolean);
   add(bad.length ? 'ÉCHEC' : 'PASS', 'Bras B /lp/vente-sans-prix : aucun montant public', bad.join(', '));

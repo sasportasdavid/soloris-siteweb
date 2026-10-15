@@ -50,7 +50,7 @@ export const SITE = {
     // 'https://www.linkedin.com/company/...',
   ],
   // Certification — allégation de positionnement, sans numéro (non affiché)
-  cofracNote: 'Diagnostiqueur certifié COFRAC',
+  cofracNote: 'Diagnostiqueur certifié',
 } as const;
 
 /** Construit la chaîne d'adresse postale affichable. */

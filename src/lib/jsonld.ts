@@ -66,7 +66,7 @@ export function localBusinessArea(areaName: string) {
 }
 
 /** Service pour une offre donnée. `priceFrom` optionnel (omis si « sur devis »). */
-export function service(opts: { name: string; description: string; url: string; priceFrom?: number }) {
+export function service(opts: { name: string; description: string; url: string; priceFrom?: number; priceTo?: number }) {
   const ld: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'Service',
@@ -82,10 +82,14 @@ export function service(opts: { name: string; description: string; url: string; 
       '@type': 'Offer',
       priceCurrency: 'EUR',
       price: String(opts.priceFrom),
+      // Prix « dès » : minPrice = prix d'entrée affiché ; maxPrice uniquement si une
+      // fourchette haute est AFFICHÉE sur la page (ex. audit).
       priceSpecification: {
         '@type': 'PriceSpecification',
         priceCurrency: 'EUR',
         price: String(opts.priceFrom),
+        minPrice: String(opts.priceFrom),
+        ...(typeof opts.priceTo === 'number' ? { maxPrice: String(opts.priceTo) } : {}),
         valueAddedTaxIncluded: true,
       },
       availability: 'https://schema.org/InStock',

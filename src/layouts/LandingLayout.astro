@@ -7,7 +7,7 @@
  * - PAS de navigation/menu/liens marketing : un seul but = convertir.
  * - Canaux de conversion (pas des sorties) : téléphone clic-to-call (bandeau + barre
  *   mobile collante) — la conversion « appel » est captée globalement par Analytics.astro.
- * - Footer de CONFIANCE : identité légale + COFRAC + zone + téléphone + liens légaux
+ * - Footer de CONFIANCE : identité légale + certification + zone + téléphone + liens légaux
  *   (mentions / confidentialité). Logo non cliquable. noindex par défaut.
  */
 import '../styles/global.css';
@@ -82,7 +82,7 @@ const phoneSvg = 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 
       <slot />
     </main>
 
-    <!-- Footer de confiance (identité + COFRAC + zone + tél + légal). Aucun lien marketing. -->
+    <!-- Footer de confiance (identité + certification + zone + tél + légal). Aucun lien marketing. -->
     <footer class="lp-foot">
       <div class="wrap">
         <div class="lp-foot-top">
@@ -102,7 +102,7 @@ const phoneSvg = 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 
 
     <!-- Barre CTA collante (mobile) : 2 canaux de conversion, AUCUN lien de navigation -->
     <div class="lp-mcta" role="group" aria-label="Actions rapides">
-      <a href="#simulateur" class="btn-gold lp-mcta-btn">Calculer mon prix</a>
+      <a href="#simulateur" class="btn-gold lp-mcta-btn">Demander mon devis</a>
       <a href={telHref} class="btn-blue lp-mcta-btn lp-mcta-call" aria-label={`Appeler le ${SITE.phoneDisplay}`}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={phoneSvg} /></svg>
         Appeler
