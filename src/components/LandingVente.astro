@@ -76,14 +76,20 @@ const piliers = [
         </span>
         <h1>Vendez sans accroc : tous vos diagnostics réunis, prêts pour le notaire — sous 48 h.</h1>
         <p class="lp-sub">{heroSub}</p>
-        {hasReviews && (
-          <div class="lp-rating" aria-label={`Note ${SITE.rating.value} sur 5, ${SITE.rating.count} avis Google`}>
-            <span class="stars" aria-hidden="true">
-              {[0,1,2,3,4].map(() => <svg width="16" height="16" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
-            </span>
-            <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
+        <div class="lp-proof">
+          <img class="lp-avatar" src="/images/diagnostiqueur-soloris-avatar.webp" width="64" height="64" alt="Un diagnostiqueur Soloris" decoding="async" />
+          <div class="lp-proof-txt">
+            {hasReviews && (
+              <div class="lp-rating" aria-label={`Note ${SITE.rating.value} sur 5, ${SITE.rating.count} avis Google`}>
+                <span class="stars" aria-hidden="true">
+                  {[0,1,2,3,4].map(() => <svg width="16" height="16" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+                </span>
+                <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
+              </div>
+            )}
+            <span class="lp-who">Diagnostiqueur certifié COFRAC, chez vous sous 48 h</span>
           </div>
-        )}
+        </div>
         <div class="lp-cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis en 2 min</a></div>
         <div class="lp-trust">
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Devis gratuit, sans engagement</span>
@@ -245,6 +251,10 @@ const piliers = [
   .lp-rating { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-family: var(--sora); font-size: 13.5px; color: var(--ink-soft); }
   .lp-rating .stars { display: inline-flex; gap: 1px; }
   .lp-rating strong { color: var(--blue); }
+  .lp-proof { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .lp-proof .lp-rating { margin-top: 0; }
+  .lp-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid #fff; box-shadow: 0 2px 10px rgba(11,42,74,.18); }
+  .lp-who { display: block; margin-top: 3px; font-family: var(--sora); font-size: 13px; color: var(--ink-soft); }
   .lp-cta { margin-top: 24px; }
   .lp-trust { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; font-family: var(--sora); font-weight: 500; font-size: 13px; color: var(--blue-light); }
   .lp-trust span { display: inline-flex; align-items: center; gap: 7px; }
