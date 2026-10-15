@@ -9,23 +9,10 @@ import QuoteForm from '../components/QuoteForm.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
-import { ADDONS, SURFACE_BANDS, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, DPE_FROM, DPE_MAISON_SUPP, AUDIT_FROM, AUDIT_TO, LOT_ANNEXE_PRICE, estimerDpe, prixDes } from '../lib/pricing';
+import { ADDONS, SURFACE_BANDS, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, DPE_FROM, DPE_MAISON_SUPP, AUDIT_FROM, AUDIT_TO, LOT_ANNEXE_PRICE, prixDes } from '../lib/pricing';
 import { SITE } from '../lib/site';
-import { CONDITIONS, DPE_FROM_MAX_M2, WORDING } from '../lib/wording';
+import { CONDITIONS, DPE_FROM_MAX_M2, DPE_GRILLE_TEXTE, WORDING } from '../lib/wording';
 import { faqPage, breadcrumb } from '../lib/jsonld';
-
-// Paliers DPE appartement, lus dans estimerDpe() (aucune grille recopiée).
-const dpePaliers = (() => {
-  const out: { from: number; to: number | null; prix: number }[] = [];
-  for (let m = 1; m <= 400; m++) {
-    const p = estimerDpe(m);
-    const last = out[out.length - 1];
-    if (!last || last.prix !== p) { if (last) last.to = m - 1; out.push({ from: m, to: null, prix: p }); }
-  }
-  return out;
-})();
-const dpeGrille = dpePaliers.slice(1).map((p) =>
-  p.to === null ? `${p.prix}&nbsp;€ au-delà de ${p.from - 1}&nbsp;m²` : `${p.prix}&nbsp;€ de ${p.from} à ${p.to}&nbsp;m²`).join(' ; ');
 
 // Diagnostics à l'unité : rendu public. La clé `cave` (supplément obsolète) n'est PAS affichée
 // comme un supplément : l'annexe rattachée au logement est incluse dans le pack (règle inchangée
@@ -122,7 +109,7 @@ const jsonLd = [catalogue, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/'
         <div class="card" style="padding:26px 28px">
           <h3 style="font-family:var(--sora);font-weight:600;font-size:19px;color:var(--blue)">DPE : un tarif selon la surface</h3>
           <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">dès {DPE_FROM} € TTC</p>
-          <p class="muted" style="font-size:14px">Dès {DPE_FROM}&nbsp;€ TTC pour un appartement jusqu’à {DPE_FROM_MAX_M2}&nbsp;m². Appartement : <Fragment set:html={dpeGrille} /> selon la grille actuelle. Maison : ajouter {DPE_MAISON_SUPP}&nbsp;€ TTC. Déplacement inclus.</p>
+          <p class="muted" style="font-size:14px">Dès {DPE_FROM}&nbsp;€ TTC pour un appartement jusqu’à {DPE_FROM_MAX_M2}&nbsp;m². Appartement : {DPE_GRILLE_TEXTE} selon la grille actuelle. Maison : ajouter {DPE_MAISON_SUPP}&nbsp;€ TTC. Déplacement inclus.</p>
           <p class="mt-2"><a href="/dpe" class="btn-ghost btn-sm">L'offre DPE</a></p>
         </div>
         <div class="card" style="padding:26px 28px">

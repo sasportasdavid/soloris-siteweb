@@ -1,28 +1,22 @@
 ---
 import Base from '../../layouts/Base.astro';
 import QuoteForm from '../../components/QuoteForm.astro';
+import GuideSources from '../../components/GuideSources.astro';
 import { getGuide } from '../../lib/guides';
-import { prixDes, prixLabel, DPE_FROM, DPE_TO, DPE_MAISON_SUPP, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT } from '../../lib/pricing';
+import { prixDes, DPE_FROM, DPE_MAISON_SUPP, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, AUDIT_FROM, AUDIT_TO, LOT_ANNEXE_PRICE, SURFACE_BANDS } from '../../lib/pricing';
+import { DPE_FROM_MAX_M2, DPE_GRILLE_TEXTE, PACK_MAX_M2 } from '../../lib/wording';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('prix-diagnostic-immobilier-paris')!;
 
 const faq = [
   {
-    q: 'Combien coûte un DPE à Paris ?',
-    a: `Chez Soloris, un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface (${DPE_FROM} à ${DPE_TO} €, majoré de ${DPE_MAISON_SUPP} € pour une maison).`,
+    q: 'Le tarif annoncé inclut-il le déplacement ?',
+    a: 'Le déplacement est inclus à Paris et en Île-de-France pour les prestations décrites dans la grille. Les caractéristiques du bien et le périmètre sont confirmés au devis.',
   },
   {
-    q: 'Quel est le prix d\'un pack de diagnostics pour vendre ?',
-    a: `Le pack vente Soloris démarre à ${prixDes('vente')} € tout compris (petit logement de moins de 15 ans), déplacement inclus. Le prix dépend de la surface et de l'âge du bien, car les diagnostics obligatoires varient (amiante et plomb sur les biens anciens).`,
-  },
-  {
-    q: 'Le déplacement est-il inclus dans le prix ?',
-    a: 'Oui. Tous les tarifs Soloris sont tout compris, déplacement inclus, à Paris et en Île-de-France. Le prix affiché au devis est le prix payé.',
-  },
-  {
-    q: 'Pourquoi les diagnostics sont-ils un peu plus chers à Paris ?',
-    a: 'Les tarifs en Île-de-France sont généralement supérieurs de 15 à 20 % au reste de la France, en raison du coût de la vie et de la demande dans la capitale.',
+    q: 'Pourquoi ne pas annoncer un seul prix de pack ?',
+    a: `La surface, la catégorie tarifaire et le périmètre du bien font varier la prestation. Le prix d’entrée de ${prixDes('vente')} € correspond à un cas défini, pas à tout logement.`,
   },
   {
     q: 'Qui paie les diagnostics, le vendeur ou l\'acheteur ?',
@@ -31,7 +25,7 @@ const faq = [
 ];
 
 const jsonLd = [
-  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished, dateModified: g.dateModified }),
   breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
   faqPage(faq),
 ];
@@ -45,48 +39,52 @@ const jsonLd = [
       <div class="wrap prose">
         <div class="eyebrow">Guide · {g.readMin} min</div>
         <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
-        <p class="lead">Vous préparez une vente ou une location à Paris et vous voulez savoir à quoi vous attendre côté budget ? Voici les fourchettes de prix 2026, ce qui les fait varier, et comment obtenir un montant ferme en 2 minutes.</p>
+        <p class="lead">{g.excerpt}</p>
 
-        <h2>Combien coûte un diagnostic immobilier à Paris ?</h2>
-        <p>Chez Soloris, le prix d'un pack de diagnostics dépend de deux choses : la <strong>surface</strong> du logement et son <strong>âge</strong>. Pourquoi l'âge ? Parce que les diagnostics obligatoires changent : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un pack vente démarre ainsi à <strong>{prixDes('vente')} €</strong> (petit logement de moins de 15 ans) et augmente avec la surface et l'ancienneté.</p>
-        <p>Estimez votre devis Soloris, <strong>tout compris, déplacement inclus</strong> (appartements et maisons) — vous recevez votre tarif par email, sans engagement :</p>
+        <h2>DPE : un tarif selon la surface et le type de logement</h2>
+        <p>Chez Soloris, le DPE d’un appartement est proposé à {DPE_FROM}&nbsp;€ TTC jusqu’à {DPE_FROM_MAX_M2}&nbsp;m², puis {DPE_GRILLE_TEXTE}. Un supplément de {DPE_MAISON_SUPP}&nbsp;€ TTC s’applique pour une maison. Le déplacement est inclus à Paris et en Île-de-France. La surface et le périmètre du bien doivent être précisés pour confirmer le devis.</p>
+
+        <h2>Packs vente et location : pourquoi le prix varie</h2>
+        <p>Le prix d’entrée est de {prixDes('vente')}&nbsp;€ TTC pour un appartement de {SURFACE_BANDS[0].maxIncl}&nbsp;m² maximum construit depuis moins de 15 ans. Le prix dépend ensuite de la surface et de la catégorie tarifaire. Pour la même catégorie et la même surface, le pack maison ajoute {MAISON_SUPP}&nbsp;€ ; une maison en copropriété ajoute encore {MAISON_COPRO_SUPPLEMENT}&nbsp;€. Au-delà de {PACK_MAX_M2}&nbsp;m², le pack est établi sur devis. Ces catégories tarifaires ne déterminent pas à elles seules les obligations réglementaires : chaque diagnostic possède ses propres critères.</p>
+        <p>Décrivez votre bien : vous recevez votre tarif par email, sans engagement.</p>
         <div style="margin:8px 0 10px" id="simulateur">
           <QuoteForm revealEstimation={false} />
         </div>
 
-        <h2>Ce qui fait varier le prix</h2>
+        <h2>Annexe rattachée ou lot seul : ne pas confondre</h2>
+        <p>Une annexe rattachée au logement et prévue dans le pack est incluse. Une cave, un parking ou un box diagnostiqué seul correspond à une autre prestation, proposée à {LOT_ANNEXE_PRICE}&nbsp;€ TTC, déplacement inclus. Signalez donc les lots réellement concernés par votre vente ou votre location.</p>
+
+        <h2>Audit énergétique : une prestation distincte</h2>
+        <p>La grille Soloris prévoit de {AUDIT_FROM} à {AUDIT_TO}&nbsp;€ TTC selon le bien. L’audit est distinct du DPE et des autres diagnostics : son prix, son périmètre et son délai sont fixés au devis. Le montant de départ n’est pas le prix de tous les audits.</p>
+
+        <h2>Comment comparer deux devis</h2>
+        <p>Comparez le bien décrit, les prestations incluses, les annexes, le déplacement, la TVA, les éventuelles analyses et les délais annoncés. Vérifiez aussi les qualifications correspondant aux missions et l’assurance du professionnel. Un prix de départ seul ne suffit pas à comparer deux offres.</p>
+
+        <h2>Demande, estimation et devis : trois notions différentes</h2>
+        <p>La demande en ligne décrit votre besoin et permet à l’équipe de vous recontacter. Une estimation est un repère indicatif, lorsqu’elle est affichée dans le parcours. Le devis confirme le prix et les prestations avant l’intervention. L’envoi du formulaire ne constitue pas une réservation automatique.</p>
+
+        <h2>Préparer votre demande</h2>
+        <p>Indiquez votre projet, le type de bien, la surface et les informations de construction disponibles. Mentionnez les lots annexes et les diagnostics déjà en votre possession. Nous précisons avec vous les prestations nécessaires avant la visite.</p>
+
+        <h2>Pour aller plus loin</h2>
         <ul>
-          <li><strong>L'âge du bien</strong> — c'est le facteur clé. <em>Avant 1949</em> : amiante + plomb requis (prix le plus élevé). <em>De 1949 à moins de 15 ans</em> : amiante requis, plomb non. <em>Moins de 15 ans</em> : ni amiante ni plomb (le plus accessible).</li>
-          <li><strong>La surface</strong> — plus le logement est grand, plus la visite et les relevés sont longs : le prix augmente par tranches de surface.</li>
-          <li><strong>Le type de bien</strong> — une maison correspond au tarif d'un appartement de même surface et même âge, majoré de {MAISON_SUPP} € (et {MAISON_COPRO_SUPPLEMENT} € de plus en copropriété).</li>
-          <li><strong>La localisation</strong> — en Île-de-France, les tarifs sont généralement <strong>15 à 20 % plus élevés</strong> que dans le reste de la France.</li>
+          <li><a href="/tarifs">Tous les tarifs</a></li>
+          <li><a href="/dpe">DPE seul</a></li>
+          <li><a href="/diagnostics-vente">Diagnostics pour vendre</a></li>
+          <li><a href="/diagnostics-location">Diagnostics pour louer</a></li>
+          <li><a href="/audit-energetique">Audit énergétique</a></li>
         </ul>
 
-        <h2>Pourquoi le « tout compris » change tout</h2>
-        <p>Beaucoup d'annonces affichent un prix d'appel… auquel s'ajoutent ensuite le déplacement, des diagnostics « en option » ou des frais de dossier. Chez Soloris, le principe est simple : <strong>le prix affiché au devis est le prix que vous payez</strong>, déplacement inclus. Pas le luxe, pas l'à-peu-près : un tarif juste, et la transparence en prime.</p>
-        <blockquote>Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat. Un DPE reflète l'état réel de votre logement.</blockquote>
-
-        <h2>Le prix selon votre besoin</h2>
-        <h3>DPE seul</h3>
-        <p>Dès {prixDes('dpe')} € tout compris. Idéal si vous avez seulement besoin de l'étiquette énergétique. Voir l'offre <a href="/dpe">DPE</a> et notre guide <a href="/guides/comprendre-etiquette-dpe">comprendre votre étiquette</a>.</p>
-        <h3>Pack vente</h3>
-        <p>Dès {prixDes('vente')} € tout compris. Le dossier de diagnostic technique complet, prêt pour le notaire. Voir <a href="/diagnostics-vente">diagnostics pour vendre</a> et <a href="/guides/diagnostics-obligatoires-vente">quels diagnostics sont obligatoires</a>.</p>
-        <h3>Pack location</h3>
-        <p>Dès {prixDes('location')} € tout compris. Les diagnostics à annexer au bail. Voir <a href="/diagnostics-location">diagnostics pour louer</a>.</p>
-        <h3>Audit énergétique</h3>
-        <p>{prixLabel('audit').charAt(0).toUpperCase() + prixLabel('audit').slice(1)} tout compris, selon le bien. Requis à la vente de certains logements énergivores. Voir <a href="/audit-energetique">l'audit énergétique</a> et le guide <a href="/guides/reforme-dpe">réforme DPE</a>.</p>
-
-        <h2>Comment obtenir un prix ferme</h2>
-        <p>Pour connaître <strong>votre</strong> prix exact, le plus simple est le simulateur ci-dessus (ou notre <a href="/devis">formulaire de devis</a>) : quelques questions, puis vous recevez votre estimation tout compris par email, et un devis confirmé sans engagement. Vous pouvez aussi passer par la page <a href="/tarifs">tarifs</a>.</p>
+        <GuideSources guide={g} />
       </div>
     </section>
 
     <section class="cta-final">
       <div class="wrap">
-        <h2>Votre prix tout compris en 2 minutes</h2>
-        <p>Estimation immédiate, devis confirmé sans engagement.</p>
+        <h2>Préparez votre demande</h2>
+        <p>Demande gratuite et sans engagement. Le prix est confirmé avant l’intervention.</p>
         <div class="cta">
-          <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+          <a href="/devis" class="btn-gold">Demander mon devis</a>
           <a href="/tarifs" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir les tarifs</a>
         </div>
       </div>

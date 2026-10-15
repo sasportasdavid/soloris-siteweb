@@ -61,8 +61,19 @@ add(formDiff.length ? 'ÉCHEC' : 'PASS', 'Formulaires : mêmes éléments, même
 const idLost = [];
 for (const r of common) { const ia = new Set(after.routes[r].ids); const miss = before.routes[r].ids.filter((id) => !ia.has(id)); if (miss.length) idLost.push(`${r} : ${miss.join(',')}`); }
 add(idLost.length ? 'ÉCHEC' : 'PASS', 'Aucun identifiant/ancre supprimé (#simulateur, #rappel…)', idLost.slice(0, 20).join(' ; '));
-const telDiff = common.filter((r) => JSON.stringify(before.routes[r].telLinks) !== JSON.stringify(after.routes[r].telLinks));
-add(telDiff.length ? 'ÉCHEC' : 'PASS', 'Liens tel: identiques (nombre et attributs)', telDiff.join(', '));
+// Liens tel: chaque lien existant doit subsister, dans l'ordre, avec les mêmes attributs
+// (hors data-astro-cid-*, simple marqueur de style généré au build). Un lien AJOUTÉ (CTA
+// téléphone demandé par le dossier) n'est pas un échec mais est listé « À REVOIR ».
+const telKey = (t) => JSON.stringify(Object.fromEntries(Object.entries(t).filter(([k]) => !k.startsWith('data-astro-cid'))));
+const telLost = [], telAdded = [];
+for (const r of common) {
+  const b = before.routes[r].telLinks.map(telKey), a = after.routes[r].telLinks.map(telKey);
+  let i = 0; for (const x of a) if (i < b.length && x === b[i]) i++;
+  if (i < b.length) telLost.push(r);
+  else if (a.length > b.length) telAdded.push(`${r} (+${a.length - b.length} : ${[...new Set(after.routes[r].telLinks.map((t) => t.href))].join(' ')})`);
+}
+add(telLost.length ? 'ÉCHEC' : 'PASS', 'Liens tel: existants conservés (ordre et attributs)', telLost.join(', '));
+if (telAdded.length) add('À REVOIR', 'Liens tel: ajoutés (même numéro, même écouteur global de conversion appel)', telAdded.slice(0, 30).join(', '));
 
 // ── 4. Scripts (hors JSON-LD) ─────────────────────────────────────────────
 const scriptDiff = [], scriptData = [];
@@ -104,7 +115,7 @@ for (const r of ra) {
 add(ldPrices.length ? 'ÉCHEC' : 'PASS', 'Prix des données structurées visibles dans la page', [...new Set(ldPrices)].slice(0, 30).join(' ; '));
 
 const FAIL = [[/certifi[ée]e?s? (par le )?cofrac/i, '« certifié COFRAC »'], [/milliers/i, 'volume « milliers » non documenté'], [/prix exact/i, '« prix exact »'],
-  [/\[À REMPLACER\]|à vérifier/i, 'texte de brouillon'], [/n°\s?1\b|numéro 1|le meilleur/i, 'superlatif'], [/garantissons|garanti sous|délai garanti/i, 'garantie de délai']];
+  [/\[À REMPLACER\]|[\[(«]\s*à vérifier/i, 'texte de brouillon (marqueur [À REMPLACER] / « à vérifier »)'], [/n°\s?1\b|numéro 1|le meilleur/i, 'superlatif'], [/garantissons|garanti sous|délai garanti/i, 'garantie de délai']];
 const WARN = [[/30\s?min/i, 'rappel 30 min'], [/48\s?h/i, '48 h'], [/24\s?h/i, '24 h'], [/opposable/i, 'opposable'], [/tout compris/i, 'tout compris']];
 for (const [re, label] of FAIL) {
   const hits = ra.filter((r) => re.test(after.routes[r].bodyText) || re.test(after.routes[r].title) || re.test(after.routes[r].description || ''));

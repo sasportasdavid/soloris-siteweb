@@ -1,18 +1,19 @@
 ---
 import Base from '../../layouts/Base.astro';
 import EnergyScale from '../../components/EnergyScale.astro';
+import GuideSources from '../../components/GuideSources.astro';
 import { getGuide } from '../../lib/guides';
-import { DPE_FROM } from '../../lib/pricing';
+import { WORDING } from '../../lib/wording';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('comprendre-etiquette-dpe')!;
 const faq = [
-  { q: 'Que signifient les lettres A à G du DPE ?', a: "A correspond à un logement très performant et G à un logement très énergivore. L'étiquette combine la consommation d'énergie et les émissions de gaz à effet de serre." },
-  { q: 'Le DPE peut-il être amélioré ?', a: "L'étiquette reflète l'état réel du logement. Des travaux (isolation, chauffage, ventilation) peuvent améliorer la performance ; un audit énergétique permet de prioriser ces travaux." },
-  { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
+  { q: 'Soloris peut-il me garantir une meilleure note ?', a: 'Non. L’engagement porte sur la réalisation de la mission et l’explication du rapport, jamais sur une classe déterminée.' },
+  { q: 'Un changement de coefficient réduit-il ma facture ?', a: 'Il modifie le calcul conventionnel concerné, pas directement les consommations physiques ou le tarif de votre contrat d’énergie.' },
+  { q: 'Combien de temps un DPE est-il valable ?', a: 'Un DPE réalisé depuis le 1er juillet 2021 est en principe valable 10 ans. Les DPE réalisés avant cette date ne sont plus valides depuis le 1er janvier 2025.' },
 ];
 const jsonLd = [
-  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished, dateModified: g.dateModified }),
   breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
   faqPage(faq),
 ];
@@ -26,39 +27,48 @@ const jsonLd = [
       <div class="wrap prose">
         <div class="eyebrow">Guide · {g.readMin} min</div>
         <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
-        <p class="lead">Votre DPE affiche une lettre, de A à G. Que mesure-t-elle vraiment, et comment la lire sereinement ? Décryptage neutre, sans promesse de résultat.</p>
+        <p class="lead">{g.excerpt}</p>
 
-        <h2>Ce que mesure le DPE</h2>
-        <p>Le Diagnostic de Performance Énergétique évalue deux choses : la <strong>consommation d'énergie</strong> du logement et ses <strong>émissions de gaz à effet de serre</strong> (le « climat »). Le calcul suit la méthode réglementaire <strong>3CL-DPE</strong>, à partir des caractéristiques réelles du bien : isolation, chauffage, ventilation, fenêtres, etc.</p>
-
-        <h2>L'échelle, de A à G</h2>
+        <h2>Que signifient les lettres A à G ?</h2>
+        <p>Le DPE classe la performance énergétique et renseigne les émissions de gaz à effet de serre. La classe dépend des seuils applicables et des résultats du logement ; une annonce de diagnostic ne peut donc pas promettre une lettre à l’avance.</p>
         <div class="card" style="padding:26px;margin:8px 0 22px">
           <EnergyScale highlight="C" />
+          <p class="muted" style="font-size:13px;margin:14px 0 0">{WORDING.illustration}</p>
         </div>
+
+        <h2>Pourquoi la facture peut être différente</h2>
+        <p>Le calcul repose sur des hypothèses conventionnelles et les caractéristiques du bien. Les usages, les occupants, la météo et les contrats d’énergie influencent les factures réellement payées. Ne comparez pas directement un montant facturé et un indicateur du DPE comme s’ils mesuraient exactement la même chose.</p>
+
+        <h2>Quelles informations vérifier dans le rapport ?</h2>
+        <p>Contrôlez l’adresse, la surface de référence, les équipements et les informations décrivant le logement. Conservez les justificatifs utiles, notamment ceux concernant les travaux et les installations. Une difficulté de compréhension doit être examinée avec le professionnel ; elle ne justifie pas de choisir arbitrairement une classe plus favorable.</p>
+
+        <h2>Que faire des recommandations ?</h2>
+        <p>Les recommandations aident à comprendre les possibilités d’amélioration. Elles ne remplacent pas des devis d’entreprises ni l’étude détaillée d’un projet de rénovation. Un <a href="/audit-energetique">audit énergétique</a> peut approfondir les scénarios lorsqu’il est pertinent ou obligatoire.</p>
+
+        <h2>Les changements de méthode ne sont pas des travaux</h2>
+        <p>Les évolutions réglementaires du calcul peuvent modifier l’étiquette de certains logements sans changer leur consommation réelle. Consultez notre <a href="/guides/reforme-dpe">guide sur les réformes</a> pour distinguer les règles en vigueur en 2026 de celles prévues en 2027, ainsi que les possibilités d’attestation officielle.</p>
+
+        <h2>Vendre ou louer : examiner le dossier complet</h2>
+        <p>Le DPE fait partie d’un ensemble d’informations. Pour louer, sa classe et les autres critères de décence doivent être vérifiés. Pour vendre, d’autres diagnostics et parfois un audit peuvent être nécessaires. Soloris précise le périmètre à prévoir pour votre projet.</p>
+
+        <h2>Pour aller plus loin</h2>
         <ul>
-          <li><strong>A et B</strong> : logements très performants, faibles consommations.</li>
-          <li><strong>C et D</strong> : performance moyenne, la plus fréquente.</li>
-          <li><strong>E, F, G</strong> : logements plus énergivores ; F et G sont souvent qualifiés de « passoires énergétiques ».</li>
+          <li><a href="/dpe">DPE seul</a></li>
+          <li><a href="/guides/reforme-dpe">Réformes du DPE : 2026 et 2027</a></li>
+          <li><a href="/audit-energetique">Audit énergétique</a></li>
+          <li><a href="/diagnostics-location">Diagnostics pour louer</a></li>
         </ul>
-        <p>L'étiquette finale retient la moins favorable des deux dimensions (énergie / climat). Un logement peut donc être bien classé en énergie mais pénalisé par son mode de chauffage.</p>
 
-        <h2>Pourquoi nous ne « promettons » jamais une étiquette</h2>
-        <p>C'est une question de déontologie. Le DPE reflète l'état réel du logement : un diagnostiqueur sérieux ne peut pas garantir une « bonne » lettre à l'avance. Chez Soloris, notre engagement porte sur la <strong>rigueur du calcul</strong> et la <strong>clarté du rapport</strong> — jamais sur le résultat.</p>
-
-        <h2>Mon logement est mal classé : que faire ?</h2>
-        <p>Une étiquette E, F ou G n'est pas une fatalité. Des travaux ciblés (isolation, changement de système de chauffage, ventilation) peuvent améliorer la performance. Pour les prioriser intelligemment, un <a href="/audit-energetique">audit énergétique</a> dresse un parcours de travaux hiérarchisé et chiffré.</p>
-
-        <h2>En résumé</h2>
-        <p>Le DPE classe votre logement de A à G en combinant énergie et climat. C'est un repère utile à l'achat, à la vente et à la location. Besoin du vôtre ? Notre <a href="/dpe">DPE</a> est réalisé avec un rendez-vous sous 48 h et un rapport remis sous 24 h, qu'on vous explique. Estimez-le en 2 minutes via notre <a href="/devis">formulaire de devis</a>.</p>
+        <GuideSources guide={g} />
       </div>
     </section>
 
     <section class="cta-final">
       <div class="wrap">
-        <h2>Votre DPE, expliqué clairement</h2>
-        <p>Rapport sous 24 h, tarif tout compris dès {DPE_FROM} €.</p>
+        <h2>Votre DPE, expliqué</h2>
+        <p>Demande gratuite et sans engagement. Le prix est confirmé avant l’intervention.</p>
         <div class="cta">
-          <a href="/devis?type=dpe" class="btn-gold">Estimer mon DPE</a>
+          <a href="/devis?type=dpe" class="btn-gold">Demander mon devis</a>
           <a href="/dpe" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir l'offre DPE</a>
         </div>
       </div>

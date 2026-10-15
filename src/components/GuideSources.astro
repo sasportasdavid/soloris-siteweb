@@ -1,0 +1,19 @@
+---
+/**
+ * Pied de guide : date de révision réelle + sources officielles (dossier éditorial V2).
+ */
+import { sourcesFor } from '../lib/sources';
+import { dateFr, type GuideMeta } from '../lib/guides';
+
+interface Props { guide: GuideMeta }
+const { guide } = Astro.props;
+const sources = sourcesFor(guide.sources);
+---
+<h2>Sources officielles</h2>
+<ul class="sources-list">
+  {sources.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.label}</a></li>)}
+</ul>
+<p class="muted" style="font-size:13.5px;margin-top:14px">
+  Publié le {dateFr(guide.datePublished)}{guide.dateModified && guide.dateModified !== guide.datePublished ? ` · mis à jour le ${dateFr(guide.dateModified)}` : ''}.
+  Les règles générales présentées ici sont à replacer dans votre situation ; la composition de votre dossier est confirmée au devis.
+</p>

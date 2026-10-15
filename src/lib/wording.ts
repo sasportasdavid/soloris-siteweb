@@ -12,6 +12,22 @@ import { SITE } from './site';
 
 /** Dernière surface (m²) facturée au prix d'entrée du DPE, déduite d'estimerDpe(). */
 export const DPE_FROM_MAX_M2 = (() => { let m = 1; while (m < 1000 && estimerDpe(m + 1) === DPE_FROM) m++; return m; })();
+
+/** Paliers DPE appartement lus dans estimerDpe() : [{ from, to (null = au-delà), prix }]. */
+export const DPE_PALIERS = (() => {
+  const out: { from: number; to: number | null; prix: number }[] = [];
+  for (let m = 1; m <= 400; m++) {
+    const p = estimerDpe(m);
+    const last = out[out.length - 1];
+    if (!last || last.prix !== p) { if (last) last.to = m - 1; out.push({ from: m, to: null, prix: p }); }
+  }
+  return out;
+})();
+/** Paliers au-delà du prix d'entrée, en texte (« 160 € de 40 à 79 m² ; … ; 190 € au-delà de 119 m² »). */
+export const DPE_GRILLE_TEXTE = DPE_PALIERS.slice(1).map((p) =>
+  p.to === null ? `${p.prix} € au-delà de ${p.from - 1} m²` : `${p.prix} € de ${p.from} à ${p.to} m²`).join(' ; ');
+/** Dernière surface (m²) tarifée dans la grille des packs ; au-delà : sur devis. */
+export const PACK_MAX_M2 = Math.max(...SURFACE_BANDS.map((b) => b.maxIncl).filter(Number.isFinite));
 /** Surface maximale du cas d'entrée des packs (1re tranche de la grille). */
 export const PACK_FROM_MAX_M2 = SURFACE_BANDS[0].maxIncl;
 
