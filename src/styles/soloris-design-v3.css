@@ -204,3 +204,39 @@
 /* ── Tableaux : le défilement horizontal reste dans le seul conteneur du tableau ── */
 [data-soloris-design="v3"] #main .ptable th,
 [data-soloris-design="v3"] #main .ptable td { font-size: 15px; }
+
+/* ═════════════════════════ LOT P1 — PAGES D'ARRIVÉE ET OFFRES ═════════════════════════ */
+
+/* ── C07 Prix et conditions : montant 28–34 px, condition dans le même bloc ── */
+[data-soloris-design="v3"] #main .lp-price { border-left-color: var(--soloris-accent); padding: 6px 0 6px 16px; }
+[data-soloris-design="v3"] #main .lp-price-amount { font-size: 19px; }
+[data-soloris-design="v3"] #main .lp-price-amount strong { font-size: 32px; letter-spacing: -.015em; }
+[data-soloris-design="v3"] #main .lp-price-cond { font-size: 14.5px; line-height: 1.55; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .lp-price-amount strong { font-size: 28px; }
+}
+[data-soloris-design="v3"] #main .v3-prix {
+  margin-top: 18px; max-width: 760px; background: #fff; border: 1px solid var(--soloris-line);
+  border-left: 4px solid var(--soloris-accent); border-radius: 16px; padding: 22px 26px;
+}
+[data-soloris-design="v3"] #main .v3-prix-montant { font-family: var(--sora); font-weight: 600; font-size: 32px; letter-spacing: -.015em; line-height: 1.15; color: var(--soloris-blue); }
+[data-soloris-design="v3"] #main .v3-prix .sec-intro { margin-top: 10px; max-width: none; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .v3-prix { padding: 18px 18px; }
+  [data-soloris-design="v3"] #main .v3-prix-montant { font-size: 28px; }
+}
+
+/* ── Preuve compacte des LP (repli éditorial) et liste de réassurance ── */
+[data-soloris-design="v3"] #main .lp-who-title { font-size: 15px; }
+[data-soloris-design="v3"] #main .lp-who { font-size: 14px; line-height: 1.5; }
+[data-soloris-design="v3"] #main .lp-trust { font-size: 13.5px; color: var(--soloris-blue); }
+[data-soloris-design="v3"] #main .lp-strip .wrap { font-size: 13px; }
+
+/* ── C09 Méthode : trois étapes en lecture simple (sans cartes surdimensionnées) ── */
+[data-soloris-design="v3"] #main .steps .step:not(:has(.step-media)) { padding: 24px 24px 26px; box-shadow: none; }
+[data-soloris-design="v3"] #main .steps .step .n { letter-spacing: .1em; font-size: 12.5px; }
+
+/* ── Blocs propres aux offres et intro « En bref » ── */
+[data-soloris-design="v3"] #main .offer-bloc { box-shadow: none; }
+[data-soloris-design="v3"] #main .offer-intro-copy .sec-title { margin-bottom: 4px; }
+[data-soloris-design="v3"] #main .proof-repli { box-shadow: none; border-left: 4px solid var(--soloris-blue); }
