@@ -15,7 +15,8 @@
  *  - cibles : hauteur des boutons d'action (.btn-gold/.btn-blue) et taille de police des champs ;
  *  - débordement horizontal.
  *
- * Usage : node scripts/controles/design-checks.mjs <statique> <sortie.json> [largeurs WxH,…] [routes…]
+ * Usage : [AB_VARIANT=A|B] node scripts/controles/design-checks.mjs <statique> <sortie.json> [largeurs WxH,…] [routes…]
+ * Les cookies d'expérience (cta, steps, early) sont fixés à la même variante (A par défaut).
  * Comparaison : node scripts/controles/design-checks.mjs --compare avant.json apres.json [rapport.md]
  */
 import { createServer } from 'node:http';
@@ -71,6 +72,10 @@ const out = { generatedAt: new Date().toISOString(), static: ROOT, pages: {} };
 for (const spec of SIZES.split(',')) {
   const [w, h] = spec.split('x').map(Number);
   const ctx = await browser.newContext({ viewport: { width: w, height: h || 900 }, serviceWorkers: 'block' });
+  // Même variante expérimentale avant/après (cahier §5.3) : sans ces cookies, steps_order / cta /
+  // early_contact sont tirés au hasard à chaque contexte et l'état initial des étapes diffère.
+  const AB = (process.env.AB_VARIANT || 'A');
+  await ctx.addCookies(['soloris_ab_cta', 'soloris_ab_steps', 'soloris_ab_early'].map((name) => ({ name, value: AB, url: BASE })));
   await ctx.route('**/*', (route) => (route.request().url().startsWith(BASE) ? route.continue() : route.abort()));
   const page = await ctx.newPage();
   for (const r of ROUTES) {

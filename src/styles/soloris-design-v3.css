@@ -160,3 +160,47 @@
 @media (max-width: 480px) {
   [data-soloris-design="v3"] #main .qform { padding: 20px 18px 22px; }
 }
+
+/* ═════════════════════════ LOT V2 — DÉCLINAISON RESPONSIVE ═════════════════════════ */
+
+/* ── Rythme vertical (cahier §1.4) : 72 px entre grandes sections ordinateur, 48 px mobile ── */
+[data-soloris-design="v3"] #main section.section-line,
+[data-soloris-design="v3"] #main section.cta-final { padding-top: 72px; padding-bottom: 72px; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main section.section-line,
+  [data-soloris-design="v3"] #main section.cta-final { padding-top: 48px; padding-bottom: 48px; }
+}
+
+/* ── C02 Hero public avec formulaire : 52/48 au-dessus de 920 px, UNE seule bascule à 920 px.
+      Avant : grille 2 colonnes jusqu'à 881 px alors que l'ordre mobile s'appliquait dès 920 px
+      (formulaire écrasé à 190–250 px de large entre 881 et 920 px). ── */
+@media (min-width: 921px) {
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) { grid-template-columns: 52fr 48fr; gap: 44px; }
+}
+@media (max-width: 920px) {
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) .hero-copy { padding: 36px 0 26px; }
+}
+
+/* ── C03 Hero Ads : même bascule à 920 px (avant : 820 px) ; carte de formulaire de largeur
+      confortable et centrée sous le texte (aucun déplacement dans le DOM). ── */
+@media (max-width: 920px) {
+  [data-soloris-design="v3"] #main .lp-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  [data-soloris-design="v3"] #main .lp-hero-visual { width: 100%; max-width: 600px; justify-self: center; }
+}
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .lp-hero { padding-top: 32px; padding-bottom: 32px; }
+  [data-soloris-design="v3"] #main .lp-sub { font-size: 16.5px; }
+  [data-soloris-design="v3"] #main .lp-price-cond { font-size: 14px; }
+}
+
+/* ── Petits écrans : titres de section et pastilles sans débordement ── */
+@media (max-width: 380px) {
+  [data-soloris-design="v3"] #main .sec-title { font-size: 25px; }
+  [data-soloris-design="v3"] #main .hero h1 { font-size: 30px; }
+  [data-soloris-design="v3"] #main .tagpill { font-size: 12.5px; }
+}
+
+/* ── Tableaux : le défilement horizontal reste dans le seul conteneur du tableau ── */
+[data-soloris-design="v3"] #main .ptable th,
+[data-soloris-design="v3"] #main .ptable td { font-size: 15px; }
