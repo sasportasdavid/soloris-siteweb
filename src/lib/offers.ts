@@ -42,12 +42,12 @@ export const OFFERS: Offer[] = [
     url: '/diagnostics-vente',
     demande: 'vente',
     nav: 'Diagnostics pour vendre',
-    navDesc: 'Le pack complet, tout compris, sous 48 h',
+    navDesc: 'Le pack complet, tout compris, rapport sous 24 h',
     shortLabel: 'dossier de diagnostics pour vendre',
-    h1: 'Tous vos diagnostics de vente, prêts pour le notaire — sous 48 h, prix tout compris annoncé d’avance.',
+    h1: 'Tous vos diagnostics de vente, prêts pour le notaire — rapport sous 24 h, prix tout compris annoncé d’avance.',
     title: 'Diagnostics pour vendre à Paris & IDF | Soloris',
     metaDesc:
-      'Pack diagnostics vente tout compris, rapport opposable sous 48 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC. Devis en 2 min.',
+      'Pack diagnostics vente tout compris, rapport opposable sous 24 h à Paris et en Île-de-France. Diagnostiqueur certifié COFRAC. Devis en 2 min.',
     tagline: "Un seul rendez-vous, un prix annoncé d'avance, aucun frais surprise le jour J.",
     // CTA héro : scroll vers le simulateur embarqué (#simulateur), même tunnel, sans quitter la page.
     heroCtaHref: '#simulateur',
@@ -76,7 +76,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'En combien de temps reçois-je le rapport ?',
-        a: 'Nous proposons un rendez-vous et la remise du rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.',
+        a: 'Nous proposons un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
       {
         q: 'Le rapport est-il accepté par le notaire ?',
@@ -98,8 +98,8 @@ export const OFFERS: Offer[] = [
     h1: 'Diagnostics location à Paris & Île-de-France',
     title: 'Diagnostics location (pack bailleur) Paris & IDF | Soloris',
     metaDesc:
-      'Pack diagnostics location tout compris pour bailleurs, sous 48 h à Paris et en Île-de-France. Rapport clair, diagnostiqueur certifié COFRAC. Devis en 2 min.',
-    tagline: "Préparez votre mise en location avec les diagnostics obligatoires : tarif clair, intervention rapide et rapport sous 48 h.",
+      'Pack diagnostics location tout compris pour bailleurs, rapport sous 24 h à Paris et en Île-de-France. Rapport clair, diagnostiqueur certifié COFRAC. Devis en 2 min.',
+    tagline: "Préparez votre mise en location avec les diagnostics obligatoires : tarif clair, intervention rapide et rapport sous 24 h.",
     intro:
       "Avant de louer, certains diagnostics doivent être annexés au bail. Soloris réunit le pack bailleur applicable à votre logement, avec un rapport lisible que vous pouvez transmettre directement à votre locataire ou à votre agence.",
     heroImage: '/images/salon-meuble.webp',
@@ -134,7 +134,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Quel est le délai pour le pack location ?',
-        a: 'Rendez-vous et rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.',
+        a: 'Rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
       {
         q: 'Combien coûte le pack location ?',
@@ -147,13 +147,13 @@ export const OFFERS: Offer[] = [
     url: '/dpe',
     demande: 'dpe',
     nav: 'DPE seul',
-    navDesc: 'Rapide, sous 48 h',
+    navDesc: 'Rapide, rapport sous 24 h',
     shortLabel: 'DPE',
-    h1: `DPE à Paris & Île-de-France — certifié, opposable, sous 48 h`,
-    title: `DPE à Paris & Île-de-France — certifié, sous 48 h | Soloris`,
+    h1: `DPE à Paris & Île-de-France — certifié, opposable, rapport sous 24 h`,
+    title: `DPE à Paris & Île-de-France — certifié, rapport sous 24 h | Soloris`,
     metaDesc:
-      `Faites réaliser votre DPE par un diagnostiqueur certifié COFRAC. Rendez-vous rapide, tarif tout compris, rapport opposable sous 48 h à Paris et en Île-de-France.`,
-    tagline: "Faites réaliser votre diagnostic de performance énergétique par un diagnostiqueur certifié, avec rapport transmis sous 48 h.",
+      `Faites réaliser votre DPE par un diagnostiqueur certifié COFRAC. Rendez-vous rapide, tarif tout compris, rapport opposable sous 24 h à Paris et en Île-de-France.`,
+    tagline: "Faites réaliser votre diagnostic de performance énergétique par un diagnostiqueur certifié, avec rapport transmis sous 24 h après la visite.",
     intro:
       "Le DPE évalue la performance énergétique de votre logement et lui attribue une étiquette de A à G. Soloris le réalise rapidement et vous remet un rapport pédagogique : vous comprenez votre étiquette et les pistes d'amélioration, sans jargon.",
     inclus: [
@@ -182,7 +182,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Intervenez-vous rapidement ?',
-        a: 'Oui : rendez-vous et rapport sous 48 h dans la plupart des cas à Paris et en Île-de-France.',
+        a: 'Oui : rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
     ],
   },

@@ -49,7 +49,7 @@ Voici ce que nous avons reçu : ${recap}.
 
 ${estimText}
 
-Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 48 h après le passage. À très vite.
+Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 24 h après le passage. À très vite.
 
 L'équipe Soloris — Le diagnostic, en toute clarté.
 soloris.fr · Paris & Île-de-France · Une marque du groupe ISDIAG
@@ -85,7 +85,7 @@ Cet email est automatique, merci de ne pas y répondre directement.`;
               : `<div style="font-size:15px;font-weight:bold;color:#fff;line-height:1.3">Votre devis personnalisé tout compris</div><div style="font-size:12.5px;color:#C3D2E2;margin-top:6px;line-height:1.5">Confirmé lors du rappel, déplacement inclus, sans engagement.</div>`}
           </td>
         </tr></table>
-        <p style="margin:0 0 20px;font-size:15px;line-height:1.6">Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 48 h après le passage. À très vite.</p>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6">Pas de mauvaise surprise : tarif tout compris, rapport clair et opposable, en général sous 24 h après le passage. À très vite.</p>
         <p style="margin:0 0 4px;font-size:15px;color:#0B2A4A"><strong>L'équipe Soloris</strong> — <span style="color:#5B6B7C">Le diagnostic, en toute clarté.</span></p>
       </td></tr>
       <tr><td style="padding:18px 28px 24px">

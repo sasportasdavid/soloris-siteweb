@@ -12,12 +12,12 @@ export type HeroVariant = { h1: string; sub: string };
 
 export const HERO_VARIANTS: Record<string, HeroVariant> = {
   dpe: {
-    h1: 'Votre DPE à Paris et en Île-de-France, <span class="hl">sous 48 h</span>',
+    h1: 'Votre DPE à Paris et en Île-de-France, <span class="hl">rapport sous 24 h</span>',
     sub: 'Tarif tout compris, rapport lisible. Diagnostiqueur certifié COFRAC.',
   },
   vente: {
     h1: 'Tous vos diagnostics pour <span class="hl">vendre</span>, en toute clarté',
-    sub: 'Pack complet tout compris, rapport opposable sous 48 h.',
+    sub: 'Pack complet tout compris, rapport opposable sous 24 h.',
   },
   location: {
     h1: 'Vos diagnostics pour <span class="hl">louer</span>, tout compris',
@@ -29,7 +29,7 @@ export const HERO_VARIANTS: Record<string, HeroVariant> = {
   },
   default: {
     h1: 'Vos diagnostics immobiliers, <span class="hl">en toute clarté</span>',
-    sub: 'Tarif tout compris, rapport sous 48 h. Paris et Île-de-France.',
+    sub: 'Tarif tout compris, rapport sous 24 h. Paris et Île-de-France.',
   },
 };
 

@@ -161,7 +161,7 @@ export async function generateDevisPdf(d: DevisPdfData, opts: { signUrl?: string
   // ── Mentions ──
   const mentions = [
     'Montants en euros, TTC, déplacement inclus. ERP inclus dans les packs vente et location.',
-    'Rapport(s) transmis sous 48 h après réception du règlement. Prestation réalisée par un diagnostiqueur certifié (assurance RC professionnelle).',
+    'Rapport(s) transmis sous 24 h après la visite, dès réception du règlement. Prestation réalisée par un diagnostiqueur certifié (assurance RC professionnelle).',
     `Devis valable ${d.validite_jours || 30} jours à compter de sa date d'émission.`,
   ];
   mentions.forEach((m) => { wrap(m, font, 8.5, right - M).forEach((ln) => { text(ln, M, y, 8.5, font, SOFT); y -= 11; }); });

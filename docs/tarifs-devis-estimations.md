@@ -219,7 +219,7 @@ Objet, durée de validité et lignes (désignation + montant entier) sont modifi
 ### Mentions du PDF
 
 - Montants en euros, **TTC**, déplacement inclus, ERP inclus dans les packs vente et location.
-- Rapport transmis sous 48 h après réception du règlement, par un diagnostiqueur certifié avec assurance RC professionnelle.
+- Rapport transmis sous 24 h après la visite, dès réception du règlement, par un diagnostiqueur certifié avec assurance RC professionnelle.
 - Devis valable 30 jours à compter de l'émission.
 - Pied de page : raison sociale, SIREN, SIRET, numéro de TVA intracommunautaire, APE.
 

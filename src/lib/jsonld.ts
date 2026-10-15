@@ -15,7 +15,7 @@ export function localBusiness() {
     name: SITE.name,
     legalName: SITE.legalName,
     description:
-      'Diagnostics immobiliers (DPE, packs vente et location, audit énergétique) à Paris et en Île-de-France. Tarif tout compris, rapport sous 48 h, diagnostiqueur certifié COFRAC.',
+      'Diagnostics immobiliers (DPE, packs vente et location, audit énergétique) à Paris et en Île-de-France. Tarif tout compris, rapport sous 24 h, diagnostiqueur certifié COFRAC.',
     url: SITE.url,
     telephone: SITE.phone,
     email: SITE.email,
