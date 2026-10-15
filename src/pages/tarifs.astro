@@ -71,8 +71,27 @@ const jsonLd = [catalogue, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/'
   <section>
     <div class="wrap">
       <div class="eyebrow">Tarifs</div>
-      <h1 class="sec-title" style="font-size:44px">Les tarifs de vos diagnostics immobiliers</h1>
+      <h1 class="sec-title v3-page-title">Les tarifs de vos diagnostics immobiliers</h1>
       <p class="sec-intro">Des prix TTC, le déplacement inclus et un devis confirmé avant l’intervention. Choisissez votre projet pour comprendre le tarif applicable à votre bien.</p>
+      <!-- Résumé tarifaire qualifié (cahier P09) : repères lus dans pricing.ts, condition sous chaque
+           montant. Ce n'est pas un second calculateur ; le formulaire reste à sa place. -->
+      <ul class="v3-resume" aria-label="Repères de prix">
+        <li class="v3-resume-item">
+          <a href="/dpe">DPE</a>
+          <p class="v3-resume-prix">dès {DPE_FROM}&nbsp;€ TTC</p>
+          <p class="v3-resume-cond">Appartement jusqu’à {DPE_FROM_MAX_M2}&nbsp;m² ; + {DPE_MAISON_SUPP}&nbsp;€ pour une maison.</p>
+        </li>
+        <li class="v3-resume-item">
+          <a href="/diagnostics-vente">Packs vente et location</a>
+          <p class="v3-resume-prix">dès {prixDes('vente')}&nbsp;€ TTC</p>
+          <p class="v3-resume-cond">Appartement de {SURFACE_BANDS[0].maxIncl}&nbsp;m² maximum, construit depuis moins de 15 ans.</p>
+        </li>
+        <li class="v3-resume-item">
+          <a href="/audit-energetique">Audit énergétique</a>
+          <p class="v3-resume-prix">de {AUDIT_FROM} à {AUDIT_TO}&nbsp;€ TTC</p>
+          <p class="v3-resume-cond">Selon le bien ; périmètre et délai confirmés au devis.</p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -127,7 +146,7 @@ const jsonLd = [catalogue, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/'
       <div class="eyebrow">À l’unité</div>
       <h2 class="sec-title">Diagnostics à l’unité</h2>
       <p class="sec-intro">Certains diagnostics peuvent être commandés séparément. Le forfait électricité + gaz correspond aux deux prestations, pas au prix de chacune prise isolément.</p>
-      <div style="overflow-x:auto" class="mt-5">
+      <div style="overflow-x:auto" class="mt-5" tabindex="0" role="region" aria-label="Tableau des tarifs à l’unité (défilement horizontal possible)">
         <table class="ptable">
           <thead><tr><th scope="col">Diagnostic</th><th scope="col">Tarif TTC</th></tr></thead>
           <tbody>

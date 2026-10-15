@@ -240,3 +240,43 @@
 [data-soloris-design="v3"] #main .offer-bloc { box-shadow: none; }
 [data-soloris-design="v3"] #main .offer-intro-copy .sec-title { margin-bottom: 4px; }
 [data-soloris-design="v3"] #main .proof-repli { box-shadow: none; border-left: 4px solid var(--soloris-blue); }
+
+/* ═════════════════════════ LOT P2 — ACCUEIL, TARIFS, CONFIANCE ═════════════════════════ */
+
+/* ── Titres de page (remplacent les tailles fixées en ligne : 40–44 px même sur mobile) ── */
+[data-soloris-design="v3"] #main .v3-page-title { font-size: 44px; line-height: 1.12; letter-spacing: -.02em; }
+@media (max-width: 720px) { [data-soloris-design="v3"] #main .v3-page-title { font-size: 31px; } }
+@media (max-width: 380px) { [data-soloris-design="v3"] #main .v3-page-title { font-size: 28px; } }
+
+/* ── C06 Comparaison des offres (accueil, pages locales) : usage, bénéfice, repère tarifaire, destination ── */
+[data-soloris-design="v3"] #main .need-card { padding: 24px 22px 24px; gap: 10px; }
+[data-soloris-design="v3"] #main .need-card .ic { width: 44px; height: 44px; }
+[data-soloris-design="v3"] #main .need-card .go {
+  color: var(--soloris-blue); font-size: 15px; padding-top: 14px; margin-top: auto;
+  border-top: 1px solid var(--soloris-line); width: 100%;
+}
+
+/* ── Engagements (accueil) : cartes sobres ── */
+[data-soloris-design="v3"] #main .eng-card { padding: 24px; border-radius: 16px; }
+[data-soloris-design="v3"] #main .eng-card:hover { transform: none; box-shadow: var(--soloris-shadow-light); }
+[data-soloris-design="v3"] #main .eng-body p { font-size: 15.5px; }
+
+/* ── Bloc tarifs de l'accueil : conditions lisibles sur marine ── */
+[data-soloris-design="v3"] #main .block-blue h2 { font-size: 32px; }
+[data-soloris-design="v3"] #main .block-blue .price-cond { opacity: 1; color: #DCE6F0; font-size: 14px; }
+
+/* ── P09 Résumé tarifaire qualifié (/tarifs) ── */
+[data-soloris-design="v3"] #main .v3-resume { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+[data-soloris-design="v3"] #main .v3-resume-item { background: #fff; border: 1px solid var(--soloris-line); border-top: 3px solid var(--soloris-accent); border-radius: 16px; padding: 18px 20px 20px; }
+[data-soloris-design="v3"] #main .v3-resume-item a { font-family: var(--sora); font-weight: 600; font-size: 16px; color: var(--soloris-blue); text-decoration: underline; text-underline-offset: 3px; }
+[data-soloris-design="v3"] #main .v3-resume-prix { font-family: var(--sora); font-weight: 600; font-size: 28px; letter-spacing: -.015em; color: var(--soloris-blue); margin-top: 6px; }
+[data-soloris-design="v3"] #main .v3-resume-cond { font-size: 14px; color: var(--soloris-ink-soft); margin-top: 4px; line-height: 1.5; }
+@media (max-width: 860px) { [data-soloris-design="v3"] #main .v3-resume { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── Tableau des tarifs : en-têtes identifiables, défilement au clavier (focus visible) ── */
+[data-soloris-design="v3"] #main [role="region"][tabindex="0"]:focus-visible { outline: 3px solid var(--soloris-focus); outline-offset: 3px; border-radius: 16px; }
+[data-soloris-design="v3"] #main .ptable td.price { color: var(--soloris-blue); }
+
+/* ── Méthode / contact : piliers et cartes sobres ── */
+[data-soloris-design="v3"] #main .pillar h3 { font-size: 19px; line-height: 1.3; }
+[data-soloris-design="v3"] #main .pillar .ic { width: 42px; height: 42px; }
