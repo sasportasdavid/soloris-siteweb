@@ -3,18 +3,21 @@
  * « Wall of love » : 2e bloc de preuve sociale (méthode Hormozi — afficher le
  * VOLUME, pas 3 avis). Bandeau agrégat (note Google réelle) + mur compact d'avis
  * réels supplémentaires (REVIEWS_EXTRA). N'affiche que du réel (source : reviews.ts).
+ * Masqué tant que la preuve n'est pas documentée (preuves.ts) : le repli est porté
+ * par le bloc Reviews, pas répété ici.
  */
 import { SITE } from '../lib/site';
 import { REVIEWS_EXTRA } from '../lib/reviews';
+import { avisVerifies, AVIS_ATTRIBUTION } from '../lib/preuves';
 
 interface Props {
   title?: string;
   eyebrow?: string;
   limit?: number;
 }
-const { title = 'Ils nous recommandent', eyebrow = 'Avis vérifiés', limit = 6 } = Astro.props;
+const { title = `D’autres retours de clients d’${SITE.legalName}`, eyebrow = 'Avis Google', limit = 6 } = Astro.props;
 const items = REVIEWS_EXTRA.slice(0, limit);
-const hasReviews = Number(SITE.rating.count) > 0;
+const hasReviews = avisVerifies;
 ---
 {hasReviews && (
   <section class="section-line">
@@ -32,6 +35,7 @@ const hasReviews = Number(SITE.rating.count) > 0;
         <strong>{SITE.rating.value}/5</strong>
         <span class="agg-sub">· {SITE.rating.count} avis Google</span>
       </div>
+      <p class="muted mt-2" style="text-align:center;font-size:13px">{AVIS_ATTRIBUTION}</p>
 
       <!-- Mur d'avis compact -->
       <div class="wall-grid mt-5">

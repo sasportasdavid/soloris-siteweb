@@ -1,43 +1,66 @@
 ---
 /**
- * /tarifs — pilier Clarté. Grille complète + add-ons. JSON-LD AggregateOffer + FAQ.
+ * /tarifs — grille et diagnostics à l'unité (textes : dossier éditorial V2, oct. 2026).
+ * Montants lus dans pricing.ts (aucun calcul recopié). JSON-LD : catalogue d'offres
+ * distinctes (prix d'entrée de chaque prestation) + FAQ + fil d'Ariane.
  */
 import Base from '../layouts/Base.astro';
 import QuoteForm from '../components/QuoteForm.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
-import { ADDONS, APPART_GRID, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, DPE_FROM, DPE_TO, DPE_MAISON_SUPP, AUDIT_FROM, AUDIT_TO, LOT_ANNEXE_PRICE } from '../lib/pricing';
+import { ADDONS, SURFACE_BANDS, MAISON_SUPP, MAISON_COPRO_SUPPLEMENT, DPE_FROM, DPE_MAISON_SUPP, AUDIT_FROM, AUDIT_TO, LOT_ANNEXE_PRICE, prixDes } from '../lib/pricing';
 import { SITE } from '../lib/site';
+import { CONDITIONS, DPE_FROM_MAX_M2, DPE_GRILLE_TEXTE, WORDING } from '../lib/wording';
 import { faqPage, breadcrumb } from '../lib/jsonld';
 
-// Bornes de prix du site (pack appart/maison + DPE + audit) pour l'AggregateOffer
-const packNums = APPART_GRID.filter(Boolean).flatMap((r) => r as readonly number[]);
-const siteLow = Math.min(DPE_FROM, ...packNums);
-const siteHigh = Math.max(AUDIT_TO, Math.max(...packNums) + MAISON_SUPP);
+// Diagnostics à l'unité : rendu public. La clé `cave` (supplément obsolète) n'est PAS affichée
+// comme un supplément : l'annexe rattachée au logement est incluse dans le pack (règle inchangée
+// du calculateur) ; le lot vendu seul relève de LOT_ANNEXE_PRICE.
+const NOTES: Record<string, string> = { erp: 'inclus dans les packs', elec_gaz: 'forfait pour les deux prestations' };
+const unites = ADDONS.filter((a) => a.key !== 'cave');
 
-const aggregateOffer = {
-  '@context': 'https://schema.org',
-  '@type': 'AggregateOffer',
+const offre = (name: string, min: number, max?: number) => ({
+  '@type': 'Offer',
+  itemOffered: { '@type': 'Service', name },
   priceCurrency: 'EUR',
-  lowPrice: String(siteLow),
-  highPrice: String(siteHigh),
+  price: String(min),
+  priceSpecification: {
+    '@type': 'PriceSpecification',
+    priceCurrency: 'EUR',
+    minPrice: String(min),
+    ...(typeof max === 'number' ? { maxPrice: String(max) } : {}),
+    valueAddedTaxIncluded: true,
+  },
   availability: 'https://schema.org/InStock',
-  areaServed: SITE.areaServed.map((name) => ({ '@type': 'AdministrativeArea', name })),
+  areaServed: SITE.areaServed.map((n) => ({ '@type': 'AdministrativeArea', name: n })),
+});
+const catalogue = {
+  '@context': 'https://schema.org',
+  '@type': 'OfferCatalog',
+  name: 'Tarifs des diagnostics immobiliers Soloris',
+  url: new URL('/tarifs', SITE.url).href,
+  itemListElement: [
+    offre('DPE', DPE_FROM),
+    offre('Pack diagnostics vente', prixDes('vente')),
+    offre('Pack diagnostics location', prixDes('location')),
+    offre('Audit énergétique', AUDIT_FROM, AUDIT_TO),
+  ],
 };
 
 const faq = [
-  { q: 'Pourquoi le prix dépend-il de l\'âge du bien ?', a: "Parce que les diagnostics obligatoires varient selon la date de construction : amiante et plomb sont requis sur les biens anciens, pas sur les plus récents. Un bien d'avant 1949 nécessite donc plus de diagnostics qu'un logement de moins de 15 ans." },
-  { q: 'Le déplacement est-il inclus dans le prix ?', a: 'Oui. Tous nos tarifs sont tout compris, déplacement inclus à Paris et en Île-de-France. Aucun frais caché.' },
-  { q: 'Comment est calculé le prix d\'une maison ?', a: `Le prix d'une maison correspond à celui d'un appartement de même surface et même âge, majoré de ${MAISON_SUPP} €. Pour une maison en copropriété, comptez ${MAISON_COPRO_SUPPLEMENT} € de plus. Pour un DPE seul, une maison est majorée de ${DPE_MAISON_SUPP} €.` },
-  { q: 'Comment obtenir un prix ferme ?', a: 'Utilisez notre formulaire de devis : vous indiquez la surface et l\'âge du bien, vous obtenez une estimation immédiate, puis un devis confirmé sans engagement.' },
+  { q: 'Les tarifs sont-ils TTC ?', a: 'Oui, les montants présentés sur cette page sont TTC. Le devis précise les prestations et le montant applicable à votre demande.' },
+  { q: 'Le déplacement est-il inclus ?', a: `Oui, à Paris et dans toute l’Île-de-France selon le périmètre actuel de ${SITE.tradeName}.` },
+  { q: 'Pourquoi le prix varie-t-il avec le bien ?', a: 'La mission et les diagnostics nécessaires peuvent différer selon le logement et les installations. Les catégories de prix ne remplacent pas la vérification des obligations applicables.' },
+  { q: 'Le prix du formulaire est-il un devis ferme ?', a: 'Non. L’estimation se fonde sur les informations saisies. Le devis est confirmé avant l’intervention.' },
+  { q: 'Dois-je payer une cave ajoutée au pack ?', a: 'L’annexe rattachée au logement est incluse dans le pack selon l’offre actuelle. Le cas d’un lot diagnostiqué seul relève d’un tarif distinct.' },
 ];
 
-const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Tarifs', url: '/tarifs' }])];
+const jsonLd = [catalogue, faqPage(faq), breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Tarifs', url: '/tarifs' }])];
 ---
 <Base
-  title="Tarifs des diagnostics immobiliers, tout compris | Soloris"
-  description="Tarifs tout compris des diagnostics immobiliers à Paris et Île-de-France : DPE, vente, location, audit. Déplacement inclus, sans frais cachés."
+  title="Prix des diagnostics immobiliers à Paris | Soloris"
+  description={`Consultez les tarifs Soloris : DPE dès ${DPE_FROM} € TTC, packs dès ${prixDes('vente')} € TTC selon le bien. Déplacement inclus et prix confirmé avant la visite.`}
   path="/tarifs"
   jsonLd={jsonLd}
 >
@@ -48,29 +71,31 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
   <section>
     <div class="wrap">
       <div class="eyebrow">Tarifs</div>
-      <h1 class="sec-title" style="font-size:44px">Tarifs tout compris, déplacement inclus</h1>
-      <p class="sec-intro">Le prix que vous voyez est le prix que vous payez. Jamais le luxe, jamais l'à-peu-près : un tarif juste, et la transparence en prime.</p>
+      <h1 class="sec-title" style="font-size:44px">Les tarifs de vos diagnostics immobiliers</h1>
+      <p class="sec-intro">Des prix TTC, le déplacement inclus et un devis confirmé avant l’intervention. Choisissez votre projet pour comprendre le tarif applicable à votre bien.</p>
     </div>
   </section>
 
   <ReassuranceBar />
 
-  <!-- CTA « prix exact » (conversion) — §9.3 audit -->
+  <!-- Packs vente et location -->
   <section class="section-line">
     <div class="wrap" style="max-width:820px">
-      <div class="eyebrow">Votre prix exact</div>
-      <h2 class="sec-title" style="font-size:28px">Vous voulez connaître le prix exact pour votre bien&nbsp;?</h2>
-      <p class="sec-intro">Le tarif dépend de votre projet, de la surface, de l'âge du logement et des diagnostics obligatoires. Répondez à quelques questions pour obtenir une estimation adaptée — confirmée avant l'intervention.</p>
-      <div class="flex-cta mt-4"><a href="#simulateur" class="btn-blue">Calculer mon prix exact</a></div>
+      <div class="eyebrow">Vendre ou louer</div>
+      <h2 class="sec-title" style="font-size:28px">Packs vente et location</h2>
+      <p class="tarif-big">Dès {prixDes('vente')}&nbsp;€ TTC</p>
+      <p class="sec-intro">Dès {prixDes('vente')}&nbsp;€ TTC pour un appartement de {SURFACE_BANDS[0].maxIncl}&nbsp;m² maximum construit depuis moins de 15 ans. La grille varie selon la surface et la catégorie tarifaire du bien. Le prix d’une maison ajoute {MAISON_SUPP}&nbsp;€ au tarif appartement correspondant ; une maison en copropriété ajoute encore {MAISON_COPRO_SUPPLEMENT}&nbsp;€.</p>
+      <p class="muted mt-2" style="font-size:14px">{CONDITIONS.pack}</p>
+      <div class="flex-cta mt-4"><a href="#simulateur" class="btn-blue">Demander mon devis</a></div>
     </div>
   </section>
 
   <section class="section-line">
     <div class="wrap">
       <div class="sec-head center">
-        <div class="eyebrow center">Votre devis en direct</div>
-        <h2 class="sec-title" style="font-size:28px">Estimez votre prix, tout compris</h2>
-        <p class="sec-intro">Renseignez votre bien en 2 minutes : vous obtenez votre estimation tout compris, déplacement inclus, sans engagement.</p>
+        <div class="eyebrow center">Demande de devis</div>
+        <h2 class="sec-title" style="font-size:28px">Obtenez une estimation adaptée à votre bien</h2>
+        <p class="sec-intro">Le formulaire recueille votre projet, les caractéristiques du logement et vos coordonnées. Lorsqu’une estimation est prévue dans ce parcours, elle apparaît après l’envoi des coordonnées. Le devis est ensuite confirmé avant l’intervention.</p>
       </div>
       <div class="mt-5" id="simulateur"><QuoteForm revealEstimation={true} /></div>
     </div>
@@ -82,15 +107,15 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
       <h2 class="sec-title">DPE seul & audit énergétique</h2>
       <div class="grid grid-2 mt-5">
         <div class="card" style="padding:26px 28px">
-          <h3 style="font-family:var(--sora);font-weight:600;font-size:19px;color:var(--blue)">DPE seul</h3>
-          <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">dès {DPE_FROM} €</p>
-          <p class="muted" style="font-size:14px">{DPE_FROM} à {DPE_TO} € selon la surface, + {DPE_MAISON_SUPP} € pour une maison, tout compris, déplacement inclus.</p>
+          <h3 style="font-family:var(--sora);font-weight:600;font-size:19px;color:var(--blue)">DPE : un tarif selon la surface</h3>
+          <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">dès {DPE_FROM} € TTC</p>
+          <p class="muted" style="font-size:14px">Dès {DPE_FROM}&nbsp;€ TTC pour un appartement jusqu’à {DPE_FROM_MAX_M2}&nbsp;m². Appartement : {DPE_GRILLE_TEXTE} selon la grille actuelle. Maison : ajouter {DPE_MAISON_SUPP}&nbsp;€ TTC. Déplacement inclus.</p>
           <p class="mt-2"><a href="/dpe" class="btn-ghost btn-sm">L'offre DPE</a></p>
         </div>
         <div class="card" style="padding:26px 28px">
           <h3 style="font-family:var(--sora);font-weight:600;font-size:19px;color:var(--blue)">Audit énergétique</h3>
-          <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">de {AUDIT_FROM} à {AUDIT_TO} €</p>
-          <p class="muted" style="font-size:14px">Pour les logements énergivores (F, G, E), tout compris, selon le bien.</p>
+          <p style="font-family:var(--sora);font-weight:600;font-size:26px;color:var(--blue);margin:8px 0 4px">de {AUDIT_FROM} à {AUDIT_TO} € TTC</p>
+          <p class="muted" style="font-size:14px">De {AUDIT_FROM} à {AUDIT_TO}&nbsp;€ TTC selon le bien. Le périmètre de l’audit, le délai et le montant sont confirmés au devis.</p>
           <p class="mt-2"><a href="/audit-energetique" class="btn-ghost btn-sm">L'audit énergétique</a></p>
         </div>
       </div>
@@ -99,41 +124,56 @@ const jsonLd = [aggregateOffer, faqPage(faq), breadcrumb([{ name: 'Accueil', url
 
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">À la carte</div>
-      <h2 class="sec-title">Diagnostics complémentaires</h2>
-      <p class="sec-intro">Certains diagnostics s'ajoutent selon votre bien. Voici les principaux, à titre indicatif.</p>
+      <div class="eyebrow">À l’unité</div>
+      <h2 class="sec-title">Diagnostics à l’unité</h2>
+      <p class="sec-intro">Certains diagnostics peuvent être commandés séparément. Le forfait électricité + gaz correspond aux deux prestations, pas au prix de chacune prise isolément.</p>
       <div style="overflow-x:auto" class="mt-5">
         <table class="ptable">
-          <thead><tr><th scope="col">Diagnostic</th><th scope="col">Tarif indicatif</th></tr></thead>
+          <thead><tr><th scope="col">Diagnostic</th><th scope="col">Tarif TTC</th></tr></thead>
           <tbody>
-            {ADDONS.map((a) => (
+            {unites.map((a) => (
               <tr>
                 <th scope="row" style="font-weight:500">{a.label}</th>
-                <td class="price">{a.prefix}{a.price} €{a.note ? <small> · {a.note}</small> : null}</td>
+                <td class="price">{a.prefix}{a.price} €{NOTES[a.key] ? <small> · {NOTES[a.key]}</small> : null}</td>
               </tr>
             ))}
+            <tr>
+              <th scope="row" style="font-weight:500">Termites</th>
+              <td class="price">Sur devis</td>
+            </tr>
           </tbody>
         </table>
       </div>
-      <p class="price-note">Montants TTC indicatifs. La liste exacte applicable à votre bien est confirmée au devis.</p>
+      <p class="price-note">Montants TTC. La liste des diagnostics applicables à votre bien est confirmée au devis.</p>
 
       <div style="margin-top:18px;background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:12px;padding:16px 20px">
-        <strong style="font-family:var(--sora);color:var(--blue)">Cave, parking ou box vendu seul</strong>
-        <span class="price"> — {LOT_ANNEXE_PRICE} € tout compris</span>
-        <span style="display:block;font-size:13.5px;margin-top:4px;color:var(--ink-soft)">Tarif unique pour ces lots, déplacement inclus.</span>
+        <strong style="font-family:var(--sora);color:var(--blue)">Annexes : deux situations différentes</strong>
+        <span style="display:block;font-size:14px;margin-top:6px;color:var(--ink)">Une annexe rattachée au logement est incluse dans le pack. Une cave, un parking ou un box diagnostiqué seul est proposé à <span class="price">{LOT_ANNEXE_PRICE}&nbsp;€ TTC</span>, déplacement inclus.</span>
       </div>
     </div>
   </section>
 
-  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+  <section class="section-line">
+    <div class="wrap" style="max-width:820px">
+      <div class="eyebrow">Bon à savoir</div>
+      <h2 class="sec-title" style="font-size:28px">Ce qui peut faire varier le prix</h2>
+      <p class="sec-intro">La surface, le type de bien, les diagnostics nécessaires et les particularités de la mission. Un prélèvement, une analyse ou une prestation complémentaire ne doit jamais être ajouté sans information sur son périmètre et son prix lorsqu’il est nécessaire.</p>
+    </div>
+  </section>
+
+  <Reviews limit={3} />
 
   <section class="cta-final">
     <div class="wrap">
-      <h2>Une estimation en 2 minutes</h2>
-      <p>Obtenez votre prix tout compris immédiatement, sans engagement.</p>
-      <div class="cta"><a href="#simulateur" class="btn-gold">Obtenir mon devis</a></div>
+      <h2>Demandez votre devis</h2>
+      <p>{WORDING.engagementDevis}</p>
+      <div class="cta"><a href="#simulateur" class="btn-gold">Demander mon devis</a></div>
     </div>
   </section>
 
   <Faq items={faq} title="Questions sur nos tarifs" />
 </Base>
+
+<style>
+  .tarif-big { font-family: var(--sora); font-weight: 600; font-size: 26px; color: var(--blue); margin: 6px 0 8px; }
+</style>

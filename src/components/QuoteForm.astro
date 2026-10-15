@@ -10,7 +10,7 @@
  * Préselection via ?type=vente|location|dpe|audit.
  */
 import {
-  DEMANDE_LABELS, AGE_LABELS, AGE_DESC, SURFACE_BANDS, APPART_GRID,
+  DEMANDE_LABELS, AGE_LABELS, SURFACE_BANDS, APPART_GRID,
   MAISON_SUPP, AUDIT_FROM, DPE_MAISON_SUPP, LOT_ANNEXE_PRICE, TYPE_BIEN_LABELS, FIXED, estimerDpe,
 } from '../lib/pricing';
 import { SITE } from '../lib/site';
@@ -48,6 +48,14 @@ const DEMANDE_DESC: Record<string, string> = {
   location: 'Je mets en location',
   dpe: 'Juste le diagnostic énergie',
   audit: 'Logement classé F, G ou E',
+};
+
+// Microcopie (dossier éditorial V2, lot M) : l'âge est une CATÉGORIE TARIFAIRE ; les aides
+// n'en déduisent plus d'obligation réglementaire (AGE_DESC de pricing.ts n'est plus affiché).
+const AGE_AIDE: Record<string, string> = {
+  avant1949: 'Construction antérieure à 1949',
+  intermediaire: 'Construction de 1949 à il y a 15 ans',
+  recent: 'Construction de moins de 15 ans',
 };
 
 const hasReviews = Number(SITE.rating.count) > 0;
@@ -95,7 +103,7 @@ const FORM_SEND_TO_DPE =
     <!-- Étape 1 — Projet -->
     <fieldset class="qstep" data-step="1">
       <legend>Quel est votre projet&nbsp;?</legend>
-      <p class="qsub">Choisissez votre situation : on calcule le bon tarif, tout compris.</p>
+      <p class="qsub">Décrivez votre bien en quelques étapes. Nous confirmons les prestations, le prix et le rendez-vous avant l’intervention.</p>
       <div class="qgrid">
         {Object.entries(DEMANDE_LABELS).map(([val, label]) => (
           <label class="qopt">
@@ -132,7 +140,7 @@ const FORM_SEND_TO_DPE =
     <!-- Étape 3 — Surface + âge + estimation -->
     <fieldset class="qstep" data-step="3" hidden>
       <legend>Votre logement</legend>
-      <p class="qsub" data-el="step3-sub">Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.</p>
+      <p class="qsub" data-el="step3-sub">Indiquez la surface et l'âge du bien. Cette information sert à estimer le pack ; les diagnostics nécessaires sont vérifiés selon les critères propres à votre bien.</p>
 
       <!-- Rappel DPE seul → location : d'autres diagnostics sont obligatoires pour louer. Affiché
            uniquement pour la demande « DPE seul », sans aucun prix, bouton interne (pas de lien sortant
@@ -153,7 +161,7 @@ const FORM_SEND_TO_DPE =
         <span class="qgroup-label">Âge du bien</span>
         <div class="qgrid qgrid-2">
           {Object.entries(AGE_LABELS).map(([val, label]) => (
-            <label class="qopt"><input type="radio" name="age_bien" value={val} /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{AGE_DESC[val]}</span></span></label>
+            <label class="qopt"><input type="radio" name="age_bien" value={val} /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{AGE_AIDE[val]}</span></span></label>
           ))}
         </div>
       </div>
@@ -176,12 +184,12 @@ const FORM_SEND_TO_DPE =
         {revealEstimation ? (
           <>
             <div class="qestim-amount">🔒 Votre estimation est prête</div>
-            <p class="qestim-note">Laissez vos coordonnées à l'étape suivante pour découvrir votre tarif tout compris — déplacement inclus, sans engagement.</p>
+            <p class="qestim-note">Votre estimation sera affichée après l’envoi de vos coordonnées. Elle reste indicative ; le devis est confirmé avant la visite.</p>
           </>
         ) : (
           <>
             <div class="qestim-amount">Obtenez votre devis personnalisé</div>
-            <p class="qestim-note">Tarif tout compris confirmé lors de votre rappel sous {recallSla}. Sans engagement, déplacement inclus.</p>
+            <p class="qestim-note">Nous confirmons votre tarif lors de notre échange, avant la visite. Déplacement inclus, demande sans engagement.</p>
           </>
         )}
       </div>
@@ -190,7 +198,7 @@ const FORM_SEND_TO_DPE =
       <label class="qfield" data-el="early-tel" hidden>
         <span>📞 Votre téléphone pour recevoir votre estimation</span>
         <input type="tel" data-el="early-tel-input" autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" />
-        <small class="qfield-help">Facultatif — on vous rappelle sous {recallSla} pour confirmer votre devis, sans engagement.</small>
+        <small class="qfield-help">Facultatif — nous vous rappelons sous {recallSla}, pendant nos horaires d’ouverture, au sujet de votre demande.</small>
       </label>
 
       <div class="qnav"><button type="button" class="btn-ghost" data-prev>Retour</button><button type="button" class="btn-blue" data-next>Continuer</button></div>
@@ -220,9 +228,9 @@ const FORM_SEND_TO_DPE =
            restent visibles → le bouton d'envoi tient dans l'écran mobile. Email et message,
            facultatifs, sont repliés (toujours envoyés s'ils sont remplis). -->
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
-      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">On vous rappelle sous {recallSla} pour confirmer votre devis.</small></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">Nous vous rappelons sous {recallSla}, pendant nos horaires d’ouverture, au sujet de votre demande.</small></label>
       <details class="qmore">
-        <summary>Recevoir le devis par email ou ajouter une précision <span class="qfield-opt">(facultatif)</span></summary>
+        <summary>Ajouter un email ou une précision <span class="qfield-opt">(facultatif)</span></summary>
         <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
         <label class="qfield"><span>Message</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
       </details>
@@ -232,7 +240,7 @@ const FORM_SEND_TO_DPE =
       <input type="hidden" name="surface" /><input type="hidden" name="estimation" />
 
       <div class="qreassure">
-        <span>🔒 Sans engagement</span><span>· Données confidentielles</span><span>· Rappel sous {recallSla}</span>
+        <span>🔒 Demande sans engagement</span><span>· Prix confirmé avant la visite</span><span>· Données confidentielles</span>
       </div>
 
       <div class="qnav">
@@ -246,8 +254,8 @@ const FORM_SEND_TO_DPE =
 
   <div class="qthanks" data-el="qthanks" hidden>
     <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-    <h3>Merci, c'est noté&nbsp;!</h3>
-    <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous rappelle sous {recallSla} ({SITE.rappel.horaires}) pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
+    <h3>Votre demande est enregistrée</h3>
+    <p>Nous vous rappelons sous {recallSla} pour confirmer les prestations, le prix et un créneau d’intervention. Nos horaires : {SITE.rappel.horaires}.</p>
     <div class="qthanks-estim" data-el="qthanks-estim" hidden></div>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
@@ -532,7 +540,7 @@ const FORM_SEND_TO_DPE =
         if (lot) sub.textContent = 'La surface est facultative pour ce type de lot. Le tarif est unique, tout compris.';
         else if (ageNeeded()) sub.textContent = abStepsB
           ? 'Type de bien, surface et âge — on calcule votre estimation.'
-          : "Indiquez la surface et l'âge du bien : les diagnostics obligatoires varient selon l'année de construction.";
+          : "Indiquez la surface et l'âge du bien. Cette information sert à estimer le pack ; les diagnostics nécessaires sont vérifiés selon les critères propres à votre bien.";
         else sub.textContent = abStepsB
           ? 'Type de bien et surface — on calcule votre estimation.'
           : 'Indiquez la surface du bien pour votre estimation.';
@@ -870,8 +878,8 @@ const FORM_SEND_TO_DPE =
           if (estEl && REVEAL_ESTIMATION) {
             var estv = Number(payload.estimation || 0);
             estEl.innerHTML = estv > 0
-              ? 'Votre estimation : <strong>à partir de ' + fmtEUR(estv) + '</strong> tout compris, déplacement inclus. Devis exact confirmé lors du rappel.'
-              : 'Votre devis personnalisé vous est confirmé lors du rappel, tout compris et sans engagement.';
+              ? 'Votre estimation indicative : <strong>à partir de ' + fmtEUR(estv) + '</strong>. Déplacement inclus. Le devis exact est confirmé avant l’intervention.'
+              : 'Nous confirmons votre tarif lors de notre échange, avant la visite. Déplacement inclus, demande sans engagement.';
             estEl.hidden = false;
           }
           form.hidden = true;
@@ -883,7 +891,7 @@ const FORM_SEND_TO_DPE =
           var nav = steps[steps.length - 1].querySelector('.qnav');
           if (!steps[steps.length - 1].querySelector('.qerror')) {
             var err = document.createElement('p'); err.className = 'qerror';
-            err.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+            err.textContent = "Votre demande n’a pas pu être confirmée. Réessayez ou appelez-nous.";
             nav.parentNode.insertBefore(err, nav);
           }
         });

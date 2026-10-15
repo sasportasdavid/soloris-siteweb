@@ -1,15 +1,19 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getGuide } from '../../lib/guides';
+import GuideSources from '../../components/GuideSources.astro';
+import { getGuide, dateFr } from '../../lib/guides';
 import { article, breadcrumb, faqPage } from '../../lib/jsonld';
 
 const g = getGuide('reforme-dpe')!;
+// Point réglementaire daté : recoupé le 15/10/2026 avec service-public.gouv.fr (F16096).
+const POINT = '2026-10-15';
 const faq = [
-  { q: 'Qu\'est-ce qui change pour le DPE au 1ᵉʳ janvier 2026 ?', a: "Le coefficient de conversion de l'électricité utilisé dans le calcul du DPE passe de 2,3 à 1,9 (arrêté du 13 août 2025). Certains logements chauffés à l'électricité peuvent gagner une classe sans aucun travaux. Les DPE édités avant 2026 restent valables et peuvent être mis à jour gratuitement via l'Observatoire DPE de l'ADEME." },
-  { q: 'Mon logement classé F ou G est-il concerné ?', a: "Oui : un logement classé G ne peut plus être proposé à la location depuis le 1ᵉʳ janvier 2025 (F au 1ᵉʳ janvier 2028, E au 1ᵉʳ janvier 2034). Et à la vente d'un logement en monopropriété, un audit énergétique est obligatoire pour les classes F et G (depuis avril 2023) et E (depuis janvier 2025)." },
+  { q: 'Le coefficient 1,7 s’applique-t-il déjà en octobre 2026 ?', a: 'Non. Son entrée en vigueur est fixée au 1er janvier 2027 par le texte cité.' },
+  { q: 'Une attestation officielle est-elle un nouveau DPE ?', a: 'Elle complète le diagnostic dans les conditions prévues par le dispositif ; elle ne correspond pas à une nouvelle visite et ne prolonge pas sa validité initiale.' },
+  { q: 'Une réforme garantit-elle que mon logement devient louable ?', a: 'Non. La classe obtenue et tous les autres critères applicables au logement et au bail doivent être examinés.' },
 ];
 const jsonLd = [
-  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished }),
+  article({ headline: g.h1, description: g.description, url: g.url, datePublished: g.datePublished, dateModified: g.dateModified }),
   breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }, { name: g.h1, url: g.url }]),
   faqPage(faq),
 ];
@@ -25,53 +29,43 @@ const jsonLd = [
         <h1 class="sec-title" style="font-size:40px">{g.h1}</h1>
 
         <div class="card" style="padding:20px 24px;border-left:3px solid var(--gold);margin:6px 0 26px">
-          <p style="margin:0;font-size:15px"><strong>Mise à jour : juin 2026.</strong> Les éléments ci-dessous reflètent la réglementation en vigueur (loi Climat et résilience, arrêté du 13 août 2025). La réglementation pouvant évoluer, nous vérifions toujours l'état applicable à votre bien au moment du devis.</p>
+          <p style="margin:0;font-size:15px"><strong>Point réglementaire au {dateFr(POINT)}, pour la France métropolitaine.</strong> Vérifiez la date de votre DPE et les dispositifs officiels avant de commander un renouvellement.</p>
         </div>
 
-        <p class="lead">Calcul du DPE, location des passoires thermiques, audit énergétique : voici ce qui s'applique aujourd'hui, avec les dates clés.</p>
+        <h2>En 2026 : le coefficient de l’électricité est de 1,9</h2>
+        <p>Depuis le 1<sup>er</sup> janvier 2026, le coefficient de conversion de l’électricité utilisé dans le calcul concerné est passé de 2,3 à 1,9. Cette évolution peut modifier le classement de certains logements. Elle ne représente pas une réduction automatique de leur consommation réelle.</p>
 
-        <h2>1. Nouveau calcul du DPE au 1ᵉʳ janvier 2026</h2>
-        <p>L'arrêté du 13 août 2025 modifie le calcul du DPE : à compter du <strong>1ᵉʳ janvier 2026</strong>, le coefficient de conversion de l'électricité passe de <strong>2,3 à 1,9</strong>. Concrètement, certains logements chauffés à l'électricité peuvent <strong>gagner une classe</strong> (par exemple passer de F à E) sans aucun travaux. Les DPE édités en 2025 et avant <strong>restent valables</strong> et peuvent être mis à jour gratuitement, sans nouvelle visite, sur le site de l'Observatoire DPE-Audit de l'ADEME.</p>
+        <h2>Au 1<sup>er</sup> janvier 2027 : un coefficient de 1,7 est prévu</h2>
+        <p>L’arrêté du 19 août 2026 prévoit une nouvelle valeur de 1,7 à compter du 1<sup>er</sup> janvier 2027. Au {dateFr(POINT)}, cette valeur n’est donc pas encore celle applicable aux nouveaux DPE. Ne présentez pas une étiquette future comme le résultat actuel du logement.</p>
 
-        <h2>2. Location : l'interdiction progressive des passoires thermiques</h2>
-        <p>La loi Climat et résilience interdit par étapes la mise en location des logements les plus énergivores, qui deviennent « indécents » :</p>
-        <ul>
-          <li><strong>Depuis le 1ᵉʳ janvier 2025</strong> : les logements classés <strong>G</strong> ne peuvent plus être loués (baux signés, renouvelés ou tacitement reconduits).</li>
-          <li><strong>Au 1ᵉʳ janvier 2028</strong> : ce sera au tour de la classe <strong>F</strong>.</li>
-          <li><strong>Au 1ᵉʳ janvier 2034</strong> : la classe <strong>E</strong> sera concernée.</li>
-        </ul>
-        <p>(Calendrier de la France métropolitaine.) Un bail en cours signé avant l'échéance n'est concerné qu'au moment de son renouvellement ou de sa reconduction tacite.</p>
+        <h2>Faut-il commander systématiquement un nouveau DPE ?</h2>
+        <p>Non. Les changements de coefficient ne rendent pas automatiquement caducs les DPE encore valides. Des attestations officielles ADEME permettent, dans les cas prévus, d’actualiser l’étiquette sans nouvelle visite. Pour l’évolution de 2027, le dispositif doit être utilisé selon ses conditions d’entrée en vigueur. Une attestation ne prolonge pas la durée de validité initiale du diagnostic.</p>
 
-        <h2>3. Vente : l'audit énergétique obligatoire</h2>
-        <p>Pour la vente d'un logement individuel ou d'un immeuble en monopropriété énergivore, un <strong>audit énergétique réglementaire</strong> est obligatoire :</p>
-        <ul>
-          <li><strong>Depuis le 1ᵉʳ avril 2023</strong> : logements classés <strong>F ou G</strong>.</li>
-          <li><strong>Depuis le 1ᵉʳ janvier 2025</strong> : logements classés <strong>E</strong>.</li>
-          <li><strong>À partir du 1ᵉʳ janvier 2034</strong> : logements classés <strong>D</strong>.</li>
-        </ul>
-        <p>L'audit propose des scénarios de travaux au futur acquéreur et est valable 5 ans. Voir notre page <a href="/audit-energetique">audit énergétique</a>.</p>
+        <h2>Petites surfaces et anciens diagnostics</h2>
+        <p>Les seuils applicables aux logements de 40&nbsp;m² ou moins ont évolué au 1<sup>er</sup> juillet 2024. Cette évolution est distincte de celle du coefficient de l’électricité. Les DPE réalisés avant le 1<sup>er</sup> juillet 2021 ne sont plus valides depuis le 1<sup>er</sup> janvier 2025 ; les diagnostics plus récents ont en principe une validité de 10 ans. Vérifiez toujours le document et la situation du bien.</p>
 
-        <h2>4. La durée de validité du DPE</h2>
-        <p>Un DPE est valable <strong>10 ans</strong>. Exception issue de la réforme de 2021 : les DPE réalisés <strong>avant le 1ᵉʳ juillet 2021</strong> ne sont plus valides depuis le <strong>1ᵉʳ janvier 2025</strong>.</p>
+        <h2>Le calendrier de location ne se confond pas avec le calcul du DPE</h2>
+        <p>En métropole, les critères de performance énergétique pour la location concernent la classe G depuis 2025, puis F en 2028 et E en 2034, selon les modalités applicables aux baux conclus, renouvelés ou tacitement reconduits. Cela ne dispense pas de vérifier les autres critères de décence et la situation du bail.</p>
 
-        <h2>Comment rester serein</h2>
-        <p>La réglementation continue d'évoluer : le mieux est de vérifier l'état applicable <strong>au moment de votre projet</strong>. C'est exactement ce que Soloris fait au devis — nous adaptons la prestation à votre bien et à la réglementation en vigueur, sans vous vendre d'inquiétude.</p>
-        <p class="muted" style="font-size:13.5px">Sources : service-public.fr, economie.gouv.fr, ecologie.gouv.fr, ADEME — réglementation en vigueur en juin 2026.</p>
+        <h2>La bonne démarche avant de payer une nouvelle intervention</h2>
+        <p>Retrouvez le numéro et la date du DPE. Consultez l’Observatoire DPE-Audit de l’ADEME pour vérifier le document et les attestations disponibles. Précisez votre projet et les changements éventuels du logement. Un nouveau diagnostic est à envisager lorsqu’il est réellement nécessaire ; Soloris ne promet pas une classe à l’avance.</p>
 
         <h2>Pour aller plus loin</h2>
         <ul>
+          <li><a href="/dpe">DPE seul</a></li>
           <li><a href="/guides/comprendre-etiquette-dpe">Comprendre votre étiquette DPE</a></li>
-          <li><a href="/guides/diagnostics-obligatoires-vente">Quels diagnostics pour vendre un appartement</a></li>
-          <li><a href="/audit-energetique">Notre audit énergétique</a></li>
+          <li><a href="/diagnostics-location">Diagnostics pour louer</a></li>
         </ul>
+
+        <GuideSources guide={g} />
       </div>
     </section>
 
     <section class="cta-final">
       <div class="wrap">
         <h2>Un projet de vente ou de location&nbsp;?</h2>
-        <p>On vérifie pour vous l'état applicable, et on s'occupe des diagnostics.</p>
-        <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+        <p>Nous vérifions avec vous le diagnostic utile à votre situation. Demande gratuite et sans engagement.</p>
+        <div class="cta"><a href="/devis" class="btn-gold">Demander mon devis</a></div>
       </div>
     </section>
   </article>

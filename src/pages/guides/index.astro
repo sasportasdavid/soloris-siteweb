@@ -5,12 +5,13 @@
 import Base from '../../layouts/Base.astro';
 import { GUIDES } from '../../lib/guides';
 import { breadcrumb } from '../../lib/jsonld';
+import { WORDING } from '../../lib/wording';
 
 const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url: '/guides' }])];
 ---
 <Base
-  title="Guides des diagnostics immobiliers | Soloris"
-  description="Guides clairs sur les diagnostics immobiliers : diagnostics obligatoires pour vendre, comprendre votre DPE, réforme du DPE. Par Soloris, Paris & Île-de-France."
+  title="Guides du diagnostic immobilier | Soloris"
+  description="Prix, diagnostics obligatoires et DPE : les guides Soloris pour préparer votre vente ou votre location avec des informations datées et sourcées."
   path="/guides"
   jsonLd={jsonLd}
 >
@@ -21,8 +22,8 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url
   <section>
     <div class="wrap">
       <div class="eyebrow">Guides</div>
-      <h1 class="sec-title" style="font-size:44px">Tout comprendre, en toute clarté</h1>
-      <p class="sec-intro">Des réponses simples et fiables aux questions que vous vous posez sur les diagnostics immobiliers.</p>
+      <h1 class="sec-title" style="font-size:44px">Comprendre vos diagnostics avant de vous lancer</h1>
+      <p class="sec-intro">Des guides pour préparer votre projet, lire un rapport et distinguer les obligations applicables des prestations utiles.</p>
 
       <div class="grid grid-3 mt-5">
         {GUIDES.map((g) => (
@@ -36,14 +37,15 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Guides', url
           </a>
         ))}
       </div>
+      <p class="muted mt-5" style="font-size:14.5px;max-width:760px"><strong>Des informations à replacer dans votre situation.</strong> Les guides présentent les règles générales et leurs sources. La composition de votre dossier dépend de votre bien, de vos documents et de votre projet.</p>
     </div>
   </section>
 
   <section class="cta-final">
     <div class="wrap">
       <h2>Une question sur votre bien&nbsp;?</h2>
-      <p>Obtenez une estimation tout compris en 2 minutes.</p>
-      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+      <p>{WORDING.engagementDevis}</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Demander mon devis</a></div>
     </div>
   </section>
 </Base>

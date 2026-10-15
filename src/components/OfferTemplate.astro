@@ -1,8 +1,8 @@
 ---
 /**
- * Gabarit commun des pages offres :
- * hero ciblé → ce qui est inclus → tarif par typologie → cadre légal (neutre)
- * → process (RDV 48 h, rapport 24 h) → FAQ spécifique → CTA + maillage interne.
+ * Gabarit commun des pages offres (textes : dossier éditorial V2, oct. 2026) :
+ * hero ciblé → intro → prestations → prix (montant + conditions) → blocs propres à l'offre
+ * → déroulement → avis → simulateur → FAQ → maillage → CTA.
  * JSON-LD : Service + FAQPage + BreadcrumbList.
  */
 import Base from '../layouts/Base.astro';
@@ -15,6 +15,8 @@ import QuoteForm from './QuoteForm.astro';
 import ResponsiveImage from './ResponsiveImage.astro';
 import { getOffer, OFFERS } from '../lib/offers';
 import { prixDes } from '../lib/pricing';
+import { SITE } from '../lib/site';
+import { WORDING } from '../lib/wording';
 import { service, faqPage, breadcrumb } from '../lib/jsonld';
 
 interface Props { slug: string }
@@ -28,12 +30,18 @@ const autres = OFFERS.filter((o) => o.slug !== slug);
 const isPack = offer.demande === 'vente' || offer.demande === 'location';
 
 const jsonLd = [
-  service({ name: offer.nav, description: offer.metaDesc, url: offer.url, priceFrom: prixDes(offer.demande) }),
+  service({ name: offer.nav, description: offer.metaDesc, url: offer.url, priceFrom: prixDes(offer.demande), priceTo: offer.prixTo }),
   faqPage(offer.faq),
   breadcrumb([
     { name: 'Accueil', url: '/' },
     { name: offer.nav, url: offer.url },
   ]),
+];
+
+const etapes = [
+  { h: 'Votre demande', p: 'Décrivez votre projet et votre bien. Votre demande de devis prend environ 2&nbsp;minutes.' },
+  { h: 'Confirmation', p: 'Nous confirmons les prestations, le prix et le créneau d’intervention.' },
+  { h: 'Intervention', p: offer.processStep3 },
 ];
 ---
 <Base title={offer.title} description={offer.metaDesc} path={offer.url} jsonLd={jsonLd}>
@@ -44,11 +52,11 @@ const jsonLd = [
   </div>
 
   <Hero
-    tagpill="Certifié COFRAC · Rapport opposable"
+    tagpill={offer.tagpill ?? 'Paris et Île-de-France · Diagnostiqueur certifié'}
     h1={offer.h1}
     sub={offer.tagline}
     primaryHref={offer.heroCtaHref ?? `/devis?type=${offer.demande}`}
-    primaryLabel="Obtenir mon devis en 2 min"
+    primaryLabel="Demander mon devis en 2 min"
     secondaryHref="#tarifs"
     secondaryLabel="Voir les tarifs"
     showTrust={true}
@@ -61,7 +69,6 @@ const jsonLd = [
     </Fragment>
   </Hero>
 
-  <!-- Barre de réassurance (4,9★ · 111 avis · COFRAC · Assuré) -->
   <ReassuranceBar />
 
   <!-- Intro — 2 colonnes (texte + CTA à gauche, visuel à droite) -->
@@ -70,6 +77,7 @@ const jsonLd = [
       <div class:list={['offer-intro', offer.introDark && 'offer-intro--dark', offer.heroImageSide === 'left' && 'offer-intro--img-left']}>
         <div class="offer-intro-copy">
           <div class="eyebrow">En bref</div>
+          <h2 class="sec-title">{offer.introTitle}</h2>
           <p class="sec-intro" style="font-size:18.5px;color:var(--ink);max-width:none">{offer.intro}</p>
           <ul class="incl mt-4" style="gap:10px">
             {offer.inclus.slice(0, 3).map((it) => (
@@ -80,7 +88,7 @@ const jsonLd = [
             ))}
           </ul>
           <div class="flex-cta mt-4">
-            <a href="#simulateur" class="btn-blue">Obtenir mon devis en 2 min</a>
+            <a href="#simulateur" class="btn-blue">Demander mon devis en 2 min</a>
             <a href="#tarifs" class="btn-ghost">Voir les tarifs</a>
           </div>
         </div>
@@ -90,12 +98,12 @@ const jsonLd = [
           </div>
         ) : (
           <div class="card" style="padding:30px">
-            <div class="eyebrow">Rapport opposable</div>
-            <p class="muted" style="font-size:14px;margin-bottom:18px">Vous recevez un rapport clair et opposable, certifié COFRAC. (Étiquette énergie illustrative — votre classe reflète l'état réel du bien.)</p>
+            <div class="eyebrow">Exemple d’étiquette</div>
+            <p class="muted" style="font-size:14px;margin-bottom:18px">{WORDING.illustration}</p>
             <EnergyScale highlight="C" />
             <p class="mt-3" style="font-family:var(--sora);font-size:12.5px;font-weight:600;color:var(--blue-light);display:flex;align-items:center;gap:8px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Diagnostiqueur certifié COFRAC · rapport opposable
+              {SITE.cofracNote}
             </p>
           </div>
         )}
@@ -103,12 +111,12 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- Ce qui est inclus -->
+  <!-- Prestations -->
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">Ce qui est inclus</div>
-      <h2 class="sec-title">Le contenu de votre {offer.shortLabel}</h2>
-      <p class="sec-intro">La composition exacte dépend de votre bien (année, énergie, zone) et vous est confirmée au devis.</p>
+      <div class="eyebrow">Prestations</div>
+      <h2 class="sec-title">{offer.inclusTitle}</h2>
+      <p class="sec-intro">{offer.inclusIntro}</p>
       <ul class="incl grid grid-2 mt-5">
         {offer.inclus.map((it) => (
           <li>
@@ -120,51 +128,54 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- Tarif -->
+  <!-- Prix : montant visible (identique au JSON-LD) + conditions au plus près -->
   <section class="section-line" id="tarifs">
     <div class="wrap">
-      <div class="eyebrow">Tarif tout compris</div>
-      <h2 class="sec-title">Combien ça coûte&nbsp;?</h2>
-      <p class="sec-intro" style="font-size:19px;color:var(--ink)">Le prix dépend de votre bien (surface, âge, diagnostics obligatoires selon la réglementation) — <strong style="font-family:var(--sora);color:var(--blue)">tout compris, déplacement inclus</strong>, sans frais surprise. Obtenez votre tarif exact en 2 min, confirmé avant l'intervention.</p>
-      <p class="mt-3"><a href="#simulateur" class="btn-blue">Estimer mon prix en 2 min</a></p>
+      <div class="eyebrow">Prix</div>
+      <h2 class="sec-title">{offer.prixTitle}</h2>
+      <p class="sec-intro" style="font-size:18px;color:var(--ink)" set:html={offer.prixText} />
+      <p class="mt-3"><a href="#simulateur" class="btn-blue">Demander mon devis</a></p>
     </div>
   </section>
 
-  <!-- Cadre légal (neutre/vérifiable) -->
-  <section class="section-line">
-    <div class="wrap" style="max-width:780px">
-      <div class="eyebrow">Cadre légal</div>
-      <h2 class="sec-title">Ce que dit la réglementation</h2>
-      <div class="mt-4">
-        {offer.cadre.map((p) => <p class="sec-intro" style="margin-top:14px" set:html={p} />)}
-      </div>
-      <p class="muted mt-3" style="font-size:13.5px">La composition exacte du dossier dépend de votre bien (année, énergie, zone). Nous établissons et confirmons la liste applicable au moment du devis, selon la réglementation en vigueur.</p>
-    </div>
-  </section>
-
-  <!-- Process : RDV sous 48 h, rapport sous 24 h -->
+  <!-- Blocs propres à l'offre -->
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">Notre process</div>
-      <h2 class="sec-title">Rendez-vous rapide, rapport sous 24&nbsp;h</h2>
-      <div class="grid grid-3 mt-5 steps">
-        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Estimation tout compris en 2 minutes, en ligne.</p></div>
-        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement.</p></div>
-        <div class="step"><div class="n">Étape 3</div><h3>Rapport sous 24 h</h3><p>Document clair et opposable, remis sous 24 h après la visite.</p></div>
+      <div class:list={['grid mt-2', offer.blocs.length > 1 && 'grid-2']}>
+        {offer.blocs.map((b) => (
+          <div class="card offer-bloc">
+            <h2>{b.h}</h2>
+            <p set:html={b.p} />
+          </div>
+        ))}
       </div>
     </div>
   </section>
 
-  <!-- Avis clients réels (preuve sociale avant le formulaire) -->
-  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+  <!-- Déroulement -->
+  <section class="section-line">
+    <div class="wrap">
+      <div class="eyebrow">Déroulement</div>
+      <h2 class="sec-title">{offer.processTitle}</h2>
+      <p class="sec-intro" set:html={offer.processText} />
+      <div class="grid grid-3 mt-5 steps">
+        {etapes.map((e, i) => (
+          <div class="step"><div class="n">Étape {i + 1}</div><h3>{e.h}</h3><p set:html={e.p} /></div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <Reviews limit={3} title={`Les retours des clients d’${SITE.legalName}`} eyebrow="Avis Google" />
 
   <!-- Simulateur en bas de page (2e instance du QuoteForm, désormais instance-safe) —
-       cible des CTA « Estimer mon prix » / ancre #simulateur. revealEstimation suit isPack. -->
+       cible des CTA / ancre #simulateur. revealEstimation suit isPack. -->
   <section class="section-line" id="simulateur">
     <div class="wrap">
       <div class="sec-head center">
-        <div class="eyebrow center">Devis en 2 min</div>
-        <h2 class="sec-title">Obtenez votre estimation</h2>
+        <div class="eyebrow center">Demande de devis</div>
+        <h2 class="sec-title">{offer.formTitle}</h2>
+        <p class="sec-intro">{offer.formIntro}</p>
       </div>
       <div class="mt-5">
         <QuoteForm revealEstimation={isPack} defaultDemande={offer.demande} />
@@ -172,20 +183,23 @@ const jsonLd = [
     </div>
   </section>
 
-  <!-- FAQ spécifique -->
   <Faq items={offer.faq} title="Questions fréquentes" eyebrow="FAQ" />
 
   <!-- Maillage interne -->
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">Autres prestations</div>
-      <h2 class="sec-title">Vous cherchez autre chose&nbsp;?</h2>
-      <div class="grid grid-3 mt-5">
+      <div class="eyebrow">Pour aller plus loin</div>
+      <h2 class="sec-title">Informations utiles</h2>
+      <ul class="offer-liens mt-4">
+        {offer.liens.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      </ul>
+      <h2 class="sec-title mt-5">Autres prestations</h2>
+      <div class="grid grid-3 mt-4">
         {autres.map((o) => (
           <a class="need-card" href={o.url}>
             <h3>{o.nav}</h3>
             <p>{o.navDesc}.</p>
-            <span class="go">Tarif tout compris
+            <span class="go">Voir l’offre
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </span>
           </a>
@@ -198,11 +212,21 @@ const jsonLd = [
   <!-- CTA final -->
   <section class="cta-final">
     <div class="wrap">
-      <h2>Votre {offer.shortLabel}, en toute clarté</h2>
-      <p>Estimation tout compris en 2 minutes, sans engagement.</p>
+      <h2>{offer.formTitle}</h2>
+      <p>{WORDING.engagementDevis}</p>
       <div class="cta">
-        <a href="#simulateur" class="btn-gold">Obtenir mon devis</a>
+        <a href="#simulateur" class="btn-gold">Demander mon devis</a>
       </div>
     </div>
   </section>
 </Base>
+
+<style>
+  .offer-bloc { padding: 28px; }
+  .offer-bloc h2 { font-family: var(--sora); font-size: 21px; line-height: 1.3; color: var(--blue); margin: 0 0 10px; }
+  .offer-bloc p { margin: 0; color: var(--ink); line-height: 1.6; }
+  .offer-bloc :global(a) { color: var(--blue-light); text-decoration: underline; }
+  .offer-liens { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .offer-liens a { display: inline-block; padding: 9px 16px; border: 1px solid var(--line, #dbe3ec); border-radius: 999px; font-family: var(--sora); font-size: 14px; font-weight: 600; color: var(--blue); background: #fff; }
+  .offer-liens a:hover { border-color: var(--blue-light); }
+</style>

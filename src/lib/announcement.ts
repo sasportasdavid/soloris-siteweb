@@ -14,7 +14,8 @@
 export const ANNOUNCEMENT = {
   enabled: true,
   // Texte court, factuel, premium :
-  text: 'DPE & calendrier de location : faites le point sur votre bien',
-  linkText: 'En savoir plus',
-  href: '/guides/reforme-dpe',
+  // Message commercial du dossier éditorial V2 (oct. 2026).
+  text: 'Diagnostics immobiliers à Paris et en Île-de-France · Déplacement inclus',
+  linkText: 'Voir les tarifs',
+  href: '/tarifs',
 };

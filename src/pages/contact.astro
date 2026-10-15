@@ -12,8 +12,8 @@ const addr = fullAddress();
 const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Contact', url: '/contact' }])];
 ---
 <Base
-  title="Contact | Soloris — diagnostics immobiliers Paris & IDF"
-  description="Contactez Soloris pour vos diagnostics immobiliers à Paris et en Île-de-France : téléphone, email et formulaire. Réponse rapide, devis tout compris."
+  title="Contacter Soloris | Diagnostics Paris et IDF"
+  description="Une question sur vos diagnostics immobiliers ? Contactez Soloris par téléphone ou par message pour un bien à Paris ou en Île-de-France."
   path="/contact"
   jsonLd={jsonLd}
 >
@@ -24,14 +24,14 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Contact', ur
   <section>
     <div class="wrap">
       <div class="eyebrow">Contact</div>
-      <h1 class="sec-title" style="font-size:42px">Parlons de votre projet</h1>
-      <p class="sec-intro">Une question, un devis, un rendez-vous ? Écrivez-nous ou appelez-nous : on vous répond vite, en toute clarté.</p>
+      <h1 class="sec-title" style="font-size:42px">Contactez Soloris pour votre projet immobilier</h1>
+      <p class="sec-intro">Une question sur un diagnostic, un devis ou une intervention ? Appelez-nous ou laissez un message : nous vous répondons pendant nos horaires d’ouverture.</p>
 
       <!-- 3 intentions (conversion) — §13.3 audit -->
       <div class="flex-cta mt-4" style="flex-wrap:wrap">
-        <a href="/devis" class="btn-blue btn-sm">Je veux connaître mon prix</a>
-        <a href="/devis" class="btn-ghost btn-sm">Je veux prendre rendez-vous</a>
-        <a href="/devis" class="btn-ghost btn-sm">Quels diagnostics sont obligatoires&nbsp;?</a>
+        <a href="/devis" class="btn-blue btn-sm">Demander un devis</a>
+        <a href="/devis" class="btn-ghost btn-sm">Organiser une intervention</a>
+        <a href="/devis" class="btn-ghost btn-sm">Décrire mon projet</a>
       </div>
 
       <div class="grid grid-2 mt-5" style="gap:44px;align-items:start">
@@ -51,12 +51,16 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Contact', ur
               {addr && (
                 <li>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  <span><b>Adresse</b><br /><span class="muted" style="font-size:14.5px">{addr}</span></span>
+                  <span><b>Adresse de l’entreprise</b><br /><span class="muted" style="font-size:14.5px">{SITE.legalName} — {addr}</span></span>
                 </li>
               )}
               <li>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                <span><b>Zone d'intervention</b><br /><span class="muted" style="font-size:14.5px">Paris et Île-de-France (dont Seine-Saint-Denis 93)</span></span>
+                <span><b>Horaires</b><br /><span class="muted" style="font-size:14.5px">{SITE.rappel.horaires.charAt(0).toUpperCase() + SITE.rappel.horaires.slice(1)}</span></span>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+                <span><b>Votre bien se situe en Île-de-France ?</b><br /><span class="muted" style="font-size:14.5px">Nous intervenons à Paris et dans les départements 77, 78, 91, 92, 93, 94 et 95. Le secteur à renseigner est celui du bien, pas nécessairement votre adresse personnelle.</span></span>
               </li>
             </ul>
           </div>
@@ -72,11 +76,11 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Contact', ur
 
   <section class="cta-final">
     <div class="wrap">
-      <h2>Besoin d'un devis tout de suite&nbsp;?</h2>
-      <p>Obtenez votre estimation tout compris en 2 minutes.</p>
+      <h2>Votre demande concerne une intervention&nbsp;?</h2>
+      <p>Précisez le projet, la commune et les informations utiles sur le logement. Pour une première demande de devis, le parcours dédié permet de décrire le bien étape par étape.</p>
       <div class="cta">
-        <a href="/devis" class="btn-gold">Obtenir mon devis</a>
-        <a href={telHref} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+        <a href="/devis" class="btn-gold">Demander un devis</a>
+        <a href={telHref} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Appeler Soloris</a>
       </div>
     </div>
   </section>

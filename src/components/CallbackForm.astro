@@ -18,7 +18,8 @@ interface Props {
 const {
   defaultType = '',
   title = `Être rappelé sous ${SITE.rappel.delai}`,
-  sub = 'Laissez votre numéro : on vous rappelle pour confirmer les diagnostics de votre bien et fixer un rendez-vous.',
+  // Microcopie V2 (lot M) — délai validé par l'exploitant, horaires rendus depuis SITE.
+  sub = `Indiquez votre numéro et le code postal du bien. Nous vous rappelons sous ${SITE.rappel.delai} au sujet de votre projet, pendant nos horaires d’ouverture.`,
 } = Astro.props;
 
 // Conversion Google Ads « Soloris - Rappel demandé » (action SECONDAIRE — observation,
@@ -62,13 +63,13 @@ const CALLBACK_SEND_TO =
     <!-- Honeypot anti-bot (identique au tunnel) -->
     <div class="cbform-hp" aria-hidden="true"><label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
     <button type="submit" class="btn-gold btn-block cbform-submit">Être rappelé</button>
-    <p class="cbform-trust">Sans engagement · Réponse rapide · Vos données restent confidentielles</p>
+    <p class="cbform-trust">Sans engagement · {SITE.rappel.horaires.charAt(0).toUpperCase() + SITE.rappel.horaires.slice(1)} · Vos données restent confidentielles</p>
     <p class="cbform-err" role="alert" hidden></p>
   </div>
   <div class="cbform-thanks" hidden>
     <div class="cbform-thanks-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-    <strong>Merci, c'est noté&nbsp;!</strong>
-    <span>On vous rappelle sous {SITE.rappel.delai} ({SITE.rappel.horaires}) au sujet de vos diagnostics.</span>
+    <strong>Votre demande est enregistrée</strong>
+    <span>Nous vous rappelons sous {SITE.rappel.delai} ({SITE.rappel.horaires}) au sujet de votre projet. En dehors de ces horaires, votre demande est traitée à la prochaine ouverture.</span>
   </div>
 </form>
 
@@ -182,7 +183,7 @@ const CALLBACK_SEND_TO =
           })
           .catch(function () {
             btn.disabled = false; btn.textContent = 'Être rappelé';
-            showErr('Une erreur est survenue. Réessayez ou appelez-nous directement.');
+            showErr('Votre demande n’a pas pu être confirmée. Réessayez ou appelez-nous.');
           });
       });
 

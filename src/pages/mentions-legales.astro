@@ -5,16 +5,18 @@
 import Base from '../layouts/Base.astro';
 import GroupEndorsement from '../components/GroupEndorsement.astro';
 import { SITE, fullAddress } from '../lib/site';
+import { WORDING } from '../lib/wording';
 ---
 <Base
   title="Mentions légales | Soloris"
-  description="Mentions légales du site Soloris, diagnostics immobiliers à Paris et en Île-de-France."
+  description="Informations légales relatives au site Soloris et à la société IS DIAG, exploitant la marque commerciale Soloris."
   path="/mentions-legales"
 >
   <section>
     <div class="wrap prose">
       <div class="eyebrow">Informations légales</div>
       <h1 class="sec-title">Mentions légales</h1>
+      <p class="lead">Informations relatives à l’éditeur du site et à l’exploitation de la marque {SITE.tradeName}.</p>
 
       <h2>Éditeur du site</h2>
       <p>
@@ -28,7 +30,7 @@ import { SITE, fullAddress } from '../lib/site';
       <div style="margin-top:6px"><GroupEndorsement variant="light" /></div>
 
       <h2>Certification</h2>
-      <p>Les diagnostics sont réalisés par un diagnostiqueur certifié, conformément à la réglementation applicable.</p>
+      <p>{WORDING.certification}</p>
 
       <h2>Hébergement</h2>
       <p>Le site est hébergé par Vercel Inc. — 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis (vercel.com). La base de données (leads) est hébergée par Supabase au sein de l'Union européenne.</p>
