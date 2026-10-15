@@ -51,6 +51,9 @@ export const WORDING = {
   rapport: 'Rapports généralement remis sous 24 h après la visite. Le délai applicable à votre dossier vous est confirmé au rendez-vous.',
   rapportAudit: 'Le délai de remise de l’audit est confirmé dans votre devis.',
   rappelCourt: 'Rappel pendant nos horaires d’ouverture',
+  /** Variante « engagement validé » du dossier (rappel 30 min demandé par l'exploitant le 14/10/2026,
+   *  aligné sur les annonces). Repli si la capacité n'est plus tenue : rappelCourt. */
+  rappelValide: `Nous vous rappelons sous ${SITE.rappel.delai}, ${SITE.rappel.horaires}. En dehors de ces horaires, votre demande est traitée à la prochaine ouverture.`,
   horaires: SITE.rappel.horaires,
   horsHoraires: 'Votre demande sera traitée à la prochaine ouverture.',
   illustration: 'Exemple de présentation, à titre illustratif. Les résultats dépendent du logement diagnostiqué.',
