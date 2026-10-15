@@ -5,6 +5,8 @@
  * une entrée dans src/lib/zones.ts). Slugs additifs, aucun slug existant touché.
  * JSON-LD : LocalBusiness (areaServed = zone) + FAQPage + BreadcrumbList.
  * Conformité : aucune promesse de résultat DPE, aucun « pas cher », prix = grille.
+ * Textes : dossier éditorial V2 (oct. 2026) — blocs communs + intro/conseil propres à la zone.
+ * Statistiques : DPE ENREGISTRÉS (pas tous les logements) ; contexte, jamais une obligation.
  */
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
@@ -14,7 +16,9 @@ import QuoteForm from '../components/QuoteForm.astro';
 import Reviews from '../components/Reviews.astro';
 import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
-import { prixDes } from '../lib/pricing';
+import { DPE_FROM, DPE_MAISON_SUPP, prixDes, SURFACE_BANDS } from '../lib/pricing';
+import { SITE } from '../lib/site';
+import { DPE_FROM_MAX_M2, WORDING } from '../lib/wording';
 import { ZONES, type Zone } from '../lib/zones';
 import { getZoneStats, fmtPct, fmtInt, fmtSurface, fmtDateFr, listFr, DPE_COLORS } from '../lib/zoneData';
 import { localBusinessArea, faqPage, breadcrumb } from '../lib/jsonld';
@@ -39,31 +43,25 @@ const radonLabel: Record<string, string> = {
 
 const title = `Diagnostic immobilier ${where} | Soloris`;
 
+// FAQ commune du dossier éditorial (identique sur les pages locales).
 const faq = [
   {
-    q: `Intervenez-vous ${where} ?`,
-    a: `Oui. Soloris réalise vos diagnostics immobiliers ${where} (${zone.dept}) et dans toute l'Île-de-France, avec un rendez-vous sous 48 h et un rapport remis sous 24 h après la visite, dans la plupart des cas.`,
+    q: 'Quel est le prix d’un DPE dans mon secteur ?',
+    a: `Le DPE commence à ${DPE_FROM} € TTC pour un appartement jusqu’à ${DPE_FROM_MAX_M2} m². Le tarif varie selon la surface et le type de logement ; une maison comporte un supplément de ${DPE_MAISON_SUPP} € TTC. Le déplacement est inclus dans la zone desservie.`,
   },
   {
-    q: `Combien coûte un DPE ${where} ?`,
-    a: `Un DPE est tout compris dès ${prixDes('dpe')} €, déplacement inclus, le prix variant selon la surface du logement. Vous obtenez une estimation immédiate via notre formulaire de devis.`,
+    q: 'Quels diagnostics faut-il pour vendre ?',
+    a: 'La liste dépend du bien, des dates de construction et de permis, des installations et de la zone. Nous vérifions les diagnostics existants et confirmons le périmètre au devis.',
   },
   {
-    q: `Quels diagnostics sont nécessaires pour vendre ${where} ?`,
-    a: `Selon le bien : DPE et ERP, complétés par l'amiante, le plomb, l'électricité, le gaz, le mesurage Loi Carrez et, en zone concernée, les termites. Nous établissons la liste applicable à votre logement au moment du devis.`,
+    q: 'Le déplacement est-il compris ?',
+    a: 'Il est inclus à Paris et en Île-de-France pour les prestations prévues au devis.',
   },
   {
-    q: `Quels sont vos délais ${where} ?`,
-    a: `Nous vous rappelons sous 30 minutes (du lundi au samedi, de 8 h à 19 h), proposons un rendez-vous sous 48 h et remettons le rapport sous 24 h après la visite, dans la plupart des cas ${where} et en Île-de-France.`,
+    q: 'Comment fixer le rendez-vous ?',
+    a: `Décrivez votre projet dans le formulaire. Nous confirmons le prix et les disponibilités avec vous pendant nos horaires d’ouverture, ${SITE.rappel.horaires.replace(', de ', ' de ')}.`,
   },
 ];
-
-if (stats) {
-  faq.push({
-    q: `Quels diagnostics pour un logement ancien ${where} ?`,
-    a: `${fmtPct(stats.shareAvant1948)} des logements ayant fait l'objet d'un DPE ${where} datent d'avant 1948 : le diagnostic plomb (CREP) est alors requis, ainsi que l'amiante pour les permis de construire antérieurs au 1er juillet 1997. Nous établissons la liste exacte applicable à votre bien au moment du devis.`,
-  });
-}
 
 const jsonLd = [
   localBusinessArea(zone.name),
@@ -82,9 +80,9 @@ const jsonLd = [
   </div>
 
   <Hero
-    tagpill={`${zone.dept} · Certifié COFRAC`}
-    h1={`Diagnostic immobilier ${where}, <span class="hl">rapport sous 24 h</span>`}
-    sub={`DPE, vente, location, audit : tarif tout compris, déplacement inclus. Soloris intervient ${where} et en Île-de-France.`}
+    tagpill={`${zone.dept} · Diagnostiqueur certifié`}
+    h1={`Vos diagnostics immobiliers ${where}`}
+    sub={`DPE, vente ou location : préparez votre intervention ${where}, avec un prix annoncé avant la visite.`}
     showTrust={true}
     sun={true}
     hideCta={true}
@@ -103,6 +101,10 @@ const jsonLd = [
       <div class="eyebrow">Votre secteur</div>
       <h2 class="sec-title">Vos diagnostics {where}</h2>
       <p class="sec-intro" style="font-size:18px;color:var(--ink);max-width:none">{zone.intro}</p>
+      <div class="zconseil mt-3">
+        <strong>À préparer avant la visite</strong>
+        <p>{zone.conseil}</p>
+      </div>
       <p class="muted mt-2" style="font-size:14.5px">Codes postaux desservis : {zone.postalCodes.join(', ')} · et toute l'Île-de-France.</p>
     </div>
   </section>
@@ -111,8 +113,9 @@ const jsonLd = [
     <section class="section-line" id="chiffres">
       <div class="wrap">
         <div class="eyebrow">Données publiques</div>
-        <h2 class="sec-title">Le parc immobilier {where} en chiffres</h2>
-        <p class="sec-intro">Sur {fmtInt(stats.dpeTotal)} DPE enregistrés {where} depuis juillet 2021, l'étiquette la plus fréquente est la {stats.topEtiquette.label} ({fmtPct(stats.topEtiquette.pct)}) et l'époque de construction dominante, {stats.topPeriode.label.toLowerCase()} ({fmtPct(stats.topPeriode.pct)}). Voici ce que cela change pour vos diagnostics.</p>
+        <h2 class="sec-title">Les logements décrits dans les DPE enregistrés {where}</h2>
+        <p class="sec-intro">Sur {fmtInt(stats.dpeTotal)} DPE enregistrés {where} depuis juillet 2021, l'étiquette la plus fréquente est la {stats.topEtiquette.label} ({fmtPct(stats.topEtiquette.pct)}) et l'époque de construction la plus représentée, {stats.topPeriode.label.toLowerCase()} ({fmtPct(stats.topPeriode.pct)}).</p>
+        <p class="sec-intro mt-2">Ces chiffres portent sur les DPE présents dans le jeu de données cité, et non sur tous les logements de la commune. Un même logement peut apparaître plusieurs fois. Les périodes de collecte et les évolutions de méthode doivent être prises en compte pour interpréter les résultats.</p>
 
         <div class="grid grid-3 mt-5">
           <div class="card zcard">
@@ -151,18 +154,19 @@ const jsonLd = [
         </div>
 
         <div class="zlist mt-5">
-          <h3>Ce que cela change pour vos diagnostics {where}</h3>
+          <h3>Comment lire ces données pour votre bien {where}</h3>
+          <p class="muted" style="font-size:14.5px;margin:0 0 10px">Ces données donnent un contexte. Elles ne déterminent ni la classe de votre logement ni la liste de vos diagnostics obligatoires. Seules les informations du bien et le périmètre applicable permettent de préparer votre dossier.</p>
           <ul>
             <li>
-              <strong>Plomb et amiante.</strong> {fmtPct(stats.shareAvant1948)} des logements datent d'avant 1948 : le diagnostic plomb (CREP) concerne les logements construits avant 1949.
-              Au moins {fmtPct(stats.sharePre1989)} ont été construits avant 1989 : tous les logements dont le permis de construire date d'avant le 1er juillet 1997 entrent dans le champ du diagnostic amiante.
+              <strong>Plomb et amiante.</strong> {fmtPct(stats.shareAvant1948)} des logements décrits dans ces DPE datent d'avant 1948 et au moins {fmtPct(stats.sharePre1989)} d'avant 1989.
+              Pour votre bien, le CREP dépend de sa date de construction (avant le 1er janvier 1949) et le constat amiante de la date de son permis de construire (avant le 1er juillet 1997).
             </li>
             <li>
-              <strong>Passoires thermiques.</strong> {fmtPct(stats.shareFG)} des DPE {where} sont classés F ou G. Un logement classé G ne peut plus être loué depuis le 1er janvier 2025, et la classe F le sera à partir du 1er janvier 2028
-              (<a href="/guides/reforme-dpe">détail de la réforme du DPE</a>). Les étiquettes établies avant 2026 reposent sur l'ancien coefficient de conversion de l'électricité : certains logements ont pu gagner une classe depuis.
+              <strong>Classes F et G.</strong> {fmtPct(stats.shareFG)} des DPE enregistrés {where} sont classés F ou G. En métropole, les critères de performance énergétique pour la location concernent la classe G depuis 2025, puis F en 2028, selon les modalités applicables aux baux
+              (<a href="/guides/reforme-dpe">les réformes du DPE</a>). Les étiquettes établies avant 2026 reposent sur l'ancien coefficient de conversion de l'électricité (2,3, contre 1,9 depuis le 1er janvier 2026).
             </li>
             <li>
-              <strong>Risques (ERP).</strong> L'état des risques et pollutions, obligatoire dans un dossier de vente ou de location, est établi pour l'adresse exacte du bien.
+              <strong>État des risques.</strong> Il est établi pour l'adresse exacte du bien, pas à partir d'une moyenne communale.
               {stats.risques.length > 0 ? <> {where.charAt(0).toUpperCase() + where.slice(1)}, Géorisques recense au niveau de la commune : {listFr(stats.risques)}.</> : <> {where.charAt(0).toUpperCase() + where.slice(1)}, Géorisques ne recense pas de risque majeur de premier niveau au niveau de la commune.</>}
               {stats.radonClasse && <> Potentiel radon : {radonLabel[stats.radonClasse] || `classe ${stats.radonClasse}`}.</>}
               {stats.sismicite && <> Zone de sismicité : {stats.sismicite}.</>}
@@ -186,7 +190,8 @@ const jsonLd = [
   <section class="section-line">
     <div class="wrap">
       <div class="eyebrow">Nos prestations</div>
-      <h2 class="sec-title">Quel diagnostic vous faut-il {where}&nbsp;?</h2>
+      <h2 class="sec-title">Choisissez les diagnostics adaptés à votre projet</h2>
+      <p class="sec-intro">DPE seul, pack vente ou pack location : nous précisons les prestations nécessaires selon votre bien. Un audit énergétique, lorsqu’il est requis, fait l’objet d’une mission distincte.</p>
       <div class="grid grid-4 mt-5">
         {OFFERS.map((o) => <OfferCard offer={o} />)}
       </div>
@@ -196,25 +201,26 @@ const jsonLd = [
   <!-- Tarifs + simulateur (2e instance du QuoteForm, ancre #simulateur) -->
   <section class="section-line" id="tarifs">
     <div class="wrap">
-      <div class="eyebrow">Tarif tout compris</div>
-      <h2 class="sec-title">Combien ça coûte {where}&nbsp;?</h2>
-      <p class="sec-intro">Mêmes tarifs qu'à Paris et en Île-de-France : tout compris, déplacement inclus. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente. Estimez le vôtre en 2 min, sans engagement.</p>
+      <div class="eyebrow">Tarifs</div>
+      <h2 class="sec-title">Un prix annoncé avant l’intervention</h2>
+      <p class="sec-intro">DPE dès {DPE_FROM}&nbsp;€ TTC pour un appartement jusqu’à {DPE_FROM_MAX_M2}&nbsp;m². Packs vente et location dès {prixDes('vente')}&nbsp;€ TTC pour un appartement de {SURFACE_BANDS[0].maxIncl}&nbsp;m² maximum construit depuis moins de 15 ans. Prix selon le bien, déplacement inclus ; devis confirmé avant la visite.</p>
       <div class="mt-5" id="simulateur"><QuoteForm revealEstimation={true} /></div>
     </div>
   </section>
 
   <!-- Avis -->
-  <Reviews limit={3} title="Ils nous ont fait confiance" eyebrow="Avis vérifiés" />
+  <Reviews limit={3} />
 
-  <!-- Process : RDV sous 48 h, rapport sous 24 h -->
+  <!-- Déroulement -->
   <section class="section-line">
     <div class="wrap">
-      <div class="eyebrow">Notre process</div>
-      <h2 class="sec-title">Rendez-vous rapide, rapport sous 24&nbsp;h</h2>
+      <div class="eyebrow">Déroulement</div>
+      <h2 class="sec-title">Une visite organisée avec vous</h2>
+      <p class="sec-intro">Nous confirmons les disponibilités et les documents utiles à la préparation de votre intervention. Les rapports de diagnostics sont généralement remis sous 24&nbsp;h après la visite, selon le dossier. Le délai d’un audit énergétique est confirmé au devis.</p>
       <div class="grid grid-3 mt-5 steps">
-        <div class="step"><div class="n">Étape 1</div><h3>Devis immédiat</h3><p>Estimation tout compris en 2 minutes, en ligne.</p></div>
-        <div class="step"><div class="n">Étape 2</div><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient {where}.</p></div>
-        <div class="step"><div class="n">Étape 3</div><h3>Rapport sous 24 h</h3><p>Document clair et opposable, remis sous 24 h après la visite.</p></div>
+        <div class="step"><div class="n">Étape 1</div><h3>Votre demande</h3><p>Décrivez votre projet et votre bien. Votre demande de devis prend environ 2&nbsp;minutes.</p></div>
+        <div class="step"><div class="n">Étape 2</div><h3>Confirmation</h3><p>Nous confirmons les prestations, le prix et le créneau d’intervention {where}.</p></div>
+        <div class="step"><div class="n">Étape 3</div><h3>Diagnostics et rapports</h3><p>Le professionnel réalise les diagnostics et vous transmet les rapports avec les explications utiles.</p></div>
       </div>
     </div>
   </section>
@@ -237,10 +243,10 @@ const jsonLd = [
   <!-- CTA final -->
   <section class="cta-final">
     <div class="wrap">
-      <h2>Vos diagnostics {where}, en toute clarté</h2>
-      <p>Estimation tout compris en 2 minutes, sans engagement.</p>
+      <h2>Vos diagnostics {where}</h2>
+      <p>{WORDING.engagementDevis}</p>
       <div class="cta">
-        <a href="#simulateur" class="btn-gold">Obtenir mon devis</a>
+        <a href="#simulateur" class="btn-gold">Demander mon devis</a>
         <a href="/tarifs" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Voir les tarifs</a>
       </div>
     </div>
@@ -249,6 +255,9 @@ const jsonLd = [
 
 <style>
   .zcard { padding: 22px 24px; }
+  .zconseil { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 14px 18px; }
+  .zconseil strong { font-family: var(--sora); color: var(--blue); font-size: 15px; }
+  .zconseil p { margin: 4px 0 0; font-size: 15px; color: var(--ink); }
   .zcard h3 { font-family: var(--sora); font-size: 16px; color: var(--blue); margin: 0 0 12px; }
   .zbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
   .zbars li { display: grid; grid-template-columns: 22px 1fr 52px; align-items: center; gap: 8px; font-size: 14px; }
