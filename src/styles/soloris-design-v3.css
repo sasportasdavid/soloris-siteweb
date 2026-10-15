@@ -1,0 +1,321 @@
+/* ============================================================
+   Soloris — design V3 (cahier Design UX V3, 15 octobre 2026)
+   Feuille ADDITIONNELLE, activée uniquement par <body data-soloris-design="v3">
+   sur les routes publiques (Base, LandingLayout). Elle ne cible que #main et les
+   boutons listés du header et des barres mobiles ; bandeau de consentement et
+   chat ne reçoivent aucune règle.
+
+   Règles du contrat (cahier §4.8) : aucun !important ; aucun display / visibility /
+   position / order / pointer-events / opacity sur un champ, une étape ou un data-el ;
+   aucun prix rendu par content: ; [hidden] intact ; outline jamais supprimé.
+   Retrait : supprimer ce fichier, son import et l'attribut d'activation des layouts.
+   ============================================================ */
+
+[data-soloris-design="v3"] {
+  --soloris-blue: #14385F;        /* structure / titres */
+  --soloris-ink: #0F1B2A;         /* texte courant */
+  --soloris-ink-soft: #5A6B7B;    /* texte secondaire (fond clair) */
+  --soloris-paper: #F7F5F2;       /* fond principal */
+  --soloris-accent: #E2671F;      /* accent décoratif (filets, motifs) — jamais texte fin */
+  --soloris-action: #B84913;      /* action principale : blanc dessus ≈ 5,25:1 */
+  --soloris-action-hover: #963A0F;/* survol d'une action disponible ≈ 7,22:1 */
+  --soloris-action-soft: #FBEDE3; /* fond d'un choix sélectionné */
+  --soloris-on-dark-accent: #F4A24A;
+  --soloris-line: #E5E1DB;        /* séparateurs décoratifs */
+  --soloris-control: #7D8D9B;     /* bordure qui identifie un contrôle ≈ 3,41:1 */
+  --soloris-focus: #2E6FAE;
+  --soloris-success: #1C6B4A;
+  --soloris-disabled: #8C7E74;
+  --soloris-shadow-light: 0 1px 2px rgba(11, 42, 74, .06), 0 10px 26px -20px rgba(11, 42, 74, .3);
+}
+
+/* ═════════════════════════ LOT V1 — LISIBILITÉ ET ACTION ═════════════════════════ */
+
+/* ── C05 Actions : orange foncé lisible, 48 px de haut, états explicites ── */
+[data-soloris-design="v3"] #main .btn-gold,
+[data-soloris-design="v3"] .site-header .btn-gold,
+[data-soloris-design="v3"] .mobile-cta .btn-gold,
+[data-soloris-design="v3"] .lp-mcta .btn-gold {
+  background: var(--soloris-action);
+  box-shadow: 0 10px 22px -16px rgba(150, 58, 15, .85);
+}
+[data-soloris-design="v3"] #main .btn-gold:hover,
+[data-soloris-design="v3"] .site-header .btn-gold:hover,
+[data-soloris-design="v3"] .mobile-cta .btn-gold:hover,
+[data-soloris-design="v3"] .lp-mcta .btn-gold:hover {
+  background: var(--soloris-action-hover);
+  box-shadow: 0 12px 24px -16px rgba(150, 58, 15, .9);
+}
+/* Bouton indisponible (ex. « Envoi… ») : jamais l'apparence d'un survol actif. */
+[data-soloris-design="v3"] #main .btn-gold:disabled,
+[data-soloris-design="v3"] #main .btn-gold:disabled:hover,
+[data-soloris-design="v3"] #main .btn-blue:disabled,
+[data-soloris-design="v3"] #main .btn-blue:disabled:hover {
+  background: var(--soloris-disabled);
+  box-shadow: none;
+  transform: none;
+  cursor: progress;
+}
+[data-soloris-design="v3"] #main .btn-gold,
+[data-soloris-design="v3"] #main .btn-blue,
+[data-soloris-design="v3"] #main .btn-ghost {
+  min-height: 48px;
+  padding: 12px 22px;
+  font-size: 15px;
+  line-height: 1.25;
+  text-align: center;
+}
+[data-soloris-design="v3"] #main .btn-sm,
+[data-soloris-design="v3"] .site-header .btn-sm {
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: 14px;
+}
+[data-soloris-design="v3"] #main .btn-ghost { border-color: rgba(20, 56, 95, .32); }
+[data-soloris-design="v3"] #main .btn-ghost:hover { border-color: var(--soloris-focus); }
+/* Bouton orange de l'intro sombre des offres (ancien orange clair) */
+[data-soloris-design="v3"] #main .offer-intro--dark .offer-intro-copy .btn-blue { background: var(--soloris-action); }
+[data-soloris-design="v3"] #main .offer-intro--dark .offer-intro-copy .btn-blue:hover { background: var(--soloris-action-hover); }
+/* Barres d'action mobiles : cibles confortables, libellé sur deux lignes si nécessaire */
+[data-soloris-design="v3"] .mobile-cta .mcta-btn,
+[data-soloris-design="v3"] .lp-mcta .lp-mcta-btn {
+  min-height: 48px;
+  line-height: 1.2;
+}
+
+/* ── Hiérarchie typographique (cahier §1.3) ── */
+[data-soloris-design="v3"] #main .eyebrow { letter-spacing: .12em; }
+[data-soloris-design="v3"] #main .sec-title { font-size: 34px; line-height: 1.18; letter-spacing: -.015em; }
+[data-soloris-design="v3"] #main .sec-intro { font-size: 17px; line-height: 1.62; }
+[data-soloris-design="v3"] #main .hero h1 { font-size: 46px; line-height: 1.12; letter-spacing: -.025em; }
+[data-soloris-design="v3"] #main .hero p.sub { line-height: 1.6; }
+[data-soloris-design="v3"] #main .lp-hero-copy h1 { font-size: clamp(30px, 3vw, 42px); line-height: 1.12; } /* hero Ads compact */
+[data-soloris-design="v3"] #main .step h3,
+[data-soloris-design="v3"] #main .need-card h3 { font-size: 20px; line-height: 1.3; }
+[data-soloris-design="v3"] #main .step p,
+[data-soloris-design="v3"] #main .need-card p,
+[data-soloris-design="v3"] #main .pillar p,
+[data-soloris-design="v3"] #main .review p { font-size: 15.5px; line-height: 1.6; }
+[data-soloris-design="v3"] #main .need-card .go { font-size: 14.5px; }
+[data-soloris-design="v3"] #main .faq-item summary { line-height: 1.4; }
+[data-soloris-design="v3"] #main .faq-item .answer { font-size: 16px; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .sec-title { font-size: 27px; }
+  [data-soloris-design="v3"] #main .hero h1 { font-size: 32px; }
+  [data-soloris-design="v3"] #main .sec-intro { font-size: 16px; }
+}
+
+/* Intro sombre des offres : titre lisible sur marine (anomalie 1:1 relevée à la baseline) */
+[data-soloris-design="v3"] #main .offer-intro--dark .offer-intro-copy .sec-title { color: #fff; }
+
+/* ── Cartes éditoriales : bordure fine, ombre très légère ; l'ombre principale reste au formulaire ── */
+[data-soloris-design="v3"] #main .card:not(.qform),
+[data-soloris-design="v3"] #main .need-card,
+[data-soloris-design="v3"] #main .step,
+[data-soloris-design="v3"] #main .review {
+  border-radius: 16px;
+  box-shadow: var(--soloris-shadow-light);
+}
+[data-soloris-design="v3"] #main .need-card:hover {
+  border-color: var(--soloris-action);
+  box-shadow: 0 14px 32px -22px rgba(11, 42, 74, .45);
+  transform: translateY(-2px);
+}
+
+/* ── C04 Carte de formulaire : HABILLAGE SEULEMENT (couleurs, tailles, bordures, ombres) ── */
+[data-soloris-design="v3"] #main .qform { padding: 26px 28px 28px; border-radius: 16px; }
+[data-soloris-design="v3"] #main .qform .qsub { font-size: 15px; line-height: 1.5; }
+[data-soloris-design="v3"] #main .qform .qfield-help,
+[data-soloris-design="v3"] #main .qform .qcheck-help { font-size: 13px; }
+[data-soloris-design="v3"] #main .qform .qopt-desc { font-size: 13px; }
+[data-soloris-design="v3"] #main .qform .qestim-note { font-size: 13.5px; }
+[data-soloris-design="v3"] #main .qform .qreassure { font-size: 13px; }
+[data-soloris-design="v3"] #main .qform .qmore summary { font-size: 14.5px; }
+[data-soloris-design="v3"] #main .qform .qopt-body { border-color: var(--soloris-control); }
+[data-soloris-design="v3"] #main .qform .qopt:hover .qopt-body { border-color: var(--soloris-focus); }
+[data-soloris-design="v3"] #main .qform .qopt input:checked + .qopt-body {
+  border-color: var(--soloris-action);
+  background: var(--soloris-action-soft);
+  box-shadow: inset 0 0 0 1px var(--soloris-action);
+}
+/* Champs de saisie : 16 px (évite le zoom automatique iOS), bordure de contrôle, anneau de focus */
+[data-soloris-design="v3"] #main .qfield input,
+[data-soloris-design="v3"] #main .qfield select,
+[data-soloris-design="v3"] #main .qfield textarea,
+[data-soloris-design="v3"] #main .cbform-field input,
+[data-soloris-design="v3"] #main .cbform-field select {
+  font-size: 16px;
+  border-color: var(--soloris-control);
+}
+[data-soloris-design="v3"] #main .qfield input:focus,
+[data-soloris-design="v3"] #main .qfield select:focus,
+[data-soloris-design="v3"] #main .qfield textarea:focus,
+[data-soloris-design="v3"] #main .cbform-field input:focus,
+[data-soloris-design="v3"] #main .cbform-field select:focus {
+  border-color: var(--soloris-focus);
+  box-shadow: 0 0 0 3px rgba(46, 111, 174, .32);
+}
+[data-soloris-design="v3"] #main .cbform-sub { font-size: 14.5px; }
+[data-soloris-design="v3"] #main .cbform-trust { font-size: 12.5px; }
+@media (max-width: 480px) {
+  [data-soloris-design="v3"] #main .qform { padding: 20px 18px 22px; }
+}
+
+/* ═════════════════════════ LOT V2 — DÉCLINAISON RESPONSIVE ═════════════════════════ */
+
+/* ── Rythme vertical (cahier §1.4) : 72 px entre grandes sections ordinateur, 48 px mobile ── */
+[data-soloris-design="v3"] #main section.section-line,
+[data-soloris-design="v3"] #main section.cta-final { padding-top: 72px; padding-bottom: 72px; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main section.section-line,
+  [data-soloris-design="v3"] #main section.cta-final { padding-top: 48px; padding-bottom: 48px; }
+}
+
+/* ── C02 Hero public avec formulaire : 52/48 au-dessus de 920 px, UNE seule bascule à 920 px.
+      Avant : grille 2 colonnes jusqu'à 881 px alors que l'ordre mobile s'appliquait dès 920 px
+      (formulaire écrasé à 190–250 px de large entre 881 et 920 px). ── */
+@media (min-width: 921px) {
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) { grid-template-columns: 52fr 48fr; gap: 44px; }
+}
+@media (max-width: 920px) {
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) .hero-copy { padding: 36px 0 26px; }
+}
+
+/* ── C03 Hero Ads : même bascule à 920 px (avant : 820 px) ; carte de formulaire de largeur
+      confortable et centrée sous le texte (aucun déplacement dans le DOM). ── */
+@media (max-width: 920px) {
+  [data-soloris-design="v3"] #main .lp-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  [data-soloris-design="v3"] #main .lp-hero-visual { width: 100%; max-width: 600px; justify-self: center; }
+}
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .lp-hero { padding-top: 32px; padding-bottom: 32px; }
+  [data-soloris-design="v3"] #main .lp-sub { font-size: 16.5px; }
+  [data-soloris-design="v3"] #main .lp-price-cond { font-size: 14px; }
+}
+
+/* ── Petits écrans : titres de section et pastilles sans débordement ── */
+@media (max-width: 380px) {
+  [data-soloris-design="v3"] #main .sec-title { font-size: 25px; }
+  [data-soloris-design="v3"] #main .hero h1 { font-size: 30px; }
+  [data-soloris-design="v3"] #main .tagpill { font-size: 12.5px; }
+}
+
+/* ── Tableaux : le défilement horizontal reste dans le seul conteneur du tableau ── */
+[data-soloris-design="v3"] #main .ptable th,
+[data-soloris-design="v3"] #main .ptable td { font-size: 15px; }
+
+/* ═════════════════════════ LOT P1 — PAGES D'ARRIVÉE ET OFFRES ═════════════════════════ */
+
+/* ── C07 Prix et conditions : montant 28–34 px, condition dans le même bloc ── */
+[data-soloris-design="v3"] #main .lp-price { border-left-color: var(--soloris-accent); padding: 6px 0 6px 16px; }
+[data-soloris-design="v3"] #main .lp-price-amount { font-size: 19px; }
+[data-soloris-design="v3"] #main .lp-price-amount strong { font-size: 32px; letter-spacing: -.015em; }
+[data-soloris-design="v3"] #main .lp-price-cond { font-size: 14.5px; line-height: 1.55; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .lp-price-amount strong { font-size: 28px; }
+}
+[data-soloris-design="v3"] #main .v3-prix {
+  margin-top: 18px; max-width: 760px; background: #fff; border: 1px solid var(--soloris-line);
+  border-left: 4px solid var(--soloris-accent); border-radius: 16px; padding: 22px 26px;
+}
+[data-soloris-design="v3"] #main .v3-prix-montant { font-family: var(--sora); font-weight: 600; font-size: 32px; letter-spacing: -.015em; line-height: 1.15; color: var(--soloris-blue); }
+[data-soloris-design="v3"] #main .v3-prix .sec-intro { margin-top: 10px; max-width: none; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .v3-prix { padding: 18px 18px; }
+  [data-soloris-design="v3"] #main .v3-prix-montant { font-size: 28px; }
+}
+
+/* ── Preuve compacte des LP (repli éditorial) et liste de réassurance ── */
+[data-soloris-design="v3"] #main .lp-who-title { font-size: 15px; }
+[data-soloris-design="v3"] #main .lp-who { font-size: 14px; line-height: 1.5; }
+[data-soloris-design="v3"] #main .lp-trust { font-size: 13.5px; color: var(--soloris-blue); }
+[data-soloris-design="v3"] #main .lp-strip .wrap { font-size: 13px; }
+
+/* ── C09 Méthode : trois étapes en lecture simple (sans cartes surdimensionnées) ── */
+[data-soloris-design="v3"] #main .steps .step:not(:has(.step-media)) { padding: 24px 24px 26px; box-shadow: none; }
+[data-soloris-design="v3"] #main .steps .step .n { letter-spacing: .1em; font-size: 12.5px; }
+
+/* ── Blocs propres aux offres et intro « En bref » ── */
+[data-soloris-design="v3"] #main .offer-bloc { box-shadow: none; }
+[data-soloris-design="v3"] #main .offer-intro-copy .sec-title { margin-bottom: 4px; }
+[data-soloris-design="v3"] #main .proof-repli { box-shadow: none; border-left: 4px solid var(--soloris-blue); }
+
+/* ═════════════════════════ LOT P2 — ACCUEIL, TARIFS, CONFIANCE ═════════════════════════ */
+
+/* ── Titres de page (remplacent les tailles fixées en ligne : 40–44 px même sur mobile) ── */
+[data-soloris-design="v3"] #main .v3-page-title { font-size: 44px; line-height: 1.12; letter-spacing: -.02em; }
+@media (max-width: 720px) { [data-soloris-design="v3"] #main .v3-page-title { font-size: 31px; } }
+@media (max-width: 380px) { [data-soloris-design="v3"] #main .v3-page-title { font-size: 28px; } }
+
+/* ── C06 Comparaison des offres (accueil, pages locales) : usage, bénéfice, repère tarifaire, destination ── */
+[data-soloris-design="v3"] #main .need-card { padding: 24px 22px 24px; gap: 10px; }
+[data-soloris-design="v3"] #main .need-card .ic { width: 44px; height: 44px; }
+[data-soloris-design="v3"] #main .need-card .go {
+  color: var(--soloris-blue); font-size: 15px; padding-top: 14px; margin-top: auto;
+  border-top: 1px solid var(--soloris-line); width: 100%;
+}
+
+/* ── Engagements (accueil) : cartes sobres ── */
+[data-soloris-design="v3"] #main .eng-card { padding: 24px; border-radius: 16px; }
+[data-soloris-design="v3"] #main .eng-card:hover { transform: none; box-shadow: var(--soloris-shadow-light); }
+[data-soloris-design="v3"] #main .eng-body p { font-size: 15.5px; }
+
+/* ── Bloc tarifs de l'accueil : conditions lisibles sur marine ── */
+[data-soloris-design="v3"] #main .block-blue h2 { font-size: 32px; }
+[data-soloris-design="v3"] #main .block-blue .price-cond { opacity: 1; color: #DCE6F0; font-size: 14px; }
+
+/* ── P09 Résumé tarifaire qualifié (/tarifs) ── */
+[data-soloris-design="v3"] #main .v3-resume { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+[data-soloris-design="v3"] #main .v3-resume-item { background: #fff; border: 1px solid var(--soloris-line); border-top: 3px solid var(--soloris-accent); border-radius: 16px; padding: 18px 20px 20px; }
+[data-soloris-design="v3"] #main .v3-resume-item a { font-family: var(--sora); font-weight: 600; font-size: 16px; color: var(--soloris-blue); text-decoration: underline; text-underline-offset: 3px; }
+[data-soloris-design="v3"] #main .v3-resume-prix { font-family: var(--sora); font-weight: 600; font-size: 28px; letter-spacing: -.015em; color: var(--soloris-blue); margin-top: 6px; }
+[data-soloris-design="v3"] #main .v3-resume-cond { font-size: 14px; color: var(--soloris-ink-soft); margin-top: 4px; line-height: 1.5; }
+@media (max-width: 860px) { [data-soloris-design="v3"] #main .v3-resume { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── Tableau des tarifs : en-têtes identifiables, défilement au clavier (focus visible) ── */
+[data-soloris-design="v3"] #main [role="region"][tabindex="0"]:focus-visible { outline: 3px solid var(--soloris-focus); outline-offset: 3px; border-radius: 16px; }
+[data-soloris-design="v3"] #main .ptable td.price { color: var(--soloris-blue); }
+
+/* ── Méthode / contact : piliers et cartes sobres ── */
+[data-soloris-design="v3"] #main .pillar h3 { font-size: 19px; line-height: 1.3; }
+[data-soloris-design="v3"] #main .pillar .ic { width: 42px; height: 42px; }
+
+/* ═════════════════════════ LOT P3 — HUBS, FICHES, GUIDES, PAGES LOCALES ═════════════════════════ */
+
+/* ── Gabarit G : lecture à une colonne (contenu ≈ 680 px), H1 40 / 30 px, liens longs repliables ── */
+[data-soloris-design="v3"] #main .v3-guide-title { font-size: 40px; }
+@media (max-width: 720px) { [data-soloris-design="v3"] #main .v3-guide-title { font-size: 30px; } }
+[data-soloris-design="v3"] #main .prose h2 { font-size: 27px; line-height: 1.25; }
+[data-soloris-design="v3"] #main .prose p,
+[data-soloris-design="v3"] #main .prose li { line-height: 1.7; }
+[data-soloris-design="v3"] #main .prose a,
+[data-soloris-design="v3"] #main .sources-list a { overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .prose h2 { font-size: 23px; margin-top: 36px; }
+  [data-soloris-design="v3"] #main .prose p,
+  [data-soloris-design="v3"] #main .prose li { font-size: 16px; }
+}
+
+/* ── Fil d'Ariane plus lisible ── */
+[data-soloris-design="v3"] #main .breadcrumb { font-size: 13.5px; }
+
+/* ── Gabarit L : conseil local, cartes de données publiques et notes de lecture ── */
+[data-soloris-design="v3"] #main .zconseil { border-left-color: var(--soloris-accent); }
+[data-soloris-design="v3"] #main .zcard { box-shadow: none; }
+[data-soloris-design="v3"] #main .zlist ul { line-height: 1.65; }
+
+/* ── Gabarit D : bloc tarif de la fiche (montant en titre, condition dessous) ── */
+[data-soloris-design="v3"] #main #tarif .sec-intro { max-width: 680px; }
+
+/* ── Hubs (diagnostics, guides, zones) : cartes et pastilles lisibles ── */
+[data-soloris-design="v3"] #main .zchips a { font-size: 15px; padding: 9px 15px; }
+[data-soloris-design="v3"] #main .offer-liens a { font-size: 14.5px; }
+
+/* ── R : compléments relevés par la recette (Lighthouse, hors #main) ───────────
+   Signature de marque sous le logo (8,5 px, opacité .85 → 3,8:1) et lien téléphone du
+   pied de LP distingué par la seule couleur. Le bouton « Accepter » du bandeau de
+   consentement n'est PAS modifié (composant de consentement gelé). */
+[data-soloris-design="v3"] .site-header .endorse.sm { opacity: 1; color: var(--soloris-ink-soft); }
+[data-soloris-design="v3"] .site-header .endorse.sm b { color: var(--soloris-focus); }
+[data-soloris-design="v3"] .lp-foot .lp-foot-trust a { text-decoration: underline; text-underline-offset: 2px; }

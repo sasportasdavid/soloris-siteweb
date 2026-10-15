@@ -8,7 +8,8 @@
  * Signale aussi les débordements horizontaux (largeur du document > largeur d'écran).
  *
  * Usage :  node scripts/controles/captures.mjs <dossier_sortie> <dossier_statique> <largeurs> <route> [route…]
- *   ex. :  node scripts/controles/captures.mjs /tmp/captures /tmp/static 360,390,768,1440 / /dpe/ /lp/dpe/
+ *   ex. :  node scripts/controles/captures.mjs /tmp/captures /tmp/static 390x844,1440x1000 / /dpe/ /lp/dpe/
+ *   Option : CAPTURE_VIEWPORT_ONLY=1 → capture du premier écran seulement (en plus de la pleine page).
  */
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -38,9 +39,14 @@ const BASE = `http://127.0.0.1:${server.address().port}`;
 
 const browser = await chromium.launch();
 const report = [];
-for (const w of WIDTHS.split(',').map(Number)) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: w < 768 ? 800 : 900 }, deviceScaleFactor: 1 });
+// Largeurs « 390 » ou dimensions « 390x844 » (hauteur du premier écran ; la capture reste pleine page).
+for (const spec of WIDTHS.split(',')) {
+  const [w, hSpec] = spec.split('x').map(Number);
+  const ctx = await browser.newContext({ viewport: { width: w, height: hSpec || (w < 768 ? 800 : 900) }, deviceScaleFactor: 1 });
   await ctx.route('**/*', (route) => (route.request().url().startsWith(BASE) ? route.continue() : route.abort()));
+  // Variante d'expérience fixée (AB_VARIANT, A par défaut) : avant et après comparables.
+  const v = process.env.AB_VARIANT || 'A';
+  await ctx.addCookies(['cta', 'steps', 'early'].map((k) => ({ name: 'soloris_ab_' + k, value: v, url: BASE })));
   const page = await ctx.newPage();
   for (const r of ROUTES) {
     await page.goto(BASE + r, { waitUntil: 'load' });
@@ -50,6 +56,7 @@ for (const w of WIDTHS.split(',').map(Number)) {
     const { sw, cw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     const name = `${(r.replace(/^\/|\/$/g, '').replace(/\//g, '_') || 'accueil')}-${w}.png`;
     await page.screenshot({ path: join(OUT, name), fullPage: true });
+    if (process.env.CAPTURE_VIEWPORT_ONLY) await page.screenshot({ path: join(OUT, name.replace(/\.png$/, '-ecran.png')) });
     report.push({ route: r, largeur: w, debordement: sw > cw ? `${sw - cw}px` : '', capture: name });
     process.stdout.write('.');
   }

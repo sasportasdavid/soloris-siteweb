@@ -6,6 +6,7 @@
  * - Tracking conforme (Consent Mode v2) + bandeau CNIL.
  */
 import '../styles/global.css';
+import '../styles/soloris-design-v3.css';
 // Polices auto-hébergées (sous-ensemble latin pour Sora/Inter)
 import '@fontsource/sora/latin-300.css';
 import '@fontsource/sora/latin-400.css';
@@ -46,6 +47,7 @@ const { title, description, path, ogImage, noindex, jsonLd, hideHeaderCta } = As
 // Google Tag Manager — pour la balise <noscript> (repli sans JS)
 const GTM = import.meta.env.PUBLIC_GTM_ID;
 const hasGTM = !!GTM && GTM !== '__A_REMPLACER__';
+const solorisDesignV3 = !/^\/(?:admin|api|rdv)(?:\/|$)/.test(Astro.url.pathname) && !/^\/devis\/signer(?:\/|$)/.test(Astro.url.pathname);
 ---
 
 <!doctype html>
@@ -63,7 +65,7 @@ const hasGTM = !!GTM && GTM !== '__A_REMPLACER__';
     <Seo title={title} description={description} path={path} ogImage={ogImage} noindex={noindex} jsonLd={jsonLd} />
     <Analytics />
   </head>
-  <body>
+  <body data-soloris-design={solorisDesignV3 ? "v3" : undefined}>
     {hasGTM && (
       <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`} />
     )}
