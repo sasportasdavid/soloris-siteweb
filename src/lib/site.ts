@@ -36,6 +36,8 @@ export const SITE = {
   },
   areaServed: ['Paris', 'Île-de-France'],
   openingHours: 'Mo-Sa 08:00-19:00', // horaires par défaut — [À CONFIRMER selon vos horaires réels]
+  // Rappel promis après une demande (formulaires, pages d'arrivée, e-mail, annonces), aux horaires d'ouverture.
+  rappel: { delai: '30 min', horaires: 'du lundi au samedi, de 8 h à 19 h' },
   priceRange: '€€',
   // Avis — note réelle de la fiche Google « is diag » (juin 2026)
   rating: {
