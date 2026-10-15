@@ -4,13 +4,14 @@
  */
 import Base from '../layouts/Base.astro';
 import QuoteForm from '../components/QuoteForm.astro';
+import { SITE } from '../lib/site';
 import { breadcrumb } from '../lib/jsonld';
 
 const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Devis', url: '/devis' }])];
 ---
 <Base
-  title="Obtenir mon devis en 2 min | Soloris"
-  description="Estimez vos diagnostics immobiliers en 2 minutes : DPE, vente, location, audit. Tarif tout compris, déplacement inclus, à Paris et en Île-de-France."
+  title="Demande de devis diagnostic immobilier | Soloris"
+  description="Décrivez votre bien et demandez votre devis gratuit de diagnostic immobilier à Paris ou en Île-de-France. Prix confirmé avant la visite."
   path="/devis"
   jsonLd={jsonLd}
   hideHeaderCta={true}
@@ -18,16 +19,17 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Devis', url:
   <section>
     <div class="wrap">
       <div class="sec-head center">
-        <div class="eyebrow center">Devis en 2 minutes</div>
-        <h1 class="sec-title" style="font-size:40px">Obtenez votre estimation tout compris</h1>
-        <p class="sec-intro">Quelques questions, et vous obtenez une estimation indicative immédiate. Devis confirmé sans engagement.</p>
+        <div class="eyebrow center">Demande de devis</div>
+        <h1 class="sec-title" style="font-size:40px">Demandez votre devis de diagnostic immobilier</h1>
+        <p class="sec-intro">Quelques questions sur votre projet et votre bien. Nous vous recontactons pour confirmer les diagnostics nécessaires, le prix et les disponibilités.</p>
       </div>
       <div class="mt-5">
         <QuoteForm />
       </div>
-      <p class="text-center muted mt-4" style="font-size:13px;max-width:560px;margin-left:auto;margin-right:auto">
-        L'estimation affichée est indicative (« à partir de »). Le prix exact, tout compris, vous est confirmé au devis selon les diagnostics applicables à votre bien.
-      </p>
+      <div class="text-center muted mt-4" style="font-size:13.5px;max-width:600px;margin-left:auto;margin-right:auto">
+        <p><strong>Votre demande, sans engagement.</strong> Les montants éventuellement affichés sont des estimations établies à partir des informations saisies. Votre prix est confirmé au devis avant l’intervention.</p>
+        <p class="mt-2"><strong>Après votre demande.</strong> Nous traitons les demandes {SITE.rappel.horaires}. Le rendez-vous est confirmé avec vous ; il n’est pas réservé automatiquement à l’envoi du formulaire.</p>
+      </div>
     </div>
   </section>
 </Base>

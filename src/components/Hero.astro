@@ -10,7 +10,9 @@
 import { HERO_VARIANTS } from '../lib/heroVariants';
 import ResponsiveImage from './ResponsiveImage.astro';
 import { SITE } from '../lib/site';
-const hasReviews = Number(SITE.rating.count) > 0;
+import { avisVerifies, AVIS_LIBELLE } from '../lib/preuves';
+// Note Google affichée uniquement lorsque la fiche et la date de contrôle sont documentées (preuves.ts).
+const hasReviews = avisVerifies;
 
 interface Props {
   tagpill?: string;
@@ -33,11 +35,11 @@ interface Props {
   aside?: boolean;
 }
 const {
-  tagpill = 'Certifié COFRAC · Rapport opposable',
+  tagpill = 'Paris et Île-de-France · Diagnostiqueur certifié',
   h1,
   sub,
   primaryHref = '/devis',
-  primaryLabel = 'Obtenir mon devis en 2 min',
+  primaryLabel = 'Demander mon devis en 2 min',
   secondaryHref = '/devis',
   secondaryLabel = '', // défaut : aucun CTA secondaire (chaque page définit le sien)
   showTrust = true,
@@ -76,13 +78,13 @@ const split = Boolean(image) || hasAside;
       <h1 id="hero-h1" set:html={h1} />
       <p class="sub" id="hero-sub">{sub}</p>
       {hasReviews && (
-        <div class="hero-rating" aria-label={`Note ${SITE.rating.value} sur 5 sur Google, ${SITE.rating.count} avis`}>
+        <div class="hero-rating" aria-label={AVIS_LIBELLE}>
           <span class="stars" aria-hidden="true">
             {[0, 1, 2, 3, 4].map(() => (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>
             ))}
           </span>
-          <strong>{SITE.rating.value}</strong> sur Google · {SITE.rating.count} avis
+          <strong>{SITE.legalName}</strong> : {SITE.rating.value}/5 sur Google · {SITE.rating.count} avis
         </div>
       )}
       {!hideCta && (
@@ -93,8 +95,8 @@ const split = Boolean(image) || hasAside;
       )}
       {showTrust && !split && (
         <div class="trust">
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Rapport sous 24 h</span>
-          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Tarif tout compris</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Prix annoncé avant la visite</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Déplacement inclus</span>
           <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Diagnostiqueur certifié</span>
         </div>
       )}
@@ -103,8 +105,8 @@ const split = Boolean(image) || hasAside;
       <div class="hero-media">
         <ResponsiveImage src={image} alt={imageAlt} width={760} height={820} loading="eager" fetchpriority="high" sizes="(max-width: 920px) 92vw, 760px" />
         <div class="hero-float">
-          <span class="hero-float-pill">24h</span>
-          <span class="hero-float-txt">Rapport remis sous 24&nbsp;heures</span>
+          <span class="hero-float-pill" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="hero-float-txt">Rapport expliqué</span>
         </div>
       </div>
     )}

@@ -1,6 +1,6 @@
 ---
 /**
- * Accueil — hub + conversion. 13 sections (cf. brief §4).
+ * Accueil — hub + conversion. Textes : dossier éditorial V2 (oct. 2026).
  * Hero dynamique (landing DTR). JSON-LD : LocalBusiness + FAQPage.
  */
 import Base from '../layouts/Base.astro';
@@ -16,37 +16,36 @@ import QuoteForm from '../components/QuoteForm.astro';
 import ResponsiveImage from '../components/ResponsiveImage.astro';
 import Faq from '../components/Faq.astro';
 import { OFFERS } from '../lib/offers';
-import { prixDes } from '../lib/pricing';
+import { DPE_FROM, prixDes } from '../lib/pricing';
 import { SITE } from '../lib/site';
+import { CONDITIONS, WORDING } from '../lib/wording';
 import { localBusiness, faqPage } from '../lib/jsonld';
 
 const piliers = [
-  { t: 'Clarté', d: 'Tarif tout compris affiché, rapport lisible sans jargon.', proof: 'Le prix que vous voyez est le prix final.', ic: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
-  { t: 'Rapidité', d: 'Rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas.', proof: 'Devis immédiat, intervention sous 48 h.', ic: '<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>' },
-  { t: 'Confiance', d: 'Diagnostiqueur certifié COFRAC, rapport opposable et assuré.', proof: 'Certifié COFRAC · rapport opposable.', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
-  { t: 'Expertise énergie', d: "Conseil clair sur votre étiquette et les pistes d'amélioration.", proof: 'Un expert qui vous explique, sans vous vendre des travaux.', ic: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>' },
+  { t: 'Un prix annoncé', d: 'Vous connaissez le montant avant la visite.', ic: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { t: 'Une intervention préparée', d: 'Nous précisons les accès et documents nécessaires.', ic: '<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>' },
+  { t: 'Un professionnel certifié', d: 'Les diagnostics soumis à certification sont réalisés dans les domaines concernés.', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+  { t: 'Des résultats expliqués', d: 'Vous comprenez les constats et les prochaines démarches.', ic: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>' },
 ];
 
 const faq = [
-  { q: 'Quels diagnostics sont obligatoires pour vendre ?', a: "Selon le bien : DPE, ERP, et selon l'âge et la zone — amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, termites. Nous établissons la liste exacte applicable à votre logement au moment du devis." },
-  { q: 'Quels diagnostics pour mettre en location ?', a: "Généralement le DPE et l'ERP, complétés selon le logement par le CREP (plomb), l'électricité, le gaz et le mesurage Loi Boutin. La composition est confirmée au devis." },
-  { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
-  { q: 'Quels sont vos délais ?', a: 'Nous vous rappelons sous 30 minutes (du lundi au samedi, de 8 h à 19 h), proposons un rendez-vous sous 48 h et remettons le rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.' },
-  { q: 'Combien coûtent vos diagnostics ?', a: `Nos tarifs sont tout compris, déplacement inclus : dès ${prixDes('dpe')} € pour un DPE, dès ${prixDes('vente')} € pour un pack vente. Vous obtenez une estimation immédiate via notre formulaire de devis.` },
-  { q: 'Dans quelle zone intervenez-vous ?', a: 'À Paris et dans toute l’Île-de-France.' },
-  { q: 'Pouvez-vous garantir une bonne étiquette énergétique ?', a: "Non. Le DPE reflète la performance réelle du logement. Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat." },
+  { q: 'Comment connaître les diagnostics nécessaires ?', a: 'Ils dépendent notamment du projet, du bien, des installations et de sa localisation. Nous vérifions la composition de votre dossier avant de confirmer le devis.' },
+  { q: 'Le DPE suffit-il pour vendre ou louer ?', a: 'Pas toujours. Des diagnostics complémentaires peuvent être nécessaires selon le logement. Le pack est adapté à cette situation ; le DPE seul reste une prestation distincte.' },
+  { q: 'Le prix affiché est-il définitif ?', a: 'Le prix « dès » est un prix d’entrée. L’estimation dépend des informations renseignées ; le devis est confirmé avant l’intervention.' },
+  { q: 'Quand serai-je recontacté ?', a: `Nous traitons les demandes ${SITE.rappel.horaires}. En dehors de ces horaires, votre demande est traitée à la prochaine ouverture.` },
+  { q: 'Garantissez-vous une meilleure note DPE ?', a: 'Non. La classe résulte de l’évaluation réglementaire du logement. Notre engagement porte sur la réalisation du diagnostic et l’explication des résultats.' },
 ];
 
 const jsonLd = [localBusiness(), faqPage(faq)];
-const title = 'Diagnostics immobiliers Paris & Île-de-France | Soloris';
-const description = 'DPE, vente, location et audit énergétique. Prix clair, diagnostiqueur certifié, rapport sous 24 h à Paris et en Île-de-France.';
+const title = 'Diagnostic immobilier Paris et Île-de-France | Soloris';
+const description = 'DPE, diagnostics vente et location, audit énergétique à Paris et en Île-de-France. Prix annoncé avant la visite, déplacement inclus.';
 ---
 <Base title={title} description={description} path="/" jsonLd={jsonLd}>
   <!-- 2 · Hero dynamique — simulateur de devis embarqué (composant unique QuoteForm) -->
   <Hero
     dynamic={true}
-    h1='Diagnostics immobiliers à <span class="hl">Paris &amp; Île-de-France</span>'
-    sub="DPE, vente, location ou audit énergétique : obtenez un prix clair, un rendez-vous rapide et un rapport sous 24 h."
+    h1='Diagnostics immobiliers à <span class="hl">Paris et en Île-de-France</span>'
+    sub="Vente, location, DPE ou audit énergétique : les diagnostics adaptés à votre bien, un prix annoncé avant la visite et une démarche simple."
     showTrust={true}
     sun={true}
     hideCta={true}
@@ -65,8 +64,8 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
     <div class="wrap">
       <div class="sec-head center">
         <div class="eyebrow center">Par où commencer</div>
-        <h2 class="sec-title">Quel est votre besoin&nbsp;?</h2>
-        <p class="sec-intro">Choisissez votre situation : on vous emmène droit au bon diagnostic.</p>
+        <h2 class="sec-title">Quel est votre projet&nbsp;?</h2>
+        <p class="sec-intro">Vous vendez, vous louez ou vous avez besoin d’un DPE ? Retrouvez l’offre adaptée à votre situation. Nous vous aidons à préciser les diagnostics nécessaires.</p>
       </div>
       <div class="grid grid-4 mt-5">
         {OFFERS.map((o) => <OfferCard offer={o} />)}
@@ -79,9 +78,9 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
     <div class="wrap">
       <div class="grid grid-2" style="align-items:center;gap:40px">
         <div>
-          <div class="eyebrow">Pas envie de remplir un formulaire&nbsp;?</div>
-          <h2 class="sec-title">Laissez votre numéro, on vous rappelle</h2>
-          <p class="sec-intro">On vérifie avec vous les diagnostics obligatoires de votre bien, on confirme le prix tout compris et on fixe un rendez-vous sous 48&nbsp;h. Vous vendez, louez ou avez besoin d'un DPE&nbsp;: dites-le-nous.</p>
+          <div class="eyebrow">Être rappelé</div>
+          <h2 class="sec-title">Vous préférez échanger avec nous&nbsp;?</h2>
+          <p class="sec-intro">Laissez votre numéro et le code postal du bien. Nous vous rappelons sous {SITE.rappel.delai}, {SITE.rappel.horaires}, pour préciser votre besoin et organiser la suite. {WORDING.horsHoraires}</p>
         </div>
         <CallbackForm />
       </div>
@@ -92,28 +91,28 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <section class="section-line">
     <div class="wrap">
       <div class="eyebrow">Comment ça marche</div>
-      <h2 class="sec-title">Trois étapes, zéro corvée</h2>
+      <h2 class="sec-title">Vos diagnostics en trois étapes</h2>
       <div class="grid grid-3 mt-5 steps">
         <div class="step">
           <div class="step-media step-media--price">
             <span class="step-n">Étape 1</span>
-            <div class="step-price"><strong>Dès {prixDes('vente')} €</strong><span>tout compris</span></div>
+            <div class="step-price"><strong>2 min</strong><span>pour votre demande</span></div>
           </div>
-          <div class="step-body"><h3>Devis immédiat</h3><p>Renseignez votre bien en 2 minutes et obtenez une estimation tout compris à l'écran.</p></div>
+          <div class="step-body"><h3>Votre demande</h3><p>Décrivez votre projet et votre bien. Votre demande de devis prend environ 2 minutes.</p></div>
         </div>
         <div class="step">
           <div class="step-media">
             <span class="step-n">Étape 2</span>
             <ResponsiveImage src="/images/mesure-tablette.webp" alt="Rendez-vous avec un diagnostiqueur certifié" width={520} height={358} />
           </div>
-          <div class="step-body"><h3>Rendez-vous sous 48 h</h3><p>Un diagnostiqueur certifié intervient rapidement, à la date qui vous arrange.</p></div>
+          <div class="step-body"><h3>Confirmation</h3><p>Nous confirmons les prestations, le prix et le créneau d’intervention.</p></div>
         </div>
         <div class="step">
           <div class="step-media">
             <span class="step-n">Étape 3</span>
             <ResponsiveImage src="/images/rapport-famille.webp" alt="Remise d'un rapport de diagnostic clair" width={520} height={358} />
           </div>
-          <div class="step-body"><h3>Rapport pédagogique</h3><p>Vous recevez un rapport clair, opposable, qui vous dit où vous en êtes — sans jargon.</p></div>
+          <div class="step-body"><h3>Diagnostics et rapports</h3><p>Le professionnel réalise les diagnostics et vous transmet les rapports avec les explications utiles.</p></div>
         </div>
       </div>
     </div>
@@ -124,7 +123,7 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
     <div class="wrap">
       <div class="sec-head center">
         <div class="eyebrow center">Nos engagements</div>
-        <h2 class="sec-title">Quatre garanties, aucune zone d'ombre</h2>
+        <h2 class="sec-title">Des engagements concrets</h2>
       </div>
       <div class="grid grid-2 mt-5 engage">
         {piliers.map((p, i) => (
@@ -133,10 +132,6 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
             <div class="eng-body">
               <h3>{p.t}</h3>
               <p>{p.d}</p>
-              <span class="eng-proof">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-                {p.proof}
-              </span>
             </div>
           </div>
         ))}
@@ -148,12 +143,13 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <section class="section-line">
     <div class="wrap">
       <div class="block-blue">
-        <div class="kicker">Tarifs tout compris</div>
-        <h2>Dès {prixDes('vente')} € tout compris, déplacement inclus</h2>
-        <p>Pas de frais cachés, pas de surprise. Le prix que vous voyez au devis est le prix que vous payez. Nos tarifs sont justes — jamais le luxe, jamais l'à-peu-près.</p>
+        <div class="kicker">Tarifs</div>
+        <h2>Un tarif clair, dès le départ</h2>
+        <p>DPE dès {DPE_FROM}&nbsp;€ TTC. Packs vente et location dès {prixDes('vente')}&nbsp;€ TTC. Déplacement inclus à Paris et en Île-de-France. Le prix de votre intervention est confirmé au devis.</p>
+        <p class="price-cond">DPE : {CONDITIONS.dpe}<br />Packs : {CONDITIONS.pack}</p>
         <div class="flex-cta mt-3">
-          <a href="/tarifs" class="btn-gold">Voir tous les tarifs</a>
-          <a href="/devis" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Obtenir mon devis</a>
+          <a href="/tarifs" class="btn-gold">Voir les tarifs</a>
+          <a href="/devis" class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Demander mon devis</a>
         </div>
       </div>
     </div>
@@ -167,25 +163,20 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
           <ResponsiveImage src="/images/camera-thermique.webp" alt="Diagnostiqueuse réalisant un relevé à la caméra thermique" width={620} height={720} sizes="(max-width: 760px) 92vw, 620px" />
         </div>
         <div class="split-media-body">
-          <div class="eyebrow">Expertise énergie</div>
-          <h2 class="sec-title">Comprendre votre étiquette, anticiper la réforme</h2>
+          <div class="eyebrow">Énergie</div>
+          <h2 class="sec-title">DPE ou audit énergétique : deux besoins différents</h2>
           <p class="sec-intro">
-            Le DPE et l'audit énergétique prennent une place croissante dans la vie d'un logement.
-            Chez Soloris, un expert vous explique votre étiquette et les pistes d'amélioration —
-            clairement, sans vous vendre de travaux.
+            Le DPE évalue la performance énergétique du logement. L’audit énergétique étudie des scénarios
+            de travaux. Nous vous aidons à identifier la prestation adaptée à votre projet, sans promettre
+            une classe énergétique.
           </p>
-          <p class="muted mt-2" style="font-size:14.5px">
-            La loi Climat et résilience interdit progressivement la location des logements énergivores
-            (classe G depuis 2025, F en 2028, E en 2034) et un audit énergétique est requis à la vente
-            des logements F, G et E. Au 1ᵉʳ janvier 2026, le calcul du DPE évolue aussi (coefficient de
-            l'électricité). Nous faisons le point sur votre situation au moment du devis.
-          </p>
+          <p class="muted mt-2" style="font-size:13.5px">Étiquette ci-dessous : {WORDING.illustration}</p>
           <div class="escale-compact mt-3">
             <EnergyScale highlight="C" />
           </div>
           <div class="flex-cta mt-3">
             <a href="/audit-energetique" class="btn-blue">L'audit énergétique</a>
-            <a href="/guides/reforme-dpe" class="btn-ghost">Réforme DPE : ce qui change</a>
+            <a href="/guides/reforme-dpe" class="btn-ghost">Les évolutions du DPE</a>
           </div>
         </div>
       </div>
@@ -196,9 +187,9 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <section class="section-line" id="rapport-type">
     <div class="wrap">
       <div class="sec-head center">
-        <div class="eyebrow center">À quoi ressemble un rapport</div>
-        <h2 class="sec-title">Un rapport clair, opposable</h2>
-        <p class="sec-intro">Lisible au premier coup d'œil, conçu pour votre notaire comme pour vous. (Exemple illustratif.)</p>
+        <div class="eyebrow center">À quoi ressemble votre rapport ?</div>
+        <h2 class="sec-title">Des rapports pour avancer dans votre projet</h2>
+        <p class="sec-intro">Retrouvez les résultats des diagnostics réalisés et les informations utiles pour votre vente, votre location ou votre réflexion sur les travaux. Exemple de présentation à titre illustratif.</p>
       </div>
       <div class="mt-5" style="max-width:880px;margin-left:auto;margin-right:auto">
         <ReportPreview />
@@ -207,7 +198,7 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   </section>
 
   <!-- 10 · Avis clients -->
-  <Reviews limit={3} title="Ce que disent nos clients" eyebrow="Ils nous ont fait confiance" />
+  <Reviews limit={3} />
 
   <!-- 10b · Wall of love — 2e bloc de preuve sociale (volume d'avis réels) -->
   <ReviewWall />
@@ -215,25 +206,25 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   <!-- 10c · Bandeau terrain Paris & Île-de-France -->
   <section class="geo-band">
     <div class="wrap">
-      <div class="eyebrow center">Notre terrain</div>
-      <h2>À Paris et dans toute l'Île-de-France</h2>
-      <p>Nos diagnostiqueurs certifiés COFRAC ont déjà réalisé plusieurs milliers de diagnostics à Paris et dans toute l'Île-de-France, avec un rendez-vous sous 48 h et un rapport remis sous 24 h après la visite, dans la plupart des cas.</p>
-      <a href="/devis" class="btn-gold">Obtenir mon devis</a>
+      <div class="eyebrow center">Zone d’intervention</div>
+      <h2>Votre bien se situe en Île-de-France&nbsp;?</h2>
+      <p>Nous intervenons à Paris et dans les départements 77, 78, 91, 92, 93, 94 et 95. Consultez les <a href="/zones-desservies" style="color:inherit;text-decoration:underline">secteurs desservis</a> ou indiquez le code postal du bien dans votre demande.</p>
+      <a href="/devis" class="btn-gold">Demander mon devis</a>
     </div>
   </section>
 
   <!-- 11 · FAQ -->
-  <Faq items={faq} title="Vos questions, nos réponses claires" />
+  <Faq items={faq} title="Questions fréquentes" />
 
   <!-- 12 · CTA final -->
   <section class="cta-final cta-final--split">
     <div class="wrap cta-final-grid">
       <div class="cta-final-copy">
-        <h2>Prêt à y voir clair&nbsp;?</h2>
-        <p>Obtenez votre estimation tout compris en 2 minutes. Sans engagement.</p>
+        <h2>Préparez votre intervention</h2>
+        <p>Décrivez votre bien. Nous revenons vers vous pour confirmer votre devis et les disponibilités. {WORDING.engagementDevis}</p>
         <div class="cta">
-          <a href="/devis" class="btn-gold">Obtenir mon devis en 2 min</a>
-          <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Nous appeler</a>
+          <a href="/devis" class="btn-gold">Demander mon devis</a>
+          <a href={`tel:${SITE.phone.replace(/\s/g, '')}`} class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Appeler Soloris</a>
         </div>
       </div>
       <div class="cta-final-media">
@@ -260,10 +251,6 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
   }
   .eng-body h3 { font-family: var(--sora); font-weight: 600; font-size: 19px; color: var(--blue); margin-bottom: 6px; }
   .eng-body p { font-size: 14.5px; color: var(--ink-soft); }
-  .eng-proof {
-    display: inline-flex; align-items: center; gap: 8px; margin-top: 13px;
-    font-family: var(--sora); font-weight: 600; font-size: 13px; color: var(--gold-hover);
-  }
-  .eng-proof svg { flex: none; color: var(--green); }
+  .price-cond { font-size: 13.5px; opacity: .85; margin-top: 10px; line-height: 1.6; }
   @media (max-width: 720px) { .eng-card { padding: 22px; } }
 </style>

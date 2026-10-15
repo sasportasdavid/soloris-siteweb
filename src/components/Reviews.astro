@@ -2,9 +2,15 @@
 /**
  * Bloc avis clients : note Google agrégée + cartes d'avis réels.
  * Source unique : SITE.rating (note/nb) + REVIEWS. N'affiche que du réel.
+ *
+ * Affichage conditionné à la preuve (preuves.ts) : tant que la fiche Google de
+ * l'exploitant et la date de contrôle ne sont pas documentées, le bloc affiche la
+ * formulation de repli du dossier éditorial (aucun avis, aucune note).
  */
 import { SITE } from '../lib/site';
 import { REVIEWS } from '../lib/reviews';
+import { PREUVES, avisVerifies, AVIS_ATTRIBUTION, REPLI_PREUVE } from '../lib/preuves';
+import { WORDING } from '../lib/wording';
 
 interface Props {
   limit?: number;
@@ -12,11 +18,10 @@ interface Props {
   eyebrow?: string;
   compact?: boolean; // version réduite (pour les pages offres, avant le formulaire)
 }
-const { limit = 3, title = 'Ce que disent nos clients', eyebrow = 'Avis vérifiés', compact = false } = Astro.props;
+const { limit = 3, title = `Les retours des clients d’${SITE.legalName}`, eyebrow = 'Avis Google', compact = false } = Astro.props;
 const items = REVIEWS.slice(0, limit);
-const hasReviews = Number(SITE.rating.count) > 0;
 ---
-{hasReviews && (
+{avisVerifies ? (
   <section class:list={[compact ? '' : 'section-line']}>
     <div class="wrap">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px">
@@ -42,6 +47,23 @@ const hasReviews = Number(SITE.rating.count) > 0;
           </div>
         ))}
       </div>
+      <p class="muted mt-4" style="font-size:13.5px">
+        {`${AVIS_ATTRIBUTION} `}<a href={PREUVES.avisGoogle.ficheUrl} rel="noopener" target="_blank">Consulter les avis sur Google</a>
+      </p>
+    </div>
+  </section>
+) : (
+  <section class:list={[compact ? '' : 'section-line']}>
+    <div class="wrap">
+      <div class="card proof-repli">
+        <div class="eyebrow">Qui intervient ?</div>
+        <h2 class="sec-title" style="font-size:26px">{REPLI_PREUVE.titre}</h2>
+        <p class="sec-intro" style="max-width:none">{`${REPLI_PREUVE.texte} ${WORDING.certification}`}</p>
+      </div>
     </div>
   </section>
 )}
+
+<style>
+  .proof-repli { padding: 28px 30px; }
+</style>

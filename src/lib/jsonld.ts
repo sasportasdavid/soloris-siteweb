@@ -3,6 +3,7 @@
  * Les champs [À REMPLACER] proviennent de src/lib/site.ts.
  */
 import { SITE, fullAddress } from './site';
+import { avisVerifies } from './preuves';
 
 const ORG_ID = `${SITE.url}/#business`;
 
@@ -15,7 +16,7 @@ export function localBusiness() {
     name: SITE.name,
     legalName: SITE.legalName,
     description:
-      'Diagnostics immobiliers (DPE, packs vente et location, audit énergétique) à Paris et en Île-de-France. Tarif tout compris, rapport sous 24 h, diagnostiqueur certifié COFRAC.',
+      'Diagnostics immobiliers (DPE, packs vente et location, audit énergétique) à Paris et en Île-de-France. Prix annoncé avant la visite, déplacement inclus.',
     url: SITE.url,
     telephone: SITE.phone,
     email: SITE.email,
@@ -46,8 +47,8 @@ export function localBusiness() {
     ],
   };
   if (SITE.sameAs.length) ld.sameAs = SITE.sameAs;
-  // AggregateRating — uniquement si des avis réels existent ([À REMPLACER])
-  if (Number(SITE.rating.count) > 0) {
+  // AggregateRating — uniquement lorsque la note est affichée (preuve documentée, preuves.ts)
+  if (avisVerifies) {
     ld.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: SITE.rating.value.replace(',', '.'),

@@ -1,7 +1,7 @@
 ---
 /**
  * Header sticky : logo, navigation (menu Diagnostics déroulant), téléphone
- * cliquable et CTA or « Obtenir un devis ».
+ * cliquable et CTA or « Demander un devis ».
  */
 import Logo from './Logo.astro';
 import GroupEndorsement from './GroupEndorsement.astro';
@@ -35,7 +35,7 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
           <div class="menu-panel">
             {OFFERS.map((o) => (
               <a class="menu-item" href={o.url}>
-                <b>{o.nav}</b>
+                <b>{o.menu}</b>
                 <span>{o.navDesc}</span>
               </a>
             ))}
@@ -60,10 +60,10 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
           </div>
         </div>
         <a href="/tarifs">Tarifs</a>
-        <a href="/methode">Méthode</a>
+        <a href="/methode">Notre méthode</a>
         <a href="/guides">Guides</a>
         <a href={telHref} class="nav-phone">{SITE.phoneDisplay}</a>
-        {!hideCta && <a href="/devis" class="btn-gold btn-sm">Obtenir un devis</a>}
+        {!hideCta && <a href="/devis" class="btn-gold btn-sm">Demander un devis</a>}
       </div>
     </nav>
   </div>

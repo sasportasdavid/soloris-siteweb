@@ -1,30 +1,33 @@
 ---
 /**
- * Barre de réassurance (fond bleu) : rapport sous 24 h · tout compris · COFRAC · note Google.
- * La note est issue de site.ts ([À REMPLACER par avis réels]).
+ * Barre de réassurance (fond bleu) : prix annoncé · déplacement inclus · professionnel certifié
+ * · exploitant (ou note Google, uniquement lorsque la preuve est documentée dans preuves.ts).
  */
 import { SITE } from '../lib/site';
-
-const hasReviews = Number(SITE.rating.count) > 0;
+import { avisVerifies } from '../lib/preuves';
 ---
 <div class="reassurance">
   <div class="wrap">
     <div class="row">
       <span class="item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        Rapport sous 24 h
+        Prix annoncé avant la visite
       </span>
       <span class="item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        Tarif tout compris
+        Déplacement inclus
       </span>
       <span class="item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Certifié COFRAC
+        Professionnel certifié
       </span>
       <span class="item">
-        <svg class="star" width="16" height="16" viewBox="0 0 24 24" fill="#FFC94D" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>
-        {hasReviews ? `${SITE.rating.value} sur Google (${SITE.rating.count} avis)` : 'Avis Google [À REMPLACER]'}
+        {avisVerifies ? (
+          <svg class="star" width="16" height="16" viewBox="0 0 24 24" fill="#FFC94D" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC94D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg>
+        )}
+        {avisVerifies ? `${SITE.legalName} : ${SITE.rating.value}/5 sur Google (${SITE.rating.count} avis)` : `${SITE.legalName}, exploitant de ${SITE.tradeName}`}
       </span>
     </div>
   </div>

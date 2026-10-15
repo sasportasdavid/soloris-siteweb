@@ -6,7 +6,6 @@
 import Base from '../layouts/Base.astro';
 import ReassuranceBar from '../components/ReassuranceBar.astro';
 import { ZONES } from '../lib/zones';
-import { prixDes } from '../lib/pricing';
 import { breadcrumb } from '../lib/jsonld';
 
 // Regroupement par département, dans un ordre stable (Paris d'abord).
@@ -18,8 +17,8 @@ const groups = [...new Set(ZONES.map((z) => z.dept))]
 const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Zones desservies', url: '/zones-desservies' }])];
 ---
 <Base
-  title="Zones desservies : diagnostic immobilier à Paris et en Île-de-France | Soloris"
-  description="Soloris réalise vos diagnostics immobiliers à Paris et dans toute l'Île-de-France. Retrouvez votre commune ou votre arrondissement, avec ses chiffres et ses spécificités."
+  title="Zones d’intervention : Paris et Île-de-France | Soloris"
+  description="Soloris intervient à Paris et dans toute l’Île-de-France pour vos DPE et diagnostics immobiliers. Déplacement inclus, créneau à confirmer."
   path="/zones-desservies"
   jsonLd={jsonLd}
 >
@@ -30,8 +29,8 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Zones desser
   <section>
     <div class="wrap">
       <div class="eyebrow">Zones desservies</div>
-      <h1 class="sec-title" style="font-size:40px">Diagnostics immobiliers à Paris et en Île-de-France</h1>
-      <p class="sec-intro">Nous intervenons dans toute l'Île-de-France, déplacement inclus. Choisissez votre secteur pour retrouver les chiffres de votre commune (étiquettes DPE, époque de construction, risques) et ce qu'ils changent pour vos diagnostics. Dès {prixDes('dpe')} € pour un DPE, dès {prixDes('vente')} € pour un pack vente.</p>
+      <h1 class="sec-title" style="font-size:40px">Vos diagnostics à Paris et dans toute l’Île-de-France</h1>
+      <p class="sec-intro">Indiquez le code postal du bien. Nous confirmons les prestations, le tarif et les disponibilités pour votre secteur.</p>
     </div>
   </section>
 
@@ -39,23 +38,26 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Zones desser
 
   <section class="section-line">
     <div class="wrap">
+      <div class="eyebrow">Notre zone d’intervention</div>
+      <p class="sec-intro" style="max-width:none">Paris (75), Seine-et-Marne (77), Yvelines (78), Essonne (91), Hauts-de-Seine (92), Seine-Saint-Denis (93), Val-de-Marne (94) et Val-d’Oise (95). Le déplacement est inclus selon l’offre actuelle.</p>
+      <h2 class="sec-title mt-5">Retrouvez votre secteur</h2>
+      <p class="sec-intro" style="max-width:none;margin-bottom:24px">Consultez les pages des communes et arrondissements ci-dessous. Chaque page présente les prestations disponibles et, lorsque les sources le permettent, des données publiques contextualisées.</p>
       {groups.map((g) => (
         <div class="zgroup">
-          <h2 class="sec-title" style="font-size:24px">{g.dept}</h2>
+          <h3 class="sec-title" style="font-size:24px">{g.dept}</h3>
           <ul class="zchips">
             {g.zones.map((z) => <li><a href={`/diagnostic-immobilier-${z.slug}`}>{z.name}</a></li>)}
           </ul>
         </div>
       ))}
-      <p class="muted mt-5" style="font-size:14.5px">Votre commune n'est pas dans la liste ? Nous intervenons dans toute l'Île-de-France : <a href="/devis">demandez votre devis</a>.</p>
     </div>
   </section>
 
   <section class="cta-final">
     <div class="wrap">
-      <h2>Une estimation en 2 minutes</h2>
-      <p>Obtenez votre prix tout compris, sans engagement.</p>
-      <div class="cta"><a href="/devis" class="btn-gold">Obtenir mon devis</a></div>
+      <h2>Votre commune n’est pas dans la liste&nbsp;?</h2>
+      <p>La liste des pages n’est pas la liste exhaustive des communes desservies. Renseignez le code postal de votre bien dans la demande de devis pour vérifier l’organisation de l’intervention.</p>
+      <div class="cta"><a href="/devis" class="btn-gold">Demander mon devis</a></div>
     </div>
   </section>
 </Base>

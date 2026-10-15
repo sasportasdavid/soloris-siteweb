@@ -18,6 +18,8 @@ export interface Offer {
   url: string;
   demande: Demande;
   nav: string;
+  /** Libellé court du menu « Nos offres » (en-tête). */
+  menu: string;
   navDesc: string;
   shortLabel: string; // libellé propre pour « votre … » (titres, CTA)
   h1: string;
@@ -67,6 +69,7 @@ export const OFFERS: Offer[] = [
     url: '/diagnostics-vente',
     demande: 'vente',
     nav: 'Diagnostics pour vendre',
+    menu: 'Pour vendre',
     navDesc: 'Les diagnostics de votre vente, en un rendez-vous',
     shortLabel: 'dossier de diagnostics pour vendre',
     h1: 'Vos diagnostics de vente, réunis en un seul rendez-vous',
@@ -132,6 +135,7 @@ export const OFFERS: Offer[] = [
     url: '/diagnostics-location',
     demande: 'location',
     nav: 'Diagnostics pour louer',
+    menu: 'Pour louer',
     navDesc: 'Le dossier de diagnostics de votre bail',
     shortLabel: 'dossier de diagnostics pour louer',
     h1: 'Préparez les diagnostics de votre location',
@@ -195,6 +199,7 @@ export const OFFERS: Offer[] = [
     url: '/dpe',
     demande: 'dpe',
     nav: 'DPE seul',
+    menu: 'DPE',
     navDesc: 'Votre DPE, prix annoncé avant la visite',
     shortLabel: 'DPE',
     h1: 'Votre DPE à Paris et en Île-de-France',
@@ -253,6 +258,7 @@ export const OFFERS: Offer[] = [
     url: '/audit-energetique',
     demande: 'audit',
     nav: 'Audit énergétique',
+    menu: 'Audit énergétique',
     navDesc: 'Scénarios de travaux, sur devis',
     shortLabel: 'audit énergétique',
     h1: 'Votre audit énergétique à Paris et en Île-de-France',

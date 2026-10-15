@@ -74,7 +74,9 @@ for (const r of common) {
   if (kb === ka) continue;
   // Scripts dont SEULES les données define:vars autorisées (--allow-vars=VARIANTS,…) changent :
   // logique identique, contenu éditorial modifié → « À REVOIR », pas « ÉCHEC ».
-  const strip = (c) => (c || '').replace(new RegExp(`^\\s*const (${ALLOW_VARS.join('|') || '__none__'}) = .*;$`, 'gm'), '');
+  // Astro injecte define:vars sur la 1re ligne du script : « (function(){const VARIANTS = {…};» —
+  // seule la valeur de la variable autorisée est neutralisée, le reste de la logique est comparé.
+  const strip = (c) => (c || '').replace(new RegExp(`const (${ALLOW_VARS.join('|') || '__none__'}) = .*;$`, 'gm'), 'const $1 = …;');
   const sameLogic = sb.length === sa.length && sb.every((s, i) => s.src === sa[i].src && (s.hash === sa[i].hash || (s.content != null && strip(s.content) === strip(sa[i].content))));
   (sameLogic ? scriptData : scriptDiff).push(`${r} (${sb.length}→${sa.length})`);
 }

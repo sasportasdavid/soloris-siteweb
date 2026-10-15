@@ -1,11 +1,14 @@
 ---
 /**
- * Mention de groupe « Une marque du groupe ISDIAG » (charte : classe .endorse).
+ * Mention de l'exploitant « Une marque d'IS DIAG » (charte : classe .endorse).
+ * Raison sociale lue dans SITE.legalName (aucun réseau ni implantation inventés).
  * Sora 500 · 11px · letter-spacing .14em · uppercase · trait séparateur · ISDIAG en gras.
  * variant : 'light' (fond clair) | 'dark' (fond bleu). Mention SECONDAIRE :
  * toujours plus petite et moins contrastée que le wordmark. Aucune couleur en dur
  * (uniquement des tokens de design).
  */
+import { SITE } from '../lib/site';
+
 interface Props {
   variant?: 'light' | 'dark';
   compact?: boolean; // version réduite/discrète (ex. sous le logo du header)
@@ -13,7 +16,7 @@ interface Props {
 }
 const { variant = 'light', compact = false, class: cls = '' } = Astro.props;
 ---
-<span class={`endorse ${variant === 'dark' ? 'on-dark' : ''} ${compact ? 'sm' : ''} ${cls}`.replace(/\s+/g, ' ').trim()}>Une marque du groupe <b>ISDIAG</b></span>
+<span class={`endorse ${variant === 'dark' ? 'on-dark' : ''} ${compact ? 'sm' : ''} ${cls}`.replace(/\s+/g, ' ').trim()}><span>Une marque d’<b>{SITE.legalName}</b></span></span>
 
 <style>
   .endorse {

@@ -2,9 +2,11 @@
 /**
  * Aperçu d'un rapport type (en-tête de rapport de l'identité).
  * ⚠️ Données fictives et étiquette neutre « (exemple) ». Aucune promesse de
- * résultat. Le n° et le diagnostiqueur sont des exemples [À REMPLACER].
+ * résultat ; légende illustrative visible (dossier éditorial V2).
  */
 import EnergyScale from './EnergyScale.astro';
+import { SITE } from '../lib/site';
+import { WORDING } from '../lib/wording';
 ---
 <div class="report">
   <div class="top">
@@ -23,8 +25,8 @@ import EnergyScale from './EnergyScale.astro';
     <div class="meta-blk">
       <div class="kv"><span>Bien</span><b>Appartement · 64 m²</b></div>
       <div class="kv"><span>Adresse</span><b>Paris (exemple)</b></div>
-      <div class="kv"><span>Méthode</span><b>3CL-DPE · opposable</b></div>
-      <div class="kv"><span>Diagnostiqueur</span><b>Certifié COFRAC</b></div>
+      <div class="kv"><span>Méthode</span><b>3CL-DPE</b></div>
+      <div class="kv"><span>Diagnostiqueur</span><b>{SITE.cofracNote}</b></div>
     </div>
     <div class="energy">
       <div class="et">Étiquette énergie (exemple)</div>
@@ -33,6 +35,6 @@ import EnergyScale from './EnergyScale.astro';
   </div>
   <div class="foot">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2E6FAE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    Document opposable · Diagnostiqueur certifié COFRAC · soloris.fr — exemple, l'étiquette reflète toujours l'état réel du logement.
+    {WORDING.illustration}
   </div>
 </div>

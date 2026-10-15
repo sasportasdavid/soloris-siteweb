@@ -10,26 +10,27 @@
 
 export type HeroVariant = { h1: string; sub: string };
 
+// Textes : dossier éditorial V2 (oct. 2026) — seules les valeurs h1/sub changent.
 export const HERO_VARIANTS: Record<string, HeroVariant> = {
   dpe: {
-    h1: 'Votre DPE à Paris et en Île-de-France, <span class="hl">rapport sous 24 h</span>',
-    sub: 'Tarif tout compris, rapport lisible. Diagnostiqueur certifié COFRAC.',
+    h1: 'Votre <span class="hl">DPE</span> à Paris et en Île-de-France',
+    sub: 'Un diagnostic pour votre appartement ou votre maison, un prix annoncé avant la visite et des résultats expliqués.',
   },
   vente: {
-    h1: 'Tous vos diagnostics pour <span class="hl">vendre</span>, en toute clarté',
-    sub: 'Pack complet tout compris, rapport opposable sous 24 h.',
+    h1: 'Vos <span class="hl">diagnostics de vente</span>, réunis en un seul rendez-vous',
+    sub: 'Nous identifions les diagnostics nécessaires à votre bien et préparons les rapports à transmettre à votre notaire.',
   },
   location: {
-    h1: 'Vos diagnostics pour <span class="hl">louer</span>, tout compris',
-    sub: 'Pack bailleur clair et rapide, à Paris et en Île-de-France.',
+    h1: 'Préparez les <span class="hl">diagnostics de votre location</span>',
+    sub: 'DPE et diagnostics complémentaires selon le logement : un dossier adapté à votre bail et un prix annoncé avant la visite.',
   },
   audit: {
-    h1: 'Votre <span class="hl">audit énergétique</span>, par un expert certifié',
-    sub: "Conseil sur l'étiquette et le plan de travaux, sans jargon.",
+    h1: 'Votre <span class="hl">audit énergétique</span> à Paris et en Île-de-France',
+    sub: 'Comprenez les possibilités de rénovation de votre bien grâce à des scénarios de travaux et un rapport détaillé.',
   },
   default: {
-    h1: 'Vos diagnostics immobiliers, <span class="hl">en toute clarté</span>',
-    sub: 'Tarif tout compris, rapport sous 24 h. Paris et Île-de-France.',
+    h1: 'Diagnostics immobiliers à <span class="hl">Paris et en Île-de-France</span>',
+    sub: 'DPE, vente, location ou audit : préparez votre intervention avec un prix annoncé et un accompagnement clair.',
   },
 };
 
