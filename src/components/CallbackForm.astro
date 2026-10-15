@@ -8,6 +8,8 @@
  * visiteur remplit ensuite le devis, c'est la même fiche (pas de doublon). Porte aussi
  * l'attribution (gclid / UTM / ValueTrack) via le cookie soloris_acq, comme le tunnel.
  */
+import { SITE } from '../lib/site';
+
 interface Props {
   defaultType?: 'vente' | 'location' | 'dpe' | 'audit' | '';
   title?: string;
@@ -15,7 +17,7 @@ interface Props {
 }
 const {
   defaultType = '',
-  title = 'Être rappelé rapidement',
+  title = `Être rappelé sous ${SITE.rappel.delai}`,
   sub = 'Laissez votre numéro : on vous rappelle pour confirmer les diagnostics de votre bien et fixer un rendez-vous.',
 } = Astro.props;
 
@@ -66,7 +68,7 @@ const CALLBACK_SEND_TO =
   <div class="cbform-thanks" hidden>
     <div class="cbform-thanks-ic" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <strong>Merci, c'est noté&nbsp;!</strong>
-    <span>On vous rappelle très vite au sujet de vos diagnostics.</span>
+    <span>On vous rappelle sous {SITE.rappel.delai} ({SITE.rappel.horaires}) au sujet de vos diagnostics.</span>
   </div>
 </form>
 

@@ -43,7 +43,7 @@ export async function sendLeadConfirmation(lead: Record<string, any>): Promise<v
   // ── Version texte ──
   const text = `${greeting}
 
-Un diagnostiqueur certifié vous rappelle très rapidement pour convenir d'un rendez-vous et finaliser votre devis tout compris.
+Un diagnostiqueur certifié vous rappelle sous ${SITE.rappel.delai} (${SITE.rappel.horaires}) pour convenir d'un rendez-vous et finaliser votre devis tout compris.
 
 Voici ce que nous avons reçu : ${recap}.
 
@@ -73,7 +73,7 @@ Cet email est automatique, merci de ne pas y répondre directement.`;
       <tr><td style="padding:28px 28px 8px">
         <h1 style="margin:0 0 16px;font-size:21px;color:#0B2A4A">Votre demande est bien reçue.</h1>
         <p style="margin:0 0 14px;font-size:15px;line-height:1.6">${esc(greeting)}</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.6">Un diagnostiqueur certifié vous rappelle très rapidement pour convenir d'un rendez-vous et finaliser votre devis tout compris.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6">Un diagnostiqueur certifié vous rappelle sous ${SITE.rappel.delai} (${SITE.rappel.horaires}) pour convenir d'un rendez-vous et finaliser votre devis tout compris.</p>
         <p style="margin:0 0 8px;font-size:14px;color:#5B6B7C">Voici ce que nous avons reçu :</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr>
           <td style="background:#FBFAF6;border-left:3px solid #F5A623;border-radius:8px;padding:12px 16px;font-size:14px;color:#0B1F33">${esc(recap)}</td>

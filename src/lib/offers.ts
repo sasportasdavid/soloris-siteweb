@@ -76,7 +76,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'En combien de temps reçois-je le rapport ?',
-        a: 'Nous proposons un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
+        a: 'Nous vous rappelons sous 30 minutes (du lundi au samedi, de 8 h à 19 h), proposons un rendez-vous sous 48 h et remettons le rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
       {
         q: 'Le rapport est-il accepté par le notaire ?',
@@ -134,7 +134,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Quel est le délai pour le pack location ?',
-        a: 'Rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
+        a: 'Rappel sous 30 minutes (du lundi au samedi, de 8 h à 19 h), rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
       {
         q: 'Combien coûte le pack location ?',
@@ -182,7 +182,7 @@ export const OFFERS: Offer[] = [
       },
       {
         q: 'Intervenez-vous rapidement ?',
-        a: 'Oui : rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
+        a: 'Oui : rappel sous 30 minutes (du lundi au samedi, de 8 h à 19 h), rendez-vous sous 48 h et rapport remis sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.',
       },
     ],
   },

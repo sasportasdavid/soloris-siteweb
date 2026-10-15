@@ -31,7 +31,7 @@ const faq = [
   { q: 'Quels diagnostics sont obligatoires pour vendre ?', a: "Selon le bien : DPE, ERP, et selon l'âge et la zone — amiante, plomb (CREP), électricité, gaz, mesurage Loi Carrez, termites. Nous établissons la liste exacte applicable à votre logement au moment du devis." },
   { q: 'Quels diagnostics pour mettre en location ?', a: "Généralement le DPE et l'ERP, complétés selon le logement par le CREP (plomb), l'électricité, le gaz et le mesurage Loi Boutin. La composition est confirmée au devis." },
   { q: 'Combien de temps un DPE est-il valable ?', a: "Un DPE est valable 10 ans. Les DPE réalisés avant le 1ᵉʳ juillet 2021 ne sont toutefois plus valides depuis le 1ᵉʳ janvier 2025." },
-  { q: 'Quels sont vos délais ?', a: 'Nous proposons un rendez-vous sous 48 h et la remise du rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.' },
+  { q: 'Quels sont vos délais ?', a: 'Nous vous rappelons sous 30 minutes (du lundi au samedi, de 8 h à 19 h), proposons un rendez-vous sous 48 h et remettons le rapport sous 24 h après la visite, dans la plupart des cas, à Paris et en Île-de-France.' },
   { q: 'Combien coûtent vos diagnostics ?', a: `Nos tarifs sont tout compris, déplacement inclus : dès ${prixDes('dpe')} € pour un DPE, dès ${prixDes('vente')} € pour un pack vente. Vous obtenez une estimation immédiate via notre formulaire de devis.` },
   { q: 'Dans quelle zone intervenez-vous ?', a: 'À Paris et dans toute l’Île-de-France.' },
   { q: 'Pouvez-vous garantir une bonne étiquette énergétique ?', a: "Non. Le DPE reflète la performance réelle du logement. Notre engagement porte sur la rigueur du diagnostic et la clarté du rapport — jamais sur le résultat." },
@@ -83,7 +83,7 @@ const description = 'DPE, vente, location et audit énergétique. Prix clair, di
           <h2 class="sec-title">Laissez votre numéro, on vous rappelle</h2>
           <p class="sec-intro">On vérifie avec vous les diagnostics obligatoires de votre bien, on confirme le prix tout compris et on fixe un rendez-vous sous 48&nbsp;h. Vous vendez, louez ou avez besoin d'un DPE&nbsp;: dites-le-nous.</p>
         </div>
-        <CallbackForm title="Être rappelé rapidement" />
+        <CallbackForm />
       </div>
     </div>
   </section>

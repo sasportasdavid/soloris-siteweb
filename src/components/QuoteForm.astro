@@ -39,7 +39,7 @@ const {
   forceSteps = 'A',
   priceModelVariant = null,
   revealEstimation = true,
-  recallSla = '48 h',
+  recallSla = SITE.rappel.delai,
   defaultDemande = '',
 } = Astro.props;
 
@@ -220,7 +220,7 @@ const FORM_SEND_TO_DPE =
            restent visibles → le bouton d'envoi tient dans l'écran mobile. Email et message,
            facultatifs, sont repliés (toujours envoyés s'ils sont remplis). -->
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
-      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">On vous rappelle pour confirmer votre devis, sous 48 h.</small></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">On vous rappelle sous {recallSla} pour confirmer votre devis.</small></label>
       <details class="qmore">
         <summary>Recevoir le devis par email ou ajouter une précision <span class="qfield-opt">(facultatif)</span></summary>
         <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
@@ -232,7 +232,7 @@ const FORM_SEND_TO_DPE =
       <input type="hidden" name="surface" /><input type="hidden" name="estimation" />
 
       <div class="qreassure">
-        <span>🔒 Sans engagement</span><span>· Données confidentielles</span><span>· Réponse sous 48 h</span>
+        <span>🔒 Sans engagement</span><span>· Données confidentielles</span><span>· Rappel sous {recallSla}</span>
       </div>
 
       <div class="qnav">
@@ -247,7 +247,7 @@ const FORM_SEND_TO_DPE =
   <div class="qthanks" data-el="qthanks" hidden>
     <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h3>Merci, c'est noté&nbsp;!</h3>
-    <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous recontacte très vite pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
+    <p>Votre demande est bien enregistrée. Un diagnostiqueur Soloris vous rappelle sous {recallSla} ({SITE.rappel.horaires}) pour confirmer votre devis et fixer un rendez-vous sous 48&nbsp;h.</p>
     <div class="qthanks-estim" data-el="qthanks-estim" hidden></div>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
@@ -465,9 +465,9 @@ const FORM_SEND_TO_DPE =
         if (tel && !telOk) {
           ok = false;
           if (telEl) telEl.style.borderColor = '#b3261e';
-          if (help) { help.textContent = 'Vérifiez votre numéro (ex : 06 12 34 56 78) : c’est lui qu’on rappelle.'; help.style.color = '#b3261e'; }
+          if (help) { if (!help.dataset.msg) help.dataset.msg = help.textContent; help.textContent = 'Vérifiez votre numéro (ex : 06 12 34 56 78) : c’est lui qu’on rappelle.'; help.style.color = '#b3261e'; }
         } else if (help && help.style.color) {
-          help.textContent = 'On vous rappelle pour confirmer votre devis, sous 48 h.'; help.style.color = '';
+          help.textContent = help.dataset.msg || ''; help.style.color = '';
         }
       }
       return ok;
