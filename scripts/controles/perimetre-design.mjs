@@ -91,7 +91,7 @@ for (const f of [...changed].sort()) {
   if (TOOLING.some((r) => r.test(f))) { add('PASS', f, 'outillage / documentation (hors application)'); continue; }
   if (FROZEN.some((r) => r.test(f))) { add('BLOCAGE', f, 'fichier gelé modifié'); continue; }
   if (f === NEW_CSS) {
-    const css = now(f) || '';
+    const css = (now(f) || '').replace(/\/\*[\s\S]*?\*\//g, ''); // règles seules (les commentaires ne sont pas analysés)
     const bad = [];
     if (/!important/.test(css)) bad.push('!important');
     if (/content\s*:\s*["'][^"']*\d+\s*€/.test(css)) bad.push('prix rendu par content:');
@@ -99,7 +99,7 @@ for (const f of [...changed].sort()) {
     if (/(input|select|textarea|\.qstep|\.qhp|\[data-el[^\]]*\])[^{,]*\{[^}]*\b(display|visibility|position|order|pointer-events|opacity)\s*:/.test(css)) bad.push('display/visibility/position/order/pointer-events/opacity sur un champ, une étape ou un data-el');
     if (/outline\s*:\s*(none|0)\b/.test(css)) bad.push('outline supprimé');
     if (/@import|url\(\s*["']?https?:/.test(css)) bad.push('import ou ressource externe');
-    add(bad.length ? 'BLOCAGE' : 'PASS', f, bad.length ? bad.join(' ; ') : `feuille additionnelle (${Buffer.byteLength(css)} octets)`);
+    add(bad.length ? 'BLOCAGE' : 'PASS', f, bad.length ? bad.join(' ; ') : `feuille additionnelle (${Buffer.byteLength(now(f) || '')} octets, règles conformes)`);
     continue;
   }
   if (LAYOUTS.includes(f)) {
