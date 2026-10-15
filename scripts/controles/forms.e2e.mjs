@@ -281,6 +281,21 @@ try {
     const hit = await btn.evaluate((b) => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return el === b || b.contains(el); });
     rec('U01', 'Mobile 390 px (après refus du bandeau) : bouton d’envoi visible et cliquable', hit, { cliquable: hit });
     await ctx.close(); }
+  // C01 / C02 — formulaire de contact : succès → soloris_contact, aucune conversion Ads ;
+  // échec API → message d'erreur, aucun événement, bouton réactivé.
+  for (const api of ['ok', 'error500']) {
+    const { ctx, page, log } = await open('/contact/', { api });
+    await page.fill('#contact-form [name="nom"]', 'Test Recette');
+    await page.fill('#contact-form [name="telephone"]', '0612345678');
+    await page.fill('#contact-form [name="email"]', 'recette@example.test');
+    await page.fill('#contact-form [name="message"]', 'Message de recette isolée');
+    await page.click('#csubmit'); await pause(page, 600);
+    const d = await dl(page); const thanks = await page.locator('#cthanks').isVisible(); const err = await page.locator('#cerror').isVisible();
+    const evts = events(d, 'soloris_contact').length, conv = conversions(d).length, enabled = await page.locator('#csubmit').isEnabled();
+    if (api === 'ok') rec('C01', 'Contact : un envoi complet, un soloris_contact, aucune conversion Ads, confirmation affichée', complets(log).length === 1 && complets(log)[0].source === 'contact' && evts === 1 && conv === 0 && thanks && !err, { complets: complets(log).length, source: complets(log)[0]?.source, soloris_contact: evts, conversions: conv, merci: thanks });
+    else rec('C02', 'Contact (échec API) : pas de confirmation, aucun événement, message d’erreur, reprise possible', !thanks && err && evts === 0 && conv === 0 && enabled, { merci: thanks, erreur: err, soloris_contact: evts, boutonActif: enabled });
+    await ctx.close(); }
+
   rec('U02', 'Lecteur d’écran, focus clavier complet', null, 'Non couvert par cette recette automatique : à faire manuellement.');
 } catch (e) {
   rec('ERR', 'Erreur d’exécution de la recette', false, String(e && e.stack || e));

@@ -8,7 +8,7 @@
 ---
 <div class="cform card" id="cform">
   <h2 class="cform-title">Écrivez-nous</h2>
-  <p class="cform-sub">On vous répond rapidement, en toute clarté.</p>
+  <p class="cform-sub">Décrivez votre besoin. L’équipe Soloris vous répond au sujet de votre demande.</p>
   <form id="contact-form" novalidate>
     <div class="cgrid">
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
@@ -37,7 +37,7 @@
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
     <h3>Message envoyé&nbsp;!</h3>
-    <p>Merci, nous avons bien reçu votre message. L'équipe Soloris vous répond très vite.</p>
+    <p>Merci, nous avons bien reçu votre message. L’équipe Soloris vous répond pendant nos horaires d’ouverture.</p>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
 </div>
@@ -98,7 +98,7 @@
         })
         .catch(function () {
           submit.disabled = false; submit.textContent = 'Envoyer mon message';
-          errEl.textContent = "Une erreur est survenue. Réessayez ou appelez-nous directement.";
+          errEl.textContent = "Votre message n’a pas pu être envoyé. Réessayez ou appelez-nous.";
           errEl.hidden = false;
         });
     });

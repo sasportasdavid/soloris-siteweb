@@ -8,7 +8,8 @@ depuis l'installation globale (`PLAYWRIGHT_MODULE` pour en indiquer une autre).
 |---|---|
 | `scripts/controles/snapshot.mjs` | Instantané du build statique, JavaScript désactivé : title, description, robots, canonique, H1/H2, JSON-LD, montants visibles, liens, **signature des formulaires** (attributs de chaque élément) et **empreinte de chaque script**, sitemap, robots.txt. |
 | `scripts/controles/compare.mjs` | Comparaison avant/après + fichiers protégés (git). Mode `E` (éditorial) : tout changement d'attribut de formulaire, de script ou de fichier protégé est un ÉCHEC. Mode `M` (microcopie de formulaire) : attributs toujours figés, scripts listés « À REVOIR ». Vérifie aussi : prix balisés visibles, allégations interdites (« certifié COFRAC », « milliers », « prix exact »…), 24 h absent de l'audit, aucun montant sur le bras B, liens internes, noindex des LP, sitemap. |
-| `scripts/controles/forms.e2e.mjs` | Recette navigateur **isolée** des formulaires (matrice F01–F15, T01–T05, U01). `/api/lead` et `/api/track` sont simulés, toute requête externe est bloquée : aucun lead, aucune notification, aucune conversion ne quitte la machine. Les conversions sont lues dans `window.dataLayer`. |
+| `scripts/controles/captures.mjs` | Captures pleine page (JavaScript actif, requêtes externes bloquées, bandeau refusé) aux largeurs demandées + détection des débordements horizontaux. |
+| `scripts/controles/forms.e2e.mjs` | Recette navigateur **isolée** des formulaires (matrice F01–F15, T01–T05, U01, C01–C02 contact). `/api/lead` et `/api/track` sont simulés, toute requête externe est bloquée : aucun lead, aucune notification, aucune conversion ne quitte la machine. Les conversions sont lues dans `window.dataLayer`. |
 
 ## Procédure
 
