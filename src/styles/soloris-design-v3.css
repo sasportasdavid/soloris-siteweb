@@ -311,3 +311,11 @@
 /* ── Hubs (diagnostics, guides, zones) : cartes et pastilles lisibles ── */
 [data-soloris-design="v3"] #main .zchips a { font-size: 15px; padding: 9px 15px; }
 [data-soloris-design="v3"] #main .offer-liens a { font-size: 14.5px; }
+
+/* ── R : compléments relevés par la recette (Lighthouse, hors #main) ───────────
+   Signature de marque sous le logo (8,5 px, opacité .85 → 3,8:1) et lien téléphone du
+   pied de LP distingué par la seule couleur. Le bouton « Accepter » du bandeau de
+   consentement n'est PAS modifié (composant de consentement gelé). */
+[data-soloris-design="v3"] .site-header .endorse.sm { opacity: 1; color: var(--soloris-ink-soft); }
+[data-soloris-design="v3"] .site-header .endorse.sm b { color: var(--soloris-focus); }
+[data-soloris-design="v3"] .lp-foot .lp-foot-trust a { text-decoration: underline; text-underline-offset: 2px; }

@@ -44,6 +44,9 @@ for (const spec of WIDTHS.split(',')) {
   const [w, hSpec] = spec.split('x').map(Number);
   const ctx = await browser.newContext({ viewport: { width: w, height: hSpec || (w < 768 ? 800 : 900) }, deviceScaleFactor: 1 });
   await ctx.route('**/*', (route) => (route.request().url().startsWith(BASE) ? route.continue() : route.abort()));
+  // Variante d'expérience fixée (AB_VARIANT, A par défaut) : avant et après comparables.
+  const v = process.env.AB_VARIANT || 'A';
+  await ctx.addCookies(['cta', 'steps', 'early'].map((k) => ({ name: 'soloris_ab_' + k, value: v, url: BASE })));
   const page = await ctx.newPage();
   for (const r of ROUTES) {
     await page.goto(BASE + r, { waitUntil: 'load' });
