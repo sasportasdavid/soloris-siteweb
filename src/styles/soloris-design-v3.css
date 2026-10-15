@@ -280,3 +280,34 @@
 /* ── Méthode / contact : piliers et cartes sobres ── */
 [data-soloris-design="v3"] #main .pillar h3 { font-size: 19px; line-height: 1.3; }
 [data-soloris-design="v3"] #main .pillar .ic { width: 42px; height: 42px; }
+
+/* ═════════════════════════ LOT P3 — HUBS, FICHES, GUIDES, PAGES LOCALES ═════════════════════════ */
+
+/* ── Gabarit G : lecture à une colonne (contenu ≈ 680 px), H1 40 / 30 px, liens longs repliables ── */
+[data-soloris-design="v3"] #main .v3-guide-title { font-size: 40px; }
+@media (max-width: 720px) { [data-soloris-design="v3"] #main .v3-guide-title { font-size: 30px; } }
+[data-soloris-design="v3"] #main .prose h2 { font-size: 27px; line-height: 1.25; }
+[data-soloris-design="v3"] #main .prose p,
+[data-soloris-design="v3"] #main .prose li { line-height: 1.7; }
+[data-soloris-design="v3"] #main .prose a,
+[data-soloris-design="v3"] #main .sources-list a { overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  [data-soloris-design="v3"] #main .prose h2 { font-size: 23px; margin-top: 36px; }
+  [data-soloris-design="v3"] #main .prose p,
+  [data-soloris-design="v3"] #main .prose li { font-size: 16px; }
+}
+
+/* ── Fil d'Ariane plus lisible ── */
+[data-soloris-design="v3"] #main .breadcrumb { font-size: 13.5px; }
+
+/* ── Gabarit L : conseil local, cartes de données publiques et notes de lecture ── */
+[data-soloris-design="v3"] #main .zconseil { border-left-color: var(--soloris-accent); }
+[data-soloris-design="v3"] #main .zcard { box-shadow: none; }
+[data-soloris-design="v3"] #main .zlist ul { line-height: 1.65; }
+
+/* ── Gabarit D : bloc tarif de la fiche (montant en titre, condition dessous) ── */
+[data-soloris-design="v3"] #main #tarif .sec-intro { max-width: 680px; }
+
+/* ── Hubs (diagnostics, guides, zones) : cartes et pastilles lisibles ── */
+[data-soloris-design="v3"] #main .zchips a { font-size: 15px; padding: 9px 15px; }
+[data-soloris-design="v3"] #main .offer-liens a { font-size: 14.5px; }
