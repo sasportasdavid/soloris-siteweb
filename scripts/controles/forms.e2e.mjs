@@ -90,7 +90,7 @@ async function fill(page, idx, o) {
   await next(page, root);
   await root.locator('[name="nom"]').fill('Test Recette');
   await root.locator('[name="telephone"]').fill(o.tel || '0612345678');
-  if (o.email) { await root.locator('summary').click(); await root.locator('[name="email"]').fill(o.email); }
+  if (o.email) await root.locator('[name="email"]').fill(o.email);
   return root;
 }
 async function submit(page, root, { double = false } = {}) {

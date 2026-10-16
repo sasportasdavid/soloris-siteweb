@@ -1,0 +1,40 @@
+---
+/**
+ * Héros « formulaire d'abord » des pages de destination Ads (/tarifs, /methode…).
+ * Ordinateur : texte à gauche (slot), QuoteForm à droite, visible dès l'arrivée.
+ * Mobile : titre, puis formulaire, puis le reste du texte (ordre visuel seulement, DOM inchangé).
+ * Le conteneur du formulaire porte l'ancre (#simulateur par défaut) visée par les liens
+ * « Demander mon devis » et par la barre d'action mobile.
+ */
+import QuoteForm from './QuoteForm.astro';
+
+interface Props {
+  /** Props transmises telles quelles au QuoteForm (revealEstimation, defaultDemande…). */
+  form?: Record<string, any>;
+  anchor?: string;
+}
+const { form = {}, anchor = 'simulateur' } = Astro.props;
+---
+<section class="fhero">
+  <div class="wrap fhero-grid">
+    <div class="fhero-copy"><slot /></div>
+    <div class="fhero-form" id={anchor}><QuoteForm {...form} /></div>
+  </div>
+</section>
+
+<style>
+  .fhero { padding: 34px 0 54px; }
+  .fhero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 48px; align-items: start; }
+  .fhero-form { min-width: 0; }
+  .fhero-form :global(.qform) { margin: 0; max-width: 100%; box-shadow: var(--shadow-soft); }
+  @media (max-width: 920px) {
+    .fhero { padding: 18px 0 40px; }
+    .fhero-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    /* Titre, formulaire, puis le reste du texte. */
+    .fhero-copy { display: contents; }
+    .fhero-copy > :global(*) { order: 3; }
+    .fhero-copy > :global(.eyebrow) { order: 0; }
+    .fhero-copy > :global(h1) { order: 1; }
+    .fhero-form { order: 2; margin: 18px 0 26px; }
+  }
+</style>

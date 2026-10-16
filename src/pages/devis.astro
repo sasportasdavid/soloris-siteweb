@@ -17,19 +17,33 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Devis', url:
   hideHeaderCta={true}
 >
   <section>
-    <div class="wrap">
+    <div class="wrap devis-flow">
       <div class="sec-head center">
         <div class="eyebrow center">Demande de devis</div>
         <h1 class="sec-title v3-page-title">Demandez votre devis de diagnostic immobilier</h1>
         <p class="sec-intro">Quelques questions sur votre projet et votre bien. Nous vous recontactons pour confirmer les diagnostics nécessaires, le prix et les disponibilités.</p>
       </div>
-      <div class="mt-5">
+      <div class="mt-5 devis-form">
         <QuoteForm />
       </div>
-      <div class="text-center muted mt-4" style="font-size:13.5px;max-width:600px;margin-left:auto;margin-right:auto">
+      <div class="text-center muted mt-4 devis-notes" style="font-size:13.5px;max-width:600px;margin-left:auto;margin-right:auto">
         <p><strong>Votre demande, sans engagement.</strong> Les montants éventuellement affichés sont des estimations établies à partir des informations saisies. Votre prix est confirmé au devis avant l’intervention.</p>
         <p class="mt-2"><strong>Après votre demande.</strong> Nous traitons les demandes {SITE.rappel.horaires}. Le rendez-vous est confirmé avec vous ; il n’est pas réservé automatiquement à l’envoi du formulaire.</p>
       </div>
     </div>
   </section>
 </Base>
+
+<style>
+  /* Mobile : formulaire en héros (titre, formulaire, puis l'introduction). Ordre visuel seulement. */
+  @media (max-width: 920px) {
+    .devis-flow { display: flex; flex-direction: column; }
+    .devis-flow .sec-head { display: contents; }
+    .devis-flow .sec-head > :global(*) { order: 3; }
+    .devis-flow .sec-head > :global(.eyebrow) { order: 0; }
+    .devis-flow .sec-head > :global(h1) { order: 1; }
+    .devis-form { order: 2; margin-top: 18px; }
+    .devis-flow .sec-head > :global(.sec-intro) { margin-top: 22px; text-align: center; }
+    .devis-notes { order: 4; }
+  }
+</style>

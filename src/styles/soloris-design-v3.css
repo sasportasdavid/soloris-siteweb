@@ -194,6 +194,28 @@
   [data-soloris-design="v3"] #main .lp-price-cond { font-size: 14px; }
 }
 
+/* ── C04 Formulaire en héros sur mobile (pages de destination Ads, 16/10/2026) : titre, puis
+      formulaire, puis le reste de l'accroche. Ordre visuel seulement (DOM inchangé). ── */
+@media (max-width: 920px) {
+  /* LP Ads (/lp/*) : le bouton « Demander mon devis » est masqué, le formulaire est juste dessous. */
+  [data-soloris-design="v3"] #main .lp-hero { padding-top: 20px; }
+  [data-soloris-design="v3"] #main .lp-hero-grid { gap: 0; }
+  [data-soloris-design="v3"] #main .lp-hero-copy { display: contents; }
+  [data-soloris-design="v3"] #main .lp-hero-copy > * { order: 3; }
+  [data-soloris-design="v3"] #main .lp-hero-copy > h1 { order: 1; }
+  [data-soloris-design="v3"] #main .lp-hero-visual { order: 2; margin: 18px 0 8px; }
+  [data-soloris-design="v3"] #main .lp-hero-copy > .tagpill { justify-self: start; margin: 22px 0 0; }
+  [data-soloris-design="v3"] #main .lp-hero-copy > .lp-cta { display: none; }
+  /* Héros avec simulateur (offres /dpe, /diagnostics-vente, /diagnostics-location…). */
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) { padding-bottom: 34px; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-copy { display: contents; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-copy > * { order: 3; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-copy > h1 { order: 1; margin-top: 22px; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-aside { order: 2; padding: 18px 0 6px; }
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-copy > .tagpill,
+  [data-soloris-design="v3"] #main .hero--split .hero-inner:has(> .hero-aside) > .hero-copy > .hero-rating { justify-self: start; margin-top: 18px; }
+}
+
 /* ── Petits écrans : titres de section et pastilles sans débordement ── */
 @media (max-width: 380px) {
   [data-soloris-design="v3"] #main .sec-title { font-size: 25px; }
@@ -272,6 +294,8 @@
 [data-soloris-design="v3"] #main .v3-resume-prix { font-family: var(--sora); font-weight: 600; font-size: 28px; letter-spacing: -.015em; color: var(--soloris-blue); margin-top: 6px; }
 [data-soloris-design="v3"] #main .v3-resume-cond { font-size: 14px; color: var(--soloris-ink-soft); margin-top: 4px; line-height: 1.5; }
 @media (max-width: 860px) { [data-soloris-design="v3"] #main .v3-resume { grid-template-columns: minmax(0, 1fr); } }
+/* Résumé posé dans la colonne de texte du héros à formulaire (/tarifs) : une colonne. */
+[data-soloris-design="v3"] #main .fhero .v3-resume { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 
 /* ── Tableau des tarifs : en-têtes identifiables, défilement au clavier (focus visible) ── */
 [data-soloris-design="v3"] #main [role="region"][tabindex="0"]:focus-visible { outline: 3px solid var(--soloris-focus); outline-offset: 3px; border-radius: 16px; }
