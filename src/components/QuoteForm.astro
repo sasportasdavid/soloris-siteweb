@@ -43,20 +43,44 @@ const {
   defaultDemande = '',
 } = Astro.props;
 
+// Libellés visibles de l'étape 1 (audit formulaire du 16/10/2026, §5.1) : un pack et le DPE seul
+// ne sont plus présentés comme des choix ambigus. Les VALEURS envoyées (vente, location, dpe, audit)
+// et DEMANDE_LABELS (récapitulatif, back-office) sont inchangés.
+const DEMANDE_TITRE: Record<string, string> = {
+  vente: 'Pack de diagnostics pour vendre',
+  location: 'Pack de diagnostics pour louer',
+  dpe: 'DPE uniquement',
+  audit: 'Audit énergétique',
+};
+// Forme courte des récapitulatifs (étape coordonnées et confirmation), cohérente avec l'étape 1.
+const DEMANDE_RECAP: Record<string, string> = {
+  vente: 'Pack vente', location: 'Pack location', dpe: 'DPE uniquement', audit: 'Audit énergétique',
+};
 const DEMANDE_DESC: Record<string, string> = {
-  vente: 'Je vends un bien',
-  location: 'Je mets en location',
-  dpe: 'Juste le diagnostic énergie',
-  audit: 'Logement classé F, G ou E',
+  vente: 'Nous précisons les diagnostics nécessaires à votre vente.',
+  location: 'Nous précisons les diagnostics nécessaires à votre location.',
+  dpe: 'Je souhaite uniquement le diagnostic de performance énergétique.',
+  audit: 'Pour étudier les travaux à envisager et leur coût estimatif.',
 };
 
 // Microcopie (dossier éditorial V2, lot M) : l'âge est une CATÉGORIE TARIFAIRE ; les aides
 // n'en déduisent plus d'obligation réglementaire (AGE_DESC de pricing.ts n'est plus affiché).
 const AGE_AIDE: Record<string, string> = {
   avant1949: 'Construction antérieure à 1949',
-  intermediaire: 'Construction de 1949 à il y a 15 ans',
+  intermediaire: 'Construit en 1949 ou après, il y a 15 ans ou plus',
   recent: 'Construction de moins de 15 ans',
 };
+// Libellés affichés dans le formulaire (audit §6 : parler de construction). Mêmes valeurs envoyées ;
+// AGE_LABELS de pricing.ts (tableaux de prix, back-office) n'est pas modifié.
+const AGE_FORM_LABELS: Record<string, string> = {
+  avant1949: 'Avant 1949',
+  intermediaire: 'À partir de 1949, bien de 15 ans ou plus',
+  recent: 'Bien de moins de 15 ans',
+};
+// Texte d'entrée selon la sortie réelle du parcours (audit §7).
+const ENTREE = revealEstimation
+  ? 'Décrivez votre bien. Une estimation indicative s’affiche après l’envoi ; le devis est confirmé avant la visite.'
+  : 'Décrivez votre bien. Notre équipe confirme vos diagnostics, votre prix et un créneau avec vous.';
 
 const hasReviews = Number(SITE.rating.count) > 0;
 const surfaceBands = SURFACE_BANDS.map((b) => b.label);
@@ -106,15 +130,16 @@ const FORM_SEND_TO_DPE =
     <!-- Étape 1 — Projet -->
     <fieldset class="qstep" data-step="1">
       <legend>Quel est votre projet&nbsp;?</legend>
-      <p class="qsub">Décrivez votre bien en quelques étapes. Nous confirmons les prestations, le prix et le rendez-vous avant l’intervention.</p>
+      <p class="qsub">{ENTREE}</p>
       <div class="qgrid">
         {Object.entries(DEMANDE_LABELS).map(([val, label]) => (
           <label class="qopt">
             <input type="radio" name="type_demande" value={val} required />
-            <span class="qopt-body"><b>{label}</b><span class="qopt-desc">{DEMANDE_DESC[val]}</span></span>
+            <span class="qopt-body"><b>{DEMANDE_TITRE[val] || label}</b><span class="qopt-desc">{DEMANDE_DESC[val]}</span></span>
           </label>
         ))}
       </div>
+      <p class="qhelp">Vous hésitez&nbsp;? <a href={`tel:${SITE.phone.replace(/\s/g, '')}`}>Nous vous aidons à choisir au {SITE.phoneDisplay}</a>.</p>
       <div class="qnav"><span></span><button type="button" class="btn-blue" data-next>Continuer</button></div>
     </fieldset>
 
@@ -145,13 +170,13 @@ const FORM_SEND_TO_DPE =
       <legend>Votre logement</legend>
       <p class="qsub" data-el="step3-sub">Indiquez la surface et l'âge du bien. Cette information sert à estimer le pack ; les diagnostics nécessaires sont vérifiés selon les critères propres à votre bien.</p>
 
-      <!-- Rappel DPE seul → location : d'autres diagnostics sont obligatoires pour louer. Affiché
-           uniquement pour la demande « DPE seul », sans aucun prix, bouton interne (pas de lien sortant
-           → compatible avec les LP nav-strippées). Présent à l'étape 3 : survit au test steps_order B. -->
+      <!-- Information « DPE uniquement » (audit §5.2) : neutre, sans supposer que le visiteur loue.
+           Seul le bouton explicite « Choisir le pack location » change le projet (comportement
+           existant de data-dpe-to-location). Présent à l'étape 3 : survit au test steps_order B. -->
       <div class="qnote" data-el="dpe-rappel" role="note" hidden>
-        <b>Pour louer, le DPE ne suffit pas</b>
-        D'autres diagnostics sont obligatoires pour une mise en location, selon l'âge du bien. Le pack location les regroupe en un seul rendez-vous.
-        <button type="button" class="qnote-link" data-dpe-to-location>Voir le pack location</button>
+        <b>DPE seul ou dossier complet&nbsp;?</b>
+        Le DPE peut faire partie d’un dossier de vente ou de location. Des diagnostics complémentaires peuvent être nécessaires selon votre bien. Vous avez déjà les autres documents&nbsp;? Vous pouvez conserver le DPE seul.
+        <button type="button" class="qnote-link" data-dpe-to-location>Choisir le pack location</button>
       </div>
 
       <label class="qfield">
@@ -164,7 +189,7 @@ const FORM_SEND_TO_DPE =
         <span class="qgroup-label">Âge du bien</span>
         <div class="qgrid qgrid-2">
           {Object.entries(AGE_LABELS).map(([val, label]) => (
-            <label class="qopt"><input type="radio" name="age_bien" value={val} /><span class="qopt-body"><b>{label}</b><span class="qopt-desc">{AGE_AIDE[val]}</span></span></label>
+            <label class="qopt"><input type="radio" name="age_bien" value={val} /><span class="qopt-body"><b>{AGE_FORM_LABELS[val] || label}</b><span class="qopt-desc">{AGE_AIDE[val]}</span></span></label>
           ))}
         </div>
       </div>
@@ -212,7 +237,7 @@ const FORM_SEND_TO_DPE =
       <legend>Où se situe le bien&nbsp;?</legend>
       <p class="qsub">Indiquez le code postal du logement.</p>
       <label class="qfield">
-        <span>Code postal</span>
+        <span>Code postal du bien</span>
         <input type="text" name="secteur" data-el="cp-input" required inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="ex : 75011" autocomplete="postal-code" />
       </label>
       <label class="qfield" data-el="ville-field" hidden>
@@ -225,12 +250,12 @@ const FORM_SEND_TO_DPE =
 
     <!-- Étape 5 — Coordonnées -->
     <fieldset class="qstep" data-step="5" hidden>
-      <legend>Vos coordonnées</legend>
+      <legend>Dernière étape&nbsp;: comment vous recontacter&nbsp;?</legend>
       <div class="qrecap" data-el="qrecap" hidden></div>
       <!-- Nom, téléphone et email visibles (email non obligatoire : il sert à envoyer l'estimation,
            cf. confirmEmail.ts). Seul le message reste replié (toujours envoyé s'il est rempli). -->
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
-      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">Nous vous rappelons sous {recallSla}, pendant nos horaires d’ouverture, au sujet de votre demande.</small></label>
+      <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">Notre équipe vous rappelle sous {recallSla}, pendant nos horaires d’ouverture, pour confirmer votre devis et proposer un créneau.</small></label>
       <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre estimation et le récapitulatif de votre demande.</small></label>
       <details class="qmore">
         <summary>Ajouter une précision</summary>
@@ -244,6 +269,7 @@ const FORM_SEND_TO_DPE =
       <div class="qreassure">
         <span>🔒 Demande sans engagement</span><span>· Prix confirmé avant la visite</span><span>· Données confidentielles</span>
       </div>
+      <p class="qbrand">{SITE.tradeName}, marque exploitée par {SITE.legalName}. Demande gratuite, aucun paiement à cette étape.</p>
 
       <div class="qnav">
         <button type="button" class="btn-ghost" data-prev>Retour</button>
@@ -256,8 +282,11 @@ const FORM_SEND_TO_DPE =
 
   <div class="qthanks" data-el="qthanks" hidden>
     <div class="qthanks-ic" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#14385F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-    <h3>Votre demande est enregistrée</h3>
-    <p>Nous vous rappelons sous {recallSla} pour confirmer les prestations, le prix et un créneau d’intervention. Nos horaires : {SITE.rappel.horaires}.</p>
+    <h3>Votre demande est bien enregistrée.</h3>
+    <!-- Texte adapté côté navigateur hors horaires d'ouverture (rappel « dès l'ouverture »). -->
+    <p data-el="qthanks-rappel">Nous vous rappelons sous {recallSla} pour confirmer les diagnostics nécessaires, votre tarif et un créneau d’intervention. Nos horaires : {SITE.rappel.horaires}.</p>
+    <p class="qthanks-recap" data-el="qthanks-recap" hidden></p>
+    <p class="qthanks-note">Votre rendez-vous sera confirmé avec vous. Aucun paiement n’a été effectué à cette étape.</p>
     <div class="qthanks-estim" data-el="qthanks-estim" hidden></div>
     <a href="/" class="btn-blue mt-3">Retour à l'accueil</a>
   </div>
@@ -344,10 +373,16 @@ const FORM_SEND_TO_DPE =
   .qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }
   .qthanks p { color: var(--ink-soft); margin-top: 12px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.6; }
   .qthanks-estim { margin: 18px auto 4px; max-width: 440px; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+  .qthanks-recap { font-size: 14px; }
+  .qthanks-recap b { color: var(--blue); }
+  .qthanks .qthanks-note { font-size: 13.5px; margin-top: 8px; }
+  .qhelp { margin-top: 14px; font-size: 13.5px; color: var(--ink-soft); }
+  .qhelp a { color: var(--blue); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .qbrand { margin-top: 8px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .qthanks-estim strong { font-family: var(--sora); font-size: 19px; color: var(--blue); }
 </style>
 
-<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_MAISON_SUPP, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS, AGE_LABELS, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
+<script is:inline define:vars={{ APPART_GRID, MAISON_SUPP, AUDIT_FROM, DPE_MAISON_SUPP, COPRO_SUPP: FIXED.coproSupp, DPE_BY_BAND: dpeByBand, LOT_ANNEXE_PRICE, BIEN_LABELS: TYPE_BIEN_LABELS, BANDS_MAX: SURFACE_BANDS.map((b) => (b.maxIncl === Infinity ? 240 : b.maxIncl)), SURF_LABELS: surfaceBands, DEMANDE_LABELS: { ...DEMANDE_LABELS, ...DEMANDE_RECAP }, AGE_LABELS: AGE_FORM_LABELS, RAPPEL: { delai: recallSla, horaires: SITE.rappel.horaires, ouverture: SITE.rappel.ouverture }, LOCK_EXPERIMENTS: lockExperiments, FORCE_CTA: forceCta, FORCE_STEPS: forceSteps, PRICE_MODEL: priceModelVariant, REVEAL_ESTIMATION: revealEstimation, DEFAULT_DEMANDE: defaultDemande, FORM_SEND_TO, FORM_SEND_TO_DPE }}>
   (function () {
     // ── Multi-instances : le QuoteForm peut apparaître plusieurs fois sur une page
     //    (ex. simulateur dans le hero + formulaire plus bas). On initialise CHAQUE
@@ -399,6 +434,8 @@ const FORM_SEND_TO_DPE =
 
     function fmtEUR(n) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n); }
     function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
+    // Même règle que /api/lead, qui refuse tout email non vide invalide (audit §9.1).
+    function emailOk(v) { v = (v || '').trim(); return !v || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
     function checkedVal(name) { var el = form.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
     function demande() { return checkedVal('type_demande'); }
     function bien() { return checkedVal('type_bien'); }
@@ -501,6 +538,13 @@ const FORM_SEND_TO_DPE =
         } else if (help && help.style.color) {
           help.textContent = help.dataset.msg || ''; help.style.color = '';
         }
+        // Email facultatif mais, s'il est saisi, valide : sinon l'API refusait l'envoi complet
+        // (erreur générique, demande perdue). On garde toutes les autres réponses.
+        var mailEl = form.querySelector('[name="email"]');
+        if (mailEl && !emailOk(mailEl.value)) {
+          ok = false; mailEl.style.borderColor = '#b3261e';
+          flag('vérifiez votre adresse email ou laissez ce champ vide', mailEl);
+        } else if (mailEl) { mailEl.style.borderColor = ''; }
       }
       showInvalid(step, ok, need, bad);
       return ok;
@@ -526,6 +570,29 @@ const FORM_SEND_TO_DPE =
       msg.textContent = 'Pour continuer : ' + need.join(', ') + '.';
       msg.hidden = false;
       bad.forEach(function (el) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', msg.id); });
+    }
+
+    // Écran de confirmation (audit §10) : récapitulatif de la demande et rappel honnête hors
+    // horaires (« dès l'ouverture » au lieu d'un délai qui courrait pendant la fermeture).
+    function ouvertMaintenant() {
+      var o = RAPPEL && RAPPEL.ouverture; if (!o) return true;
+      try {
+        var p = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+        var h = p.getHours() + p.getMinutes() / 60;
+        return o.jours.indexOf(p.getDay()) > -1 && h >= o.de && h < o.a;
+      } catch (e) { return true; }
+    }
+    function fillThanks() {
+      var d = demande(), b = bien(), m2 = surfaceM2(), cp = val('secteur'), ville = val('ville');
+      var parts = [];
+      if (d && DEMANDE_LABELS[d]) parts.push(DEMANDE_LABELS[d]);
+      if (b) parts.push(BIEN_LABELS[b] || b);
+      if (m2 != null) parts.push(m2 + ' m²');
+      if (cp) parts.push(ville ? ville + ' (' + cp + ')' : cp);
+      var rec = gid('qthanks-recap');
+      if (rec && parts.length) { rec.textContent = ''; var bb = document.createElement('b'); bb.textContent = 'Votre demande : '; rec.appendChild(bb); rec.appendChild(document.createTextNode(parts.join(' · '))); rec.hidden = false; }
+      var rp = gid('qthanks-rappel');
+      if (rp && !ouvertMaintenant()) rp.textContent = 'Nous vous rappelons dès l’ouverture (' + RAPPEL.horaires + ') pour confirmer les diagnostics nécessaires, votre tarif et un créneau d’intervention.';
     }
 
     // Récap de la demande à la dernière étape (CRO #5)
@@ -725,7 +792,7 @@ const FORM_SEND_TO_DPE =
         type_demande: demande() || '', type_bien: bien() || '', age_bien: checkedVal('age_bien') || '',
         surface: val('surface'), estimation: val('estimation'), secteur: val('secteur'), ville: val('ville'),
         annexe: ax.on ? '1' : '0', annexe_type: ax.on ? ax.type : '',
-        nom: val('nom'), telephone: val('telephone'), email: val('email'), message: val('message'),
+        nom: val('nom'), telephone: val('telephone'), email: emailOk(val('email')) ? val('email') : '', message: val('message'),
         utm_source: a.utm_source || '', medium: a.utm_medium || '', campaign: a.utm_campaign || '',
         term: a.utm_term || '', content: a.utm_content || '', gclid: a.gclid || '', fbclid: a.fbclid || '',
         gbraid: a.gbraid || '', wbraid: a.wbraid || '',
@@ -930,7 +997,8 @@ const FORM_SEND_TO_DPE =
                 try {
                   var ecEmail = (val('email') || '').trim().toLowerCase();
                   var ecPhone = (val('telephone') || '').replace(/[^\d+]/g, '');
-                  if (ecPhone && ecPhone.charAt(0) === '0') ecPhone = '+33' + ecPhone.slice(1);
+                  if (ecPhone.indexOf('00') === 0) ecPhone = '+' + ecPhone.slice(2); // 00XX… = international
+                  else if (ecPhone && ecPhone.charAt(0) === '0') ecPhone = '+33' + ecPhone.slice(1);
                   var ecData = {};
                   if (ecEmail) ecData.email = ecEmail;
                   if (ecPhone) ecData.phone_number = ecPhone;
@@ -958,6 +1026,7 @@ const FORM_SEND_TO_DPE =
               : 'Nous confirmons votre tarif lors de notre échange, avant la visite. Déplacement inclus, demande sans engagement.';
             estEl.hidden = false;
           }
+          try { fillThanks(); } catch (e3) {}
           form.hidden = true;
           gid('qthanks').hidden = false;
           root.scrollIntoView({ behavior: 'smooth', block: 'start' });
