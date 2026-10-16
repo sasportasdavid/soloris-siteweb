@@ -1,4 +1,33 @@
-# Tickets séparés — NON APPLIQUÉS (validation distincte requise)
+# Tickets séparés
+
+## Statut au 16/10/2026 (validation reçue : « Fais tout ce qui reste à faire »)
+
+| Ticket | Statut | Recette (`scripts/controles/tickets-f.mjs`, réseau isolé) |
+|---|---|---|
+| F1 barre mobile contextuelle | **Appliqué** | M1–M5 PASS : formulaire commencé → ramené à lui ; sinon `#simulateur` / 1er formulaire ; page sans formulaire → `/devis` inchangé. Liens, classes et `tel:` inchangés |
+| F2 progression « Étape X sur Y » | **Appliqué** | P1A (sur 5) et P1B (sur 4, steps_order B) PASS |
+| F3 clavier, Entrée, erreurs | **Appliqué** | K1–K4 (devis complet au clavier sur `/devis/`, `/dpe/`, `/lp/vente-prix/`, `/lp/dpe/`), E1, V1, A1 PASS ; **tous en ÉCHEC sur la production précédente** |
+| F4 chat « Poser une question » | **Appliqué** | C3 PASS : nom accessible et libellé visible (ordinateur), envoi `source=chat`, 1 `soloris_chat` |
+| M1 aperçu de rapport | **Appliqué** | « Intervenant : Diagnostiqueur certifié » (redondance supprimée) |
+| D1 bouton désactivé | **Appliqué** | `#74675E` : blanc 5,5:1 (était 3,9:1) |
+| F5 test du prix avant contact | **Non appliqué** | Décision commerciale requise : bras testés, part d'audience, durée, critère de succès (clients payés, marge) |
+| T1 gbraid / wbraid | **Non appliqué** | Demande une migration de la base de production (`upsert_lead`), l'API et l'import de conversions hors ligne (`gads-rdv-upload`) |
+
+Non-régression : `forms.e2e.mjs` 29 PASS (U02 lecteur d'écran NON EXÉCUTÉ) ; visibilité de chaque élément existant
+identique dans les 88 formulaires rendus (variantes A et B, 390 / 1440) ; contrastes, focus, cibles : 0 écart ;
+62 URL × 2 écrans PASS. `compare.mjs --mode=M` signale, comme attendu : `ChatWidget.astro` (fichier protégé, F4),
+un élément ajouté dans chaque formulaire (`p[data-el=qprogress]`, F2), scripts modifiés (QuoteForm, barres F1).
+
+Bug préexistant corrigé au passage (F3) : la touche Entrée dans un champ intermédiaire (surface, code postal)
+déclenchait une soumission implicite — envoi « complet » sans coordonnées refusé par l'API et message
+« Votre demande n'a pas pu être confirmée » inséré d'avance à la dernière étape.
+
+Limite F1 : un déclencheur GTM de clic sur lien configuré avec « Vérifier la validation » ne se déclencherait plus
+lorsque la barre ramène au formulaire (clic intercepté). Le conteneur GTM n'est pas consultable depuis le dépôt.
+
+---
+
+Description d'origine des tickets :
 
 Ces évolutions dépassent le périmètre d'habillage (lots V/P). Le comportement actuel est conservé.
 Chaque ticket touche au moins un fichier gelé ou un comportement de collecte : aucun n'est réputé
