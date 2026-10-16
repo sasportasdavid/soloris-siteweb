@@ -110,11 +110,15 @@ const FORM_SEND_TO_DPE =
 ---
 <div class="qform card">
   {hasReviews && (
+    <!-- Note Google sans le nombre d'avis : note mise en avant, source explicite. -->
     <div class="qrating">
-      <span class="stars" aria-hidden="true">
-        {[0,1,2,3,4].map(() => <svg width="14" height="14" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+      <span class="qrating-score">{SITE.rating.value}<span class="qrating-max">/5</span></span>
+      <span class="qrating-body">
+        <span class="stars" aria-hidden="true">
+          {[0,1,2,3,4].map(() => <svg width="15" height="15" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
+        </span>
+        <span class="qrating-src">Avis clients sur Google</span>
       </span>
-      <strong>{SITE.rating.value}</strong> · {SITE.rating.count} avis Google
     </div>
   )}
 
@@ -294,9 +298,12 @@ const FORM_SEND_TO_DPE =
 
 <style>
   .qform { padding: 24px 30px 28px; max-width: 600px; margin: 0 auto; }
-  .qrating { display: flex; align-items: center; gap: 8px; justify-content: center; font-family: var(--sora); font-size: 13px; color: var(--ink-soft); padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
-  .qrating .stars { display: inline-flex; gap: 1px; }
-  .qrating strong { color: var(--blue); }
+  .qrating { display: flex; align-items: center; gap: 12px; justify-content: center; font-family: var(--sora); color: var(--ink-soft); padding-bottom: 14px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .qrating-score { font-size: 26px; font-weight: 600; line-height: 1; color: var(--blue); letter-spacing: -.02em; }
+  .qrating-max { font-size: 14px; font-weight: 500; color: var(--ink-soft); margin-left: 1px; }
+  .qrating-body { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 1px solid var(--line); }
+  .qrating .stars { display: inline-flex; gap: 2px; }
+  .qrating-src { font-size: 12.5px; font-weight: 500; line-height: 1.2; color: var(--ink-soft); }
   .qsteps { display: flex; gap: 8px; justify-content: center; margin: 8px 0 10px; }
   .qprogress { text-align: center; font-family: var(--sora); font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin: 0 0 18px; }
   .qsteps .dot { width: 30px; height: 5px; border-radius: 4px; background: var(--line); transition: background .2s; }
