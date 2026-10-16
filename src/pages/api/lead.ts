@@ -193,6 +193,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     content: clean(body.content, 160) || '',
     gclid: clean(body.gclid, 255) || '',
     fbclid: clean(body.fbclid, 255) || '',
+    // Clics Google Ads iOS sans gclid (gbraid : depuis une app ; wbraid : web) — migration 13.
+    gbraid: clean(body.gbraid, 255) || '',
+    wbraid: clean(body.wbraid, 255) || '',
     gads_keyword: clean(body.gads_keyword, 160) || '',
     gads_campaign_id: clean(body.gads_campaign_id, 40) || '',
     gads_adgroup_id: clean(body.gads_adgroup_id, 40) || '',

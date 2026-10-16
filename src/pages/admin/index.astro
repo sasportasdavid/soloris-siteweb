@@ -567,7 +567,7 @@ const STATUT_LABELS: Record<string, string> = {
     }
 
     function isAds(l: any): boolean {
-      if (l.gclid || l.fbclid) return true;
+      if (l.gclid || l.gbraid || l.wbraid || l.fbclid) return true;
       const m = (l.medium || '').toLowerCase();
       const s = (l.utm_source || '').toLowerCase();
       if (['cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display'].includes(m)) return true;
@@ -787,7 +787,7 @@ const STATUT_LABELS: Record<string, string> = {
         const acqBits: string[] = [];
         if (l.gads_keyword) acqBits.push('🎯 <b>' + esc(l.gads_keyword) + '</b>');
         if (l.campaign) acqBits.push(esc(l.campaign));
-        const acq = acqBits.length ? `<div class="adm-cell-sub">${acqBits.join('<br>')}</div>` : (l.gclid ? '<div class="adm-cell-sub">gclid ✓</div>' : '');
+        const acq = acqBits.length ? `<div class="adm-cell-sub">${acqBits.join('<br>')}</div>` : (l.gclid || l.gbraid || l.wbraid ? '<div class="adm-cell-sub">' + (l.gclid ? 'gclid' : l.gbraid ? 'gbraid' : 'wbraid') + ' ✓</div>' : '');
         const dv = devisByLead[l._devisId || l.id];
         const devisCell = dv
           ? `<a class="adm-devis-link" href="/api/devis/${dv.sign_token}.pdf" target="_blank" rel="noopener" title="Télécharger le PDF du devis ${esc(dv.numero)}">${statutDevisBadge(dv.statut)} 📄</a>`
@@ -855,6 +855,7 @@ const STATUT_LABELS: Record<string, string> = {
       rows.push(dlRow('Appareil', l.device ? esc(DEVICE_LBL[l.device] || l.device) : ''));
       rows.push(dlRow('Réseau', l.network ? esc(NETWORK_LBL[l.network] || l.network) : ''));
       rows.push(dlRow('gclid (Google)', l.gclid ? '✓ ' + esc(l.gclid) : ''));
+      rows.push(dlRow('gbraid / wbraid (Google iOS)', l.gbraid || l.wbraid ? '✓ ' + esc(l.gbraid || l.wbraid) : ''));
       rows.push(dlRow('fbclid (Meta)', l.fbclid ? '✓ ' + esc(l.fbclid) : ''));
       rows.push(dlRow("Page d'entrée", esc(l.landing_path)));
       rows.push(dlRow('Référent', esc(l.referrer)));

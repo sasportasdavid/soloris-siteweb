@@ -250,6 +250,12 @@ try {
     rec('T01', 'Attribution gclid/UTM conservée jusqu’au payload', p.gclid === 'TESTGCLID' && p.utm_source === 'google' && p.medium === 'cpc' && p.campaign === 'recette', { gclid: p.gclid, utm_source: p.utm_source, medium: p.medium, campaign: p.campaign, landing_path: p.landing_path });
     await ctx.close(); }
 
+  // T06 — clic Google Ads iOS sans gclid ni UTM (gbraid) : identifiant transmis et rattachement google/cpc
+  { const { ctx, page, log } = await open('/lp/dpe/?gbraid=TESTGBRAID');
+    const root = await fill(page, 0, { demande: 'dpe', surface: 30 }); await submit(page, root); const p = complets(log)[0] || {};
+    rec('T06', 'Clic iOS (gbraid seul) : gbraid transmis, source google/cpc, gclid vide', p.gbraid === 'TESTGBRAID' && !p.gclid && p.utm_source === 'google' && p.medium === 'cpc', { gbraid: p.gbraid, wbraid: p.wbraid, gclid: p.gclid, utm_source: p.utm_source, medium: p.medium });
+    await ctx.close(); }
+
   // T02 — consentement : défaut « denied » (EEE), refus → formulaire toujours utilisable
   { const { ctx, page, log } = await open('/lp/dpe/', {});
     const d0 = await dl(page); const def = d0.find((e) => Array.isArray(e) && e[0] === 'consent' && e[1] === 'default' && e[2]?.region);

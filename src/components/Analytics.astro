@@ -100,7 +100,8 @@ const PHONE_SEND_TO =
       // Garde-fou attribution : un clic Google Ads auto-taggé porte TOUJOURS un gclid, mais
       // le suffixe utm peut manquer (clic antérieur à sa config, ou cas limite). On rattache
       // alors la touche à google/cpc → attribution interne (CRM/analytics) cohérente.
-      if (acq.gclid && !acq.utm_source) { acq.utm_source = 'google'; acq.utm_medium = acq.utm_medium || 'cpc'; }
+      // gbraid / wbraid = clic Google Ads iOS sans gclid : même rattachement.
+      if ((acq.gclid || acq.gbraid || acq.wbraid) && !acq.utm_source) { acq.utm_source = 'google'; acq.utm_medium = acq.utm_medium || 'cpc'; }
       acq.landing_path = window.location.pathname;
       try { var ref = document.referrer || ''; if (ref && new URL(ref).host !== window.location.host) acq.referrer = ref.slice(0, 255); } catch (e) {}
       var d = new Date(); d.setTime(d.getTime() + 30 * 864e5);

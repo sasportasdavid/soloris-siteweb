@@ -60,11 +60,22 @@ async function getAccessToken(): Promise<string> {
 }
 
 export type OfflineConversion = {
-  gclid: string;
+  /** Identifiant de clic : Google en exige UN SEUL (gclid, sinon gbraid, sinon wbraid). */
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
   conversionDateTime: string; // via toGoogleAdsDateTime()
   value: number;
   orderId: string; // id du lead = clé de déduplication Google
 };
+
+/** Un seul identifiant par conversion : gclid prioritaire, puis gbraid, puis wbraid (clics iOS). */
+export function clickId(c: Pick<OfflineConversion, 'gclid' | 'gbraid' | 'wbraid'>): Record<string, string> {
+  if (c.gclid) return { gclid: c.gclid };
+  if (c.gbraid) return { gbraid: c.gbraid };
+  if (c.wbraid) return { wbraid: c.wbraid };
+  return {};
+}
 
 export type UploadResult = {
   ok: boolean;
@@ -95,7 +106,7 @@ export async function uploadClickConversions(conversions: OfflineConversion[]): 
 
   const body = {
     conversions: conversions.map((c) => ({
-      gclid: c.gclid,
+      ...clickId(c),
       conversionAction: conversionActionRes,
       conversionDateTime: c.conversionDateTime,
       conversionValue: c.value,
