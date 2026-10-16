@@ -5,7 +5,7 @@
  * - Estimation « à partir de X € » (ou « sur devis » > 239 m²), jamais un prix ferme.
  * - Attribution utm/gclid/fbclid → champs cachés → leads.
  * - Conversions ads après consentement (Consent Mode v2).
- * - CRO : email facultatif, micro-réassurance, note 4,9★ en en-tête,
+ * - CRO : email non obligatoire (affiché, pour recevoir l'estimation), micro-réassurance, note 4,9★ en en-tête,
  *   capture anticipée du téléphone (lead « partiel » si abandon), A/B test du CTA.
  * Préselection via ?type=vente|location|dpe|audit.
  */
@@ -171,7 +171,7 @@ const FORM_SEND_TO_DPE =
 
       <label class="qcheck" data-el="copro-block" hidden>
         <input type="checkbox" name="copropriete" value="1" />
-        <span>Maison en copropriété {revealEstimation && <span class="qopt-tag">+ {FIXED.coproSupp} €</span>}</span>
+        <span>Maison en copropriété</span>
       </label>
 
       <label class="qcheck" data-el="annexe-appart-block" hidden>
@@ -227,14 +227,13 @@ const FORM_SEND_TO_DPE =
     <fieldset class="qstep" data-step="5" hidden>
       <legend>Vos coordonnées</legend>
       <div class="qrecap" data-el="qrecap" hidden></div>
-      <!-- CRO (oct. 2026) : ~45-50 % des abandons se font à cette étape. Seuls nom + téléphone
-           restent visibles → le bouton d'envoi tient dans l'écran mobile. Email et message,
-           facultatifs, sont repliés (toujours envoyés s'ils sont remplis). -->
+      <!-- Nom, téléphone et email visibles (email non obligatoire : il sert à envoyer l'estimation,
+           cf. confirmEmail.ts). Seul le message reste replié (toujours envoyé s'il est rempli). -->
       <label class="qfield"><span>Nom et prénom</span><input type="text" name="nom" required autocomplete="name" placeholder="Camille Roussel" /></label>
       <label class="qfield"><span>Téléphone</span><input type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78" /><small class="qfield-help" data-el="tel-help">Nous vous rappelons sous {recallSla}, pendant nos horaires d’ouverture, au sujet de votre demande.</small></label>
+      <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /><small class="qfield-help">Pour recevoir votre estimation et le récapitulatif de votre demande.</small></label>
       <details class="qmore">
-        <summary>Ajouter un email ou une précision <span class="qfield-opt">(facultatif)</span></summary>
-        <label class="qfield"><span>Email</span><input type="email" name="email" autocomplete="email" placeholder="vous@email.fr" /></label>
+        <summary>Ajouter une précision</summary>
         <label class="qfield"><span>Message</span><textarea name="message" rows="2" placeholder="Une précision sur votre bien ?"></textarea></label>
       </details>
 
@@ -294,7 +293,6 @@ const FORM_SEND_TO_DPE =
   .qfield { display: block; margin-top: 16px; }
   .qfield:first-of-type { margin-top: 0; }
   .qfield span { display: block; font-family: var(--sora); font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
-  .qfield-opt { font-weight: 400; color: var(--ink-soft); }
   .qfield input, .qfield textarea, .qfield select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: var(--inter); font-size: 15px; color: var(--ink); background: #fff; }
   .qfield input:focus, .qfield textarea:focus, .qfield select:focus { outline: none; border-color: var(--blue-light); }
   .qfield-help { display: block; font-family: var(--inter); font-weight: 400; font-size: 12px; color: var(--ink-soft); margin-top: 6px; line-height: 1.45; }
@@ -321,6 +319,10 @@ const FORM_SEND_TO_DPE =
   .qestim-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; }
   .qnav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
   .qnav .btn-blue, .qnav .btn-gold { margin-left: auto; }
+  /* Retour lisible sur la carte blanche, même quand le formulaire est posé dans un héros sombre
+     (.hero--split / .offer-intro--dark passent les .btn-ghost en texte blanc). */
+  .qnav .btn-ghost { color: var(--blue); background: #fff; border-color: rgba(20, 56, 95, .32); }
+  .qnav .btn-ghost:hover { border-color: var(--blue-light); }
   .qreassure { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 18px; font-family: var(--sora); font-size: 12px; font-weight: 500; color: var(--blue-light); }
   .qmore { margin-top: 14px; }
   .qmore summary { cursor: pointer; font-family: var(--inter); font-size: 13.5px; color: var(--blue-light); text-decoration: underline; text-underline-offset: 3px; list-style: none; }

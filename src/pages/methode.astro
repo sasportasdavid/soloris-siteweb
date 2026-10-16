@@ -7,6 +7,7 @@
  */
 import Base from '../layouts/Base.astro';
 import GroupEndorsement from '../components/GroupEndorsement.astro';
+import FormHero from '../components/FormHero.astro';
 import { SITE } from '../lib/site';
 import { breadcrumb } from '../lib/jsonld';
 
@@ -22,14 +23,13 @@ const jsonLd = [breadcrumb([{ name: 'Accueil', url: '/' }, { name: 'Méthode', u
     <nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="/">Accueil</a> <span>/</span> <span aria-current="page">Méthode</span></nav>
   </div>
 
-  <section>
-    <div class="wrap">
-      <div class="eyebrow">Notre méthode</div>
-      <h1 class="sec-title v3-page-title">Une intervention préparée, des résultats expliqués</h1>
-      <p class="sec-intro">De votre demande au rapport, nous précisons ce qui sera réalisé, le prix de l’intervention et les informations nécessaires pour votre bien.</p>
-      <div style="margin-top:18px"><GroupEndorsement variant="light" /></div>
-    </div>
-  </section>
+  <!-- Formulaire en héros (page de destination des liens « Méthode » Google Ads) -->
+  <FormHero>
+    <div class="eyebrow">Notre méthode</div>
+    <h1 class="sec-title v3-page-title">Une intervention préparée, des résultats expliqués</h1>
+    <p class="sec-intro">De votre demande au rapport, nous précisons ce qui sera réalisé, le prix de l’intervention et les informations nécessaires pour votre bien.</p>
+    <div style="margin-top:18px"><GroupEndorsement variant="light" /></div>
+  </FormHero>
 
   <section class="section-line">
     <div class="wrap">
