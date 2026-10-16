@@ -11,7 +11,7 @@
 | M1 aperçu de rapport | **Appliqué** | « Intervenant : Diagnostiqueur certifié » (redondance supprimée) |
 | D1 bouton désactivé | **Appliqué** | `#74675E` : blanc 5,5:1 (était 3,9:1) |
 | F5 test du prix avant contact | **Non appliqué** | Décision commerciale requise : bras testés, part d'audience, durée, critère de succès (clients payés, marge) |
-| T1 gbraid / wbraid | **Non appliqué** | Demande une migration de la base de production (`upsert_lead`), l'API et l'import de conversions hors ligne (`gads-rdv-upload`) |
+| T1 gbraid / wbraid | **Appliqué le 16/10/2026** (PR #74) | Migration 13 (colonnes, `upsert_lead`, `gads_rdv_pending_v2`) testée en transaction annulée puis appliquée ; API, formulaires, Analytics, admin et import RDV ; `forms.e2e.mjs` T06 PASS |
 
 Non-régression : `forms.e2e.mjs` 29 PASS (U02 lecteur d'écran NON EXÉCUTÉ) ; visibilité de chaque élément existant
 identique dans les 88 formulaires rendus (variantes A et B, 390 / 1440) ; contrastes, focus, cibles : 0 écart ;
