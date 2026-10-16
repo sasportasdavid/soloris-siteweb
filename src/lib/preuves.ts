@@ -28,7 +28,7 @@ export const PREUVES = {
 export const avisVerifies = Boolean(PREUVES.avisGoogle.ficheUrl && PREUVES.avisGoogle.dateControle && Number(SITE.rating.count) > 0);
 
 /** Libellés de la preuve « avis », attribués à l'exploitant (uniquement si avisVerifies). */
-export const AVIS_LIBELLE = `${SITE.legalName} : ${SITE.rating.value}/5 sur Google — ${SITE.rating.count} avis`;
+export const AVIS_LIBELLE = `${SITE.legalName} : ${SITE.rating.value}/5 sur Google`;
 export const AVIS_ATTRIBUTION = `Avis de la fiche Google ${SITE.legalName}, société qui exploite la marque ${SITE.tradeName}.`;
 
 /** Repli du dossier lorsque la preuve n'est pas documentée. */

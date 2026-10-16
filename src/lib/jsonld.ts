@@ -3,7 +3,6 @@
  * Les champs [À REMPLACER] proviennent de src/lib/site.ts.
  */
 import { SITE, fullAddress } from './site';
-import { avisVerifies } from './preuves';
 
 const ORG_ID = `${SITE.url}/#business`;
 
@@ -47,14 +46,9 @@ export function localBusiness() {
     ],
   };
   if (SITE.sameAs.length) ld.sameAs = SITE.sameAs;
-  // AggregateRating — uniquement lorsque la note est affichée (preuve documentée, preuves.ts)
-  if (avisVerifies) {
-    ld.aggregateRating = {
-      '@type': 'AggregateRating',
-      ratingValue: SITE.rating.value.replace(',', '.'),
-      reviewCount: SITE.rating.count,
-    };
-  }
+  // Pas d'AggregateRating : le nombre d'avis n'est plus publié (16/10/2026) et le balisage
+  // l'exige (reviewCount/ratingCount). Les avis « auto-attribués » d'une LocalBusiness ne
+  // produisent de toute façon pas d'étoiles dans Google.
   return ld;
 }
 

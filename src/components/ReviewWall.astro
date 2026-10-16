@@ -27,13 +27,13 @@ const hasReviews = avisVerifies;
         <h2 class="sec-title">{title}</h2>
       </div>
 
-      <!-- Bandeau agrégat : note Google réelle (volume de preuve) -->
+      <!-- Bandeau agrégat : note Google réelle d'IS DIAG (nombre d'avis non affiché) -->
       <div class="wall-agg mt-4">
         <span class="stars" aria-hidden="true">
           {[0,1,2,3,4].map(() => <svg width="18" height="18" viewBox="0 0 24 24" fill="#F4A24A"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.8 5.9 20.4 7.2 13.7l-5-4.7 6.8-.8z"/></svg>)}
         </span>
         <strong>{SITE.rating.value}/5</strong>
-        <span class="agg-sub">· {SITE.rating.count} avis Google</span>
+        <span class="agg-sub">· Note d’{SITE.legalName} sur Google</span>
       </div>
       <p class="muted mt-2" style="text-align:center;font-size:13px">{AVIS_ATTRIBUTION}</p>
 
