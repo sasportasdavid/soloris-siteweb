@@ -2,8 +2,9 @@
  * Cron quotidien — remontée des RDV vers Google Ads (import conversions hors-ligne).
  *
  * Déclenché par Vercel Cron (voir vercel.json). À chaque passage :
- *   1. lit les leads `rdv_pris` (gclid, non encore remontés) via la fonction
- *      SECURITY DEFINER `gads_rdv_pending` (gardée par jeton) ;
+ *   1. lit les leads `rdv_pris` (gclid, ou gbraid / wbraid pour les clics iOS ; non encore
+ *      remontés) via la fonction
+ *      SECURITY DEFINER `gads_rdv_pending_v2` (gardée par jeton) ;
  *   2. uploade une conversion « Soloris - RDV pris » par lead (orderId = id lead
  *      → Google déduplique, un lead déjà remonté ne compte jamais deux fois) ;
  *   3. marque chaque lead remonté (`gads_rdv_mark_uploaded`).
@@ -30,7 +31,7 @@ function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-type PendingLead = { id: string; gclid: string; conversion_datetime: string; value: number };
+type PendingLead = { id: string; gclid: string | null; gbraid: string | null; wbraid: string | null; conversion_datetime: string; value: number };
 
 export const GET: APIRoute = async ({ request }) => {
   // ── Auth : jeton obligatoire (en-tête Vercel Cron ou appel manuel) ──
@@ -48,14 +49,17 @@ export const GET: APIRoute = async ({ request }) => {
   const db = createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false } });
 
   // 1. Leads à remonter.
-  const { data, error } = await db.rpc('gads_rdv_pending', { p_token: CRON_SECRET });
-  if (error) return json({ error: 'rpc gads_rdv_pending', detail: error.message }, 500);
+  // v2 (migration 13) : leads avec gclid OU gbraid OU wbraid (clics iOS sans gclid).
+  const { data, error } = await db.rpc('gads_rdv_pending_v2', { p_token: CRON_SECRET });
+  if (error) return json({ error: 'rpc gads_rdv_pending_v2', detail: error.message }, 500);
   const leads = (data || []) as PendingLead[];
   if (!leads.length) return json({ ok: true, pending: 0, uploaded: 0, message: 'aucun RDV à remonter' });
 
   // 2. Upload groupé (un seul appel API, partial failure géré par Google).
   const conversions: OfflineConversion[] = leads.map((l) => ({
     gclid: l.gclid,
+    gbraid: l.gbraid,
+    wbraid: l.wbraid,
     conversionDateTime: toGoogleAdsDateTime(new Date(l.conversion_datetime)),
     value: Number(l.value) || 0,
     orderId: l.id,

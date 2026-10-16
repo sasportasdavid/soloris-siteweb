@@ -80,6 +80,7 @@
       payload.lead_status = 'complet';
       var a = getAcq();
       payload.gclid = a.gclid || ''; payload.fbclid = a.fbclid || '';
+      payload.gbraid = a.gbraid || ''; payload.wbraid = a.wbraid || '';
       payload.utm_source = a.utm_source || ''; payload.medium = a.utm_medium || ''; payload.campaign = a.utm_campaign || '';
       payload.term = a.utm_term || ''; payload.content = a.utm_content || '';
       payload.gads_keyword = a.keyword || ''; payload.gads_campaign_id = a.campaignid || '';
