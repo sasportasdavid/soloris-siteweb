@@ -110,6 +110,22 @@ const solorisDesignV3 = !/^\/(?:admin|api|rdv)(?:\/|$)/.test(Astro.url.pathname)
         Appeler
       </a>
     </div>
+    <script is:inline>
+      // Ticket F1 — la barre vise #simulateur (instance basse) ; si le visiteur a déjà commencé
+      // l'autre instance (hero), on le ramène à CELLE-CI, sans modifier aucun champ. Lien inchangé.
+      (function () {
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('.lp-mcta a[href="#simulateur"]') : null;
+          if (!a) return;
+          var started = document.querySelector('.qform[data-qf-started]');
+          var sim = document.getElementById('simulateur');
+          if (!started || (sim && sim.contains(started))) return; // comportement historique
+          e.preventDefault();
+          var top = started.getBoundingClientRect().top + window.pageYOffset - 16;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        });
+      })();
+    </script>
 
     <ConsentBanner />
     <BehaviorTracking />

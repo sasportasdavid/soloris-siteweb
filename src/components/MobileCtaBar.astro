@@ -21,6 +21,24 @@ const telHref = `tel:${SITE.phone.replace(/\s/g, '')}`;
   </a>
 </div>
 
+<script is:inline>
+  // Ticket F1 — « Demander un devis » contextuel : ramène au formulaire de devis réellement
+  // commencé sur la page (attribut posé par QuoteForm, aucun champ modifié) ; sinon au simulateur
+  // de la page (#simulateur) ou au premier formulaire présent ; sinon lien /devis inchangé.
+  // Le lien (href, classe, texte) et le lien tel: ne changent pas : le clic reste visible des tags.
+  (function () {
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('.mobile-cta a[href="/devis"]') : null;
+      if (!a) return;
+      var target = document.querySelector('.qform[data-qf-started]') || document.getElementById('simulateur') || document.querySelector('.qform');
+      if (!target) return;
+      e.preventDefault();
+      var top = target.getBoundingClientRect().top + window.pageYOffset - 80;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  })();
+</script>
+
 <style>
   .mobile-cta {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;

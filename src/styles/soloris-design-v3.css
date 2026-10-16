@@ -25,7 +25,7 @@
   --soloris-control: #7D8D9B;     /* bordure qui identifie un contrôle ≈ 3,41:1 */
   --soloris-focus: #2E6FAE;
   --soloris-success: #1C6B4A;
-  --soloris-disabled: #8C7E74;
+  --soloris-disabled: #74675E;   /* D1 : blanc 5,5:1 (était #8C7E74, 3,9:1) */
   --soloris-shadow-light: 0 1px 2px rgba(11, 42, 74, .06), 0 10px 26px -20px rgba(11, 42, 74, .3);
 }
 

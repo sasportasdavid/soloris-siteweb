@@ -99,6 +99,9 @@ const FORM_SEND_TO_DPE =
       <span class="dot active" data-dot="1"></span><span class="dot" data-dot="2"></span>
       <span class="dot" data-dot="3"></span><span class="dot" data-dot="4"></span><span class="dot" data-dot="5"></span>
     </div>
+    <!-- Progression verbale (ticket F2) : recalculée par showStep() depuis l'état réel du parcours
+         (4 étapes en variante steps_order B). Annoncée aux lecteurs d'écran à chaque étape. -->
+    <p class="qprogress" data-el="qprogress" aria-live="polite">Étape 1 sur 5</p>
 
     <!-- Étape 1 — Projet -->
     <fieldset class="qstep" data-step="1">
@@ -266,7 +269,8 @@ const FORM_SEND_TO_DPE =
   .qrating { display: flex; align-items: center; gap: 8px; justify-content: center; font-family: var(--sora); font-size: 13px; color: var(--ink-soft); padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
   .qrating .stars { display: inline-flex; gap: 1px; }
   .qrating strong { color: var(--blue); }
-  .qsteps { display: flex; gap: 8px; justify-content: center; margin: 8px 0 26px; }
+  .qsteps { display: flex; gap: 8px; justify-content: center; margin: 8px 0 10px; }
+  .qprogress { text-align: center; font-family: var(--sora); font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin: 0 0 18px; }
   .qsteps .dot { width: 30px; height: 5px; border-radius: 4px; background: var(--line); transition: background .2s; }
   .qsteps .dot.active { background: var(--gold); }
   .qstep { border: none; }
@@ -331,6 +335,8 @@ const FORM_SEND_TO_DPE =
   .qconsent a { color: var(--blue-light); text-decoration: underline; }
   .qhp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
   .qerror { color: #b3261e; font-size: 13px; margin-top: 12px; }
+  /* Créé en JS (pas d'attribut de portée Astro) → sélecteur :global sous la racine du composant. */
+  .qform :global(.qinvalid) { color: #b3261e; font-size: 13.5px; margin-top: 14px; line-height: 1.5; }
   .qthanks { text-align: center; padding: 20px 10px; }
   .qthanks-ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(245,166,35,.16); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
   .qthanks h3 { font-family: var(--sora); font-weight: 600; font-size: 24px; color: var(--blue); }
@@ -366,6 +372,8 @@ const FORM_SEND_TO_DPE =
     var form = root.querySelector('form');
     if (!form) return;
     function gid(n) { return root.querySelector('[data-el="' + n + '"]'); }
+    // Préfixe d'identifiants propre à l'instance (messages d'erreur reliés par aria-describedby).
+    var uid = 'qf' + (window.__qfCount = (window.__qfCount || 0) + 1);
     var steps = Array.prototype.slice.call(form.querySelectorAll('.qstep'));
     var dots = Array.prototype.slice.call(form.querySelectorAll('.dot'));
     var current = 0;
@@ -423,6 +431,8 @@ const FORM_SEND_TO_DPE =
       steps.forEach(function (s, idx) { s.hidden = idx !== i; });
       dots.forEach(function (d, idx) { d.classList.toggle('active', idx <= i); });
       current = i;
+      var pg = gid('qprogress'); if (pg) pg.textContent = 'Étape ' + (i + 1) + ' sur ' + steps.length; // F2
+      if (userAction) root.setAttribute('data-qf-started', '1'); // F1 : formulaire réellement commencé
       updateEstimation(); // rafraîchit estimation + visibilité âge/copropriété/annexe
       if (i === steps.length - 1) buildRecap(); // récap avant l'envoi (CRO #5)
       if (i > maxReached) { maxReached = i; if (i >= 1) upsertLead('partiel'); } // capture progressive
@@ -435,24 +445,33 @@ const FORM_SEND_TO_DPE =
       }
     }
 
+    // Ticket F3 : libellés des corrections attendues, affichés dans un message relié aux champs.
+    // Les RÈGLES de validation ci-dessous sont inchangées ; seuls le message et l'état ARIA s'ajoutent.
+    var NEED = {
+      type_demande: 'choisissez votre projet', type_bien: 'choisissez le type de bien',
+      age_bien: "choisissez l'âge du bien", surface_m2: 'indiquez la surface en m²',
+      secteur: 'indiquez le code postal', nom: 'indiquez votre nom', telephone: 'indiquez votre téléphone',
+    };
     function validStep(i) {
       var step = steps[i];
       var ok = true;
+      var need = [], bad = [];
+      function flag(key, el) { if (need.indexOf(NEED[key] || key) === -1) need.push(NEED[key] || key); if (el && bad.indexOf(el) === -1) bad.push(el); }
       // radios requis
       var radioNames = {};
       step.querySelectorAll('input[type="radio"][required]').forEach(function (el) { radioNames[el.name] = true; });
-      Object.keys(radioNames).forEach(function (n) { if (!form.querySelector('input[name="' + n + '"]:checked')) ok = false; });
+      Object.keys(radioNames).forEach(function (n) { if (!form.querySelector('input[name="' + n + '"]:checked')) { ok = false; flag(n); } });
       // champs texte/select requis
       step.querySelectorAll('input[required]:not([type="radio"]), select[required], textarea[required]').forEach(function (el) {
-        if (!el.value.trim()) { ok = false; el.style.borderColor = '#b3261e'; } else { el.style.borderColor = ''; }
-        if (el.type === 'email' && el.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value)) { ok = false; el.style.borderColor = '#b3261e'; }
+        if (!el.value.trim()) { ok = false; el.style.borderColor = '#b3261e'; flag(el.name, el); } else { el.style.borderColor = ''; }
+        if (el.type === 'email' && el.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value)) { ok = false; el.style.borderColor = '#b3261e'; flag("vérifiez l'adresse email", el); }
       });
       // étape 3 : logement → surface obligatoire (+ âge pour vente/location) ;
       //           lot annexe (cave/parking/box) → surface facultative, pas d'âge.
       if (step.getAttribute('data-step') === '3' && !isLotBien()) {
         var sb = form.querySelector('[name="surface_m2"]');
-        if (surfaceM2() == null) { ok = false; if (sb) sb.style.borderColor = '#b3261e'; } else if (sb) { sb.style.borderColor = ''; }
-        if (ageNeeded() && !checkedVal('age_bien')) ok = false;
+        if (surfaceM2() == null) { ok = false; if (sb) sb.style.borderColor = '#b3261e'; flag('surface_m2', sb); } else if (sb) { sb.style.borderColor = ''; }
+        if (ageNeeded() && !checkedVal('age_bien')) { ok = false; flag('age_bien'); }
       }
       // étape 4 : code postal valide (5 chiffres, Île-de-France)
       if (step.getAttribute('data-step') === '4') {
@@ -461,6 +480,8 @@ const FORM_SEND_TO_DPE =
         if (!/^\d{5}$/.test(cp) || IDF.indexOf(cp.slice(0, 2)) === -1) {
           ok = false;
           var cpEl = gid('cp-input'); if (cpEl) cpEl.style.borderColor = '#b3261e';
+          if (cp) flag("indiquez un code postal d'Île-de-France à 5 chiffres (75, 77, 78, 91, 92, 93, 94, 95)", cpEl);
+          else flag('secteur', cpEl);
         }
       }
       // étape 5 : numéro joignable (FR 10 chiffres, ou international +XX / 00XX).
@@ -474,11 +495,35 @@ const FORM_SEND_TO_DPE =
           ok = false;
           if (telEl) telEl.style.borderColor = '#b3261e';
           if (help) { if (!help.dataset.msg) help.dataset.msg = help.textContent; help.textContent = 'Vérifiez votre numéro (ex : 06 12 34 56 78) : c’est lui qu’on rappelle.'; help.style.color = '#b3261e'; }
+          flag('vérifiez le numéro de téléphone', telEl);
         } else if (help && help.style.color) {
           help.textContent = help.dataset.msg || ''; help.style.color = '';
         }
       }
+      showInvalid(step, ok, need, bad);
       return ok;
+    }
+
+    // F3 : message « Pour continuer : … » (role=alert) inséré avant la navigation de l'étape,
+    // champs concernés marqués aria-invalid et reliés au message. Classe distincte de .qerror
+    // (réservée à l'échec d'envoi).
+    function showInvalid(step, ok, need, bad) {
+      var msg = step.querySelector('.qinvalid');
+      step.querySelectorAll('[aria-invalid]').forEach(function (el) {
+        if (bad.indexOf(el) === -1) { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+      });
+      if (ok || !need.length) { if (msg) msg.hidden = true; return; }
+      if (!msg) {
+        msg = document.createElement('p');
+        msg.className = 'qinvalid';
+        msg.id = uid + '-invalide-' + (step.getAttribute('data-step') || '');
+        msg.setAttribute('role', 'alert');
+        var nav = step.querySelector('.qnav');
+        if (nav) nav.parentNode.insertBefore(msg, nav); else step.appendChild(msg);
+      }
+      msg.textContent = 'Pour continuer : ' + need.join(', ') + '.';
+      msg.hidden = false;
+      bad.forEach(function (el) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', msg.id); });
     }
 
     // Récap de la demande à la dernière étape (CRO #5)
@@ -584,11 +629,33 @@ const FORM_SEND_TO_DPE =
       setTimeout(function () { if (current === idx && validStep(idx) && idx < steps.length - 1) showStep(idx + 1, true); }, 280);
     }
 
+    // Ticket F3 — clavier sur les étapes à avance automatique :
+    //  · Espace sur le choix DÉJÀ coché (présélection ?type= ou defaultDemande) fait avancer,
+    //    comme le re-clic souris (Entrée passe par la soumission implicite, voir « submit ») ;
+    //  · les flèches changent le choix SANS changer d'étape (WCAG 3.2.2) : « Continuer »
+    //    réapparaît pour confirmer. Souris et tactile : comportement inchangé.
+    var arrowNav = false;
+    form.addEventListener('keydown', function (e) {
+      var t = e.target, stepEl = steps[current];
+      if (!t || t.type !== 'radio' || !isAutoStep(stepEl) || !stepEl.contains(t)) return;
+      if ((e.key === ' ' || e.key === 'Spacebar') && t.checked) { e.preventDefault(); maybeAutoAdvance(t); return; }
+      if (/^Arrow/.test(e.key)) {
+        // Actif jusqu'au relâchement : Chrome émet aussi un « click » sur le radio atteint par flèche.
+        arrowNav = true;
+        var nav = stepEl.querySelector('.qnav'), nx = stepEl.querySelector('[data-next]');
+        if (nav) nav.style.display = '';
+        if (nx) nx.style.display = '';
+      }
+    });
+    document.addEventListener('keyup', function (e) { if (/^Arrow/.test(e.key)) setTimeout(function () { arrowNav = false; }, 0); });
+    form.addEventListener('pointerdown', function () { arrowNav = false; }); // souris / tactile : jamais bloqué
+
     form.addEventListener('change', function (e) {
+      root.setAttribute('data-qf-started', '1'); // F1 : saisie réelle (la présélection n'émet pas de change)
       if (['type_demande', 'type_bien', 'surface_m2', 'age_bien', 'copropriete', 'annexe_appart', 'annexe_maison'].indexOf(e.target.name) > -1) {
         updateEstimation();
       }
-      if (e.target.type === 'radio') maybeAutoAdvance(e.target);
+      if (e.target.type === 'radio' && !arrowNav) maybeAutoAdvance(e.target);
     });
     // Estimation en direct pendant la saisie de la surface (sans attendre le blur).
     form.addEventListener('input', function (e) {
@@ -607,7 +674,8 @@ const FORM_SEND_TO_DPE =
         if (rLoc) { rLoc.checked = true; showStep(1, true); }
       } else if (e.target.matches('input[type="radio"]')) {
         // re-clic sur un radio déjà coché : `change` ne se déclenche pas → on avance ici
-        if (e.target.checked) maybeAutoAdvance(e.target);
+        // (sauf sélection par flèches : F3, pas de changement d'étape sans confirmation)
+        if (e.target.checked && !arrowNav) maybeAutoAdvance(e.target);
       }
     });
 
@@ -787,6 +855,11 @@ const FORM_SEND_TO_DPE =
     // ── Soumission complète ──
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      // Ticket F3 : la touche Entrée dans un champ d'une étape intermédiaire (surface, code postal,
+      // choix…) déclenchait une soumission implicite : lead « complet » sans coordonnées refusé par
+      // l'API, et message d'échec inséré d'avance à la dernière étape. Hors dernière étape, Entrée
+      // vaut désormais « Continuer » ; l'envoi réel reste réservé à la dernière étape.
+      if (current < steps.length - 1) { if (validStep(current)) showStep(current + 1, true); return; }
       if (!validStep(current)) return;
       var btn = gid('qsubmit'); btn.disabled = true; btn.textContent = 'Envoi…';
       submitted = true; // n'envoie plus de partiel
